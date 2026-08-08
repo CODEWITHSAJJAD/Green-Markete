@@ -141,17 +141,28 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
             const SizedBox(height: 4),
             Text('${widget.batch.batchCode} • ${widget.batch.productName ?? ''}', style: theme.textTheme.bodySmall),
             const SizedBox(height: 16),
-            DropdownButtonFormField<CustomerModel?>(
-              initialValue: _customer,
-              decoration: const InputDecoration(labelText: 'Customer'),
-              items: [
-                const DropdownMenuItem<CustomerModel?>(value: null, child: Text('Walk-in customer')),
-                ...customers.map((c) => DropdownMenuItem<CustomerModel?>(
-                      value: c,
-                      child: Text(c.fullName),
-                    )),
-              ],
-              onChanged: (v) => setState(() => _customer = v),
+            InkWell(
+              onTap: () async {
+                final picked = await showModalBottomSheet<CustomerModel?>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (ctx) => _CustomerPicker(
+                    customers: customers,
+                    initial: _customer,
+                  ),
+                );
+                if (!mounted) return;
+                setState(() => _customer = picked);
+              },
+              child: InputDecorator(
+                decoration: const InputDecoration(labelText: 'Customer'),
+                child: Text(
+                  _customer?.fullName ?? 'Walk-in customer',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: _customer == null ? theme.colorScheme.onSurface.withValues(alpha: 0.6) : null,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -209,6 +220,106 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
               child: _saving
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Save Sale'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomerPicker extends StatefulWidget {
+  const _CustomerPicker({required this.customers, this.initial});
+
+  final List<CustomerModel> customers;
+  final CustomerModel? initial;
+
+  @override
+  State<_CustomerPicker> createState() => _CustomerPickerState();
+}
+
+class _CustomerPickerState extends State<_CustomerPicker> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final filtered = widget.customers.where((c) {
+      if (_query.isEmpty) return true;
+      final q = _query.toLowerCase();
+      return c.fullName.toLowerCase().contains(q) ||
+          (c.phone?.toLowerCase().contains(q) ?? false) ||
+          (c.city?.toLowerCase().contains(q) ?? false) ||
+          (c.shopName?.toLowerCase().contains(q) ?? false);
+    }).toList();
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Search customer',
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Walk-in customer'),
+              subtitle: const Text('No customer on this sale'),
+              selected: widget.initial == null,
+              onTap: () => Navigator.pop(context, null),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: filtered.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Center(
+                        child: Text(
+                          _query.isEmpty ? 'No customers yet' : 'No matches',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (_, i) {
+                        final c = filtered[i];
+                        return ListTile(
+                          title: Text(c.fullName),
+                          subtitle: Text(
+                            [
+                              if (c.phone != null && c.phone!.isNotEmpty) c.phone,
+                              if (c.city != null && c.city!.isNotEmpty) c.city,
+                              if (c.shopName != null && c.shopName!.isNotEmpty) c.shopName,
+                            ].where((e) => e != null && e.isNotEmpty).join(' • '),
+                          ),
+                          selected: widget.initial?.id == c.id,
+                          onTap: () => Navigator.pop(context, c),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
