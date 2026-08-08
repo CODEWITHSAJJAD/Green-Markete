@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../core/supabase/supabase_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../providers/customer_provider.dart';
@@ -21,12 +23,56 @@ class CustomerLedgerPage extends StatefulWidget {
 }
 
 class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
+  RealtimeChannel? _paymentsChannel;
+
+  String get _customerId => widget.customer.id;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CustomerProvider>().loadLedger(widget.customer.id);
+      if (!mounted) return;
+      final provider = context.read<CustomerProvider>();
+      provider.loadLedger(_customerId);
+      _subscribeRealtime(provider);
     });
+  }
+
+  void _subscribeRealtime(CustomerProvider provider) {
+    final client = SupabaseService.instance.client;
+    _paymentsChannel = client
+        .channel('customer_payments_$_customerId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'customer_payments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'customer_id',
+            value: _customerId,
+          ),
+          callback: (_) => provider.loadLedger(_customerId),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'customer_payments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'customer_id',
+            value: _customerId,
+          ),
+          callback: (_) => provider.loadLedger(_customerId),
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    if (_paymentsChannel != null) {
+      SupabaseService.instance.client.removeChannel(_paymentsChannel!);
+    }
+    super.dispose();
   }
 
   Future<void> _openRecordPayment() async {

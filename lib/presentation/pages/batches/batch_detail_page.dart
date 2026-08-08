@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../core/supabase/supabase_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
 import '../../../data/models/expense_model.dart';
@@ -39,19 +41,89 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
 
   String get batchId => widget.batchId;
 
+  RealtimeChannel? _expensesChannel;
+  RealtimeChannel? _salesChannel;
+
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 5, vsync: this);
     _tabCtrl.addListener(() => setState(() {}));
-    context.read<BatchDetailProvider>().load(batchId);
-    context.read<BatchPLProvider>().load(batchId);
-    context.read<ExpenseProvider>().load(batchId);
-    context.read<SaleProvider>().loadByBatch(batchId);
+    final detail = context.read<BatchDetailProvider>();
+    final pl = context.read<BatchPLProvider>();
+    final expenses = context.read<ExpenseProvider>();
+    final sales = context.read<SaleProvider>();
+    detail.load(batchId);
+    pl.load(batchId);
+    expenses.load(batchId);
+    sales.loadByBatch(batchId);
+    _subscribeRealtime(detail, pl, expenses, sales);
+  }
+
+  void _subscribeRealtime(
+    BatchDetailProvider detail,
+    BatchPLProvider pl,
+    ExpenseProvider expenses,
+    SaleProvider sales,
+  ) {
+    final client = SupabaseService.instance.client;
+    _expensesChannel = client
+        .channel('expenses_batch_$batchId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'expenses',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'batch_id',
+            value: batchId,
+          ),
+          callback: (_) {
+            expenses.load(batchId);
+            pl.load(batchId);
+            detail.load(batchId);
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'expenses',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'batch_id',
+            value: batchId,
+          ),
+          callback: (_) {
+            expenses.load(batchId);
+            pl.load(batchId);
+          },
+        )
+        .subscribe();
+    _salesChannel = client
+        .channel('sales_batch_$batchId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'sales',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'batch_id',
+            value: batchId,
+          ),
+          callback: (_) {
+            sales.loadByBatch(batchId);
+            pl.load(batchId);
+            detail.load(batchId);
+          },
+        )
+        .subscribe();
   }
 
   @override
   void dispose() {
+    final client = SupabaseService.instance.client;
+    if (_expensesChannel != null) client.removeChannel(_expensesChannel!);
+    if (_salesChannel != null) client.removeChannel(_salesChannel!);
     _tabCtrl.dispose();
     super.dispose();
   }
