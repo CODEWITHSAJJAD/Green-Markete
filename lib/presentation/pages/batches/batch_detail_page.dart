@@ -324,11 +324,12 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               const SizedBox(height: 18),
               StatusTimeline(currentStatus: batch.status),
               const SizedBox(height: 18),
+              _buildQuantityProgress(context, batch),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _metric(theme, 'Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'),
                   _metric(theme, 'Purchase Cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
                   _metric(theme, 'Price / Unit', CurrencyFormatter.format(batch.purchasePricePerUnit)),
                   _metric(theme, 'Transport', batch.transportPaidBy ?? '-'),
@@ -817,6 +818,71 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           );
         });
       },
+    );
+  }
+
+  Widget _buildQuantityProgress(BuildContext context, BatchModel batch) {
+    final theme = Theme.of(context);
+    final sold = context.watch<SaleProvider>().sales.fold<double>(
+          0,
+          (acc, s) => acc + s.quantitySold,
+        );
+    final total = batch.totalQuantity;
+    final remaining = (total - sold).clamp(0, total).toDouble();
+    final pct = total > 0 ? (sold / total).clamp(0, 1).toDouble() : 0.0;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Sold vs Remaining', style: theme.textTheme.bodySmall),
+              ),
+              Text(
+                '${(pct * 100).toStringAsFixed(0)}%',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: pct >= 1 ? AppColors.success : AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _metric(theme, 'Sold', '${sold.toStringAsFixed(0)} ${batch.quantityUnit}'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _metric(theme, 'Remaining', '${remaining.toStringAsFixed(0)} ${batch.quantityUnit}'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: pct,
+              minHeight: 10,
+              color: pct >= 1 ? AppColors.success : AppColors.primary,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Total ${total.toStringAsFixed(0)} ${batch.quantityUnit}',
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 
