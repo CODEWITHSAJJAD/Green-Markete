@@ -1,106 +1,170 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
-import '../../providers/batch_provider.dart';
-import '../../widgets/amount_text.dart';
-import '/core/utils/currency_formatter.dart';
+import 'package:provider/provider.dart';
 
-class BatchPLPage extends ConsumerWidget {
+import '../../../core/utils/currency_formatter.dart';
+import '../../providers/batch_provider.dart';
+
+class BatchPLPage extends StatefulWidget {
   final String batchId;
+
   const BatchPLPage({super.key, required this.batchId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final plAsync = ref.watch(batchPLProvider(batchId));
+  State<BatchPLPage> createState() => _BatchPLPageState();
+}
+
+class _BatchPLPageState extends State<BatchPLPage> {
+  String get batchId => widget.batchId;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<BatchDetailProvider>().load(batchId);
+    context.read<BatchPLProvider>().load(batchId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final batchProvider = context.watch<BatchDetailProvider>();
+    final plProvider = context.watch<BatchPLProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profit & Loss'),
+        title: const Text('Batch P&L'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share),
             onPressed: () {
-              Clipboard.setData(const ClipboardData(text: 'Batch P&L Report'));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Report copied to clipboard')),
+                const SnackBar(content: Text('Export available in a later build')),
               );
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
-            onPressed: () {},
+            icon: const Icon(Icons.ios_share_rounded),
           ),
         ],
       ),
-      body: plAsync.when(
-        data: (pl) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: _buildBody(context, theme, batchProvider, plProvider),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, ThemeData theme, BatchDetailProvider batchProvider, BatchPLProvider plProvider) {
+    final batch = batchProvider.batch;
+    if (batch == null) {
+      if (batchProvider.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (batchProvider.error != null) {
+        return _errorBlock(context, batchProvider.error!, () => context.read<BatchDetailProvider>().load(batchId));
+      }
+      return const Center(child: Text('No batch data'));
+    }
+
+    final pl = plProvider.pl;
+    if (pl == null) {
+      if (plProvider.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (plProvider.error != null) {
+        return _errorBlock(context, plProvider.error!, () => context.read<BatchPLProvider>().load(batchId));
+      }
+      return const Center(child: Text('No P&L data yet'));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(batch.batchCode, style: theme.textTheme.headlineMedium),
+        const SizedBox(height: 6),
+        Text(
+          '${batch.productName ?? 'Product'} • ${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 20),
+        _section(theme, 'Cost Breakdown', [
+          _line('Purchase Cost', pl.costBreakdown.purchaseCost),
+          _line('Purchaser Daily Charges', pl.costBreakdown.purchaserDailyCharges),
+          _line('Purchaser Expenses', pl.costBreakdown.purchaserExpenses),
+          _line('Packing Cost', pl.costBreakdown.packingCost),
+          _line('Transport Cost', pl.costBreakdown.transportCost),
+          _line('Seller Daily Charges', pl.costBreakdown.sellerDailyCharges),
+          _line('Seller Expenses', pl.costBreakdown.sellerExpenses),
+          _line('Total Cost', pl.costBreakdown.totalCost, emphasize: true),
+        ]),
+        const SizedBox(height: 16),
+        _section(theme, 'Revenue', [
+          _line('Total Revenue', pl.revenue.totalRevenue),
+          _line('Cash Received', pl.revenue.cashReceived),
+          _line('Credit Outstanding', pl.revenue.creditOutstanding),
+        ]),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (pl.batchCode != null)
-                Text('Batch: ${pl.batchCode}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
-              const Text('COST BREAKDOWN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              const Divider(),
-              _PLRow('Purchase Cost', pl.costBreakdown.purchaseCost),
-              _PLRow('Purchaser Daily Charges', pl.costBreakdown.purchaserDailyCharges),
-              _PLRow('Purchaser Expenses', pl.costBreakdown.purchaserExpenses),
-              _PLRow('Packing Cost', pl.costBreakdown.packingCost),
-              _PLRow('Transport Cost', pl.costBreakdown.transportCost),
-              _PLRow('Seller Daily Charges', pl.costBreakdown.sellerDailyCharges),
-              _PLRow('Seller Expenses', pl.costBreakdown.sellerExpenses),
-              const Divider(thickness: 2),
-              _PLRow('TOTAL COST', pl.costBreakdown.totalCost, isBold: true),
-              const SizedBox(height: 24),
-              const Text('SALES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              const Divider(),
-              _PLRow('Total Revenue', pl.revenue.totalRevenue, color: Colors.green),
-              _PLRow('Cash Received', pl.revenue.cashReceived),
-              _PLRow('Credit Outstanding', pl.revenue.creditOutstanding, color: Colors.amber),
-              const Divider(thickness: 2),
-              _PLRow(
-                pl.netProfitLoss >= 0 ? 'NET PROFIT' : 'NET LOSS',
-                pl.netProfitLoss,
-                isBold: true,
-                color: pl.netProfitLoss >= 0 ? Colors.green : Colors.red,
+              Text('Net Profit / Loss', style: theme.textTheme.titleMedium),
+              Text(
+                CurrencyFormatter.format(pl.netProfitLoss),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: pl.netProfitLoss >= 0 ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+      ],
+    );
+  }
+
+  Widget _errorBlock(BuildContext context, String message, VoidCallback onRetry) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message),
+            const SizedBox(height: 12),
+            OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _PLRow extends StatelessWidget {
-  final String label;
-  final double amount;
-  final bool isBold;
-  final Color? color;
+  Widget _section(ThemeData theme, String title, List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
 
-  const _PLRow(this.label, this.amount, {this.isBold = false, this.color});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _line(String label, double value, {bool emphasize = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            fontSize: isBold ? 16 : 14,
-            color: color,
-          )),
-          AmountText(
-            amount: amount,
-            fontSize: isBold ? 18 : 14,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-            color: color,
-          ),
+          Expanded(child: Text(label, style: TextStyle(fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500))),
+          Text(CurrencyFormatter.format(value), style: TextStyle(fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500)),
         ],
       ),
     );

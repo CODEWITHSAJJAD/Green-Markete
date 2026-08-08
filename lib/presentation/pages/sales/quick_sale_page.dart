@@ -1,192 +1,220 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../data/models/batch_model.dart';
+import '../../../data/models/customer_model.dart';
+import '../../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
-import '../../../data/models/sale_model.dart';
-import '../../../data/repositories/sale_repository.dart';
-import '../../../core/utils/date_formatter.dart';
-import '../../widgets/searchable_dropdown.dart';
-import '../../widgets/amount_text.dart';
 
-class QuickSalePage extends ConsumerStatefulWidget {
+class QuickSalePage extends StatefulWidget {
   const QuickSalePage({super.key});
 
   @override
-  ConsumerState<QuickSalePage> createState() => _QuickSalePageState();
+  State<QuickSalePage> createState() => _QuickSalePageState();
 }
 
-class _QuickSalePageState extends ConsumerState<QuickSalePage> {
-  int _step = 0;
-  dynamic _selectedBatch;
-  dynamic _selectedCustomer;
-  final _quantityController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _cashReceivedController = TextEditingController();
-  final _bankRefController = TextEditingController();
+class _QuickSalePageState extends State<QuickSalePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _quantityCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _cashCtrl = TextEditingController();
+  final _bankRefCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  BatchModel? _selectedBatch;
+  CustomerModel? _selectedCustomer;
   String _paymentMode = 'cash';
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  void _load() {
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId != null && businessId.isNotEmpty) {
+      context.read<BatchListProvider>().load(businessId, status: 'selling');
+      context.read<CustomerProvider>().load(businessId);
+    }
+  }
 
   @override
   void dispose() {
-    _quantityController.dispose();
-    _priceController.dispose();
-    _cashReceivedController.dispose();
-    _bankRefController.dispose();
+    _quantityCtrl.dispose();
+    _priceCtrl.dispose();
+    _cashCtrl.dispose();
+    _bankRefCtrl.dispose();
+    _notesCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _confirmSale() async {
-    final authState = ref.read(authProvider);
-    final qty = double.tryParse(_quantityController.text) ?? 0;
-    final price = double.tryParse(_priceController.text) ?? 0;
-    final cash = double.tryParse(_cashReceivedController.text) ?? 0;
-    final total = qty * price;
-    final credit = _paymentMode == 'credit'
-        ? total
-        : _paymentMode == 'partial_credit'
-            ? total - cash
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || _selectedBatch == null) return;
+    final auth = context.read<AuthProvider>();
+    final quantity = double.parse(_quantityCtrl.text.trim());
+    final price = double.parse(_priceCtrl.text.trim());
+    final cashReceived = _cashCtrl.text.trim().isEmpty ? 0.0 : double.parse(_cashCtrl.text.trim());
+    final totalAmount = quantity * price;
+    final creditAmount = _paymentMode == 'partial_credit'
+        ? (totalAmount - cashReceived)
+        : _paymentMode == 'credit'
+            ? totalAmount
             : 0.0;
 
-    final request = SaleCreateRequest(
-      batchId: _selectedBatch.id,
-      sellerId: authState.user?.id,
-      customerId: _selectedCustomer?.id,
-      saleDate: DateFormatter.toISO(DateTime.now()),
-      quantitySold: qty,
-      pricePerUnit: price,
-      paymentMode: _paymentMode,
-      cashReceived: cash,
-      creditAmount: credit,
-      bankReference: _bankRefController.text.isNotEmpty ? _bankRefController.text : null,
-    );
-
-    final repo = ref.read(saleRepositoryProvider);
-    await repo.create(request);
-    ref.invalidate(batchDetailProvider(_selectedBatch.id));
-    ref.invalidate(batchPLProvider(_selectedBatch.id));
-    if (mounted) context.go('/batches/${_selectedBatch.id}');
+    setState(() => _saving = true);
+    final ok = await context.read<SaleProvider>().add(
+          SaleCreateRequest(
+            batchId: _selectedBatch!.id,
+            sellerId: auth.userId,
+            customerId: _selectedCustomer?.id,
+            saleDate: DateTime.now().toIso8601String().split('T').first,
+            quantitySold: quantity,
+            pricePerUnit: price,
+            paymentMode: _paymentMode,
+            cashReceived: cashReceived,
+            creditAmount: creditAmount,
+            bankReference: _bankRefCtrl.text.trim().isEmpty ? null : _bankRefCtrl.text.trim(),
+            notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+          ),
+        );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) {
+      _load();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sale recorded successfully')),
+      );
+      Navigator.of(context).pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.read<SaleProvider>().error ?? 'Failed to record sale')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final businessId = authState.user?.id ?? '';
-    final batchesAsync = ref.watch(batchListProvider(businessId));
+    final batchesProvider = context.watch<BatchListProvider>();
+    final customersProvider = context.watch<CustomerProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Quick Sale')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: _buildBody(context, batchesProvider, customersProvider),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, BatchListProvider batchesProvider, CustomerProvider customersProvider) {
+    if (batchesProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (batchesProvider.error != null) {
+      return Center(child: Text(batchesProvider.error!));
+    }
+    if (customersProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (customersProvider.error != null) {
+      return Center(child: Text(customersProvider.error!));
+    }
+
+    final batchList = batchesProvider.batches;
+    final customerList = customersProvider.customers;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Form(
+        key: _formKey,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LinearProgressIndicator(value: (_step + 1) / 5),
-            const SizedBox(height: 24),
-            if (_step == 0) ...[
-              const Text('Select Batch', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              batchesAsync.when(
-                data: (batches) => SearchableDropdown(
-                  items: batches.where((b) => b.status == 'selling').toList(),
-                  itemLabel: (b) => '${b.batchCode}',
-                  hintText: 'Search selling batches...',
-                  onChanged: (batch) {
-                    setState(() { _selectedBatch = batch; _step = 1; });
-                  },
-                ),
-                loading: () => const CircularProgressIndicator(),
-                error: (e, _) => Text('$e'),
-              ),
-            ],
-            if (_step == 1) ...[
-              const Text('Select Customer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Customer Name'),
-                onSubmitted: (_) => setState(() => _step = 2),
-              ),
-              TextButton(
-                onPressed: () => setState(() => _step = 2),
-                child: const Text('Skip - Walk-in Customer'),
-              ),
-            ],
-            if (_step == 2) ...[
-              const Text('Quantity & Price', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _quantityController,
-                decoration: const InputDecoration(labelText: 'Quantity'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _priceController,
-                decoration: const InputDecoration(labelText: 'Price Per Unit'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => setState(() => _step = 3),
-                child: const Text('Next'),
-              ),
-            ],
-            if (_step == 3) ...[
-              const Text('Payment Mode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                children: [
-                  ChoiceChip(label: const Text('Cash'), selected: _paymentMode == 'cash', onSelected: (_) => setState(() => _paymentMode = 'cash')),
-                  ChoiceChip(label: const Text('Credit'), selected: _paymentMode == 'credit', onSelected: (_) => setState(() => _paymentMode = 'credit')),
-                  ChoiceChip(label: const Text('Part Credit'), selected: _paymentMode == 'partial_credit', onSelected: (_) => setState(() => _paymentMode = 'partial_credit')),
-                ],
-              ),
-              if (_paymentMode == 'partial_credit') ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _cashReceivedController,
-                  decoration: const InputDecoration(labelText: 'Cash Received'),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-              if (_paymentMode == 'bank_transfer') ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _bankRefController,
-                  decoration: const InputDecoration(labelText: 'Bank Reference'),
-                ),
-              ],
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => setState(() => _step = 4),
-                child: const Text('Review'),
-              ),
-            ],
-            if (_step == 4) ...[
-              const Text('Confirm Sale', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text('Batch: ${_selectedBatch?.batchCode ?? ''}'),
-                      Text('Qty: ${_quantityController.text} × PKR ${_priceController.text}'),
-                      AmountText(amount: (double.tryParse(_quantityController.text) ?? 0) * (double.tryParse(_priceController.text) ?? 0)),
-                    ],
+            DropdownButtonFormField<BatchModel>(
+              initialValue: _selectedBatch,
+              decoration: const InputDecoration(labelText: 'Batch'),
+              items: batchList
+                  .map(
+                    (batch) => DropdownMenuItem(
+                      value: batch,
+                      child: Text('${batch.batchCode} • ${batch.productName ?? 'Batch'}'),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedBatch = value),
+              validator: (value) => value == null ? 'Select a batch' : null,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<CustomerModel?>(
+              initialValue: _selectedCustomer,
+              decoration: const InputDecoration(labelText: 'Customer'),
+              items: [
+                const DropdownMenuItem<CustomerModel?>(value: null, child: Text('Walk-in customer')),
+                ...customerList.map(
+                  (customer) => DropdownMenuItem<CustomerModel?>(
+                    value: customer,
+                    child: Text(customer.fullName),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _confirmSale,
-                  child: const Text('Confirm Sale'),
+              ],
+              onChanged: (value) => setState(() => _selectedCustomer = value),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _quantityCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Quantity sold'),
+              validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _priceCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Price per unit'),
+              validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _paymentMode,
+              decoration: const InputDecoration(labelText: 'Payment mode'),
+              items: const [
+                DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                DropdownMenuItem(value: 'credit', child: Text('Credit')),
+                DropdownMenuItem(value: 'partial_credit', child: Text('Partial credit')),
+                DropdownMenuItem(value: 'bank_transfer', child: Text('Bank transfer')),
+              ],
+              onChanged: (value) => setState(() => _paymentMode = value ?? 'cash'),
+            ),
+            if (_paymentMode == 'partial_credit' || _paymentMode == 'bank_transfer') ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _cashCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: _paymentMode == 'partial_credit' ? 'Cash received' : 'Cash received (optional)',
                 ),
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _bankRefCtrl,
+                decoration: const InputDecoration(labelText: 'Bank reference'),
+              ),
             ],
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _notesCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: 'Notes'),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _saving ? null : _submit,
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Save Sale'),
+            ),
           ],
         ),
       ),

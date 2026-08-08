@@ -1,388 +1,675 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../providers/batch_provider.dart';
-import '../../providers/product_provider.dart';
-import '../../providers/partner_provider.dart';
-import '../../providers/market_provider.dart';
-import '../../../data/models/product_model.dart';
-import '../../../data/models/market_model.dart';
-import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+import '../../../core/config/theme.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
-import '../../../core/utils/date_formatter.dart';
-import '../../widgets/searchable_dropdown.dart';
-import '../../widgets/city_market_dropdown.dart';
-import 'widgets/partner_selector.dart';
-import 'widgets/packing_entry_form.dart';
-import 'widgets/batch_summary_card.dart';
-import '../../../data/repositories/batch_repository.dart';
+import '../../../data/models/market_model.dart';
+import '../../../data/models/product_model.dart';
+import '../../../data/models/partner_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/batch_provider.dart';
+import '../../providers/batch_wizard_provider.dart';
+import '../../providers/market_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../widgets/partner_selector.dart';
+import '../../widgets/packing_entry_form.dart';
 
-class CreateBatchWizard extends ConsumerStatefulWidget {
+class CreateBatchWizard extends StatefulWidget {
   const CreateBatchWizard({super.key});
 
   @override
-  ConsumerState<CreateBatchWizard> createState() => _CreateBatchWizardState();
+  State<CreateBatchWizard> createState() => _CreateBatchWizardState();
 }
 
-class _CreateBatchWizardState extends ConsumerState<CreateBatchWizard> {
-  final _pageController = PageController();
+class _CreateBatchWizardState extends State<CreateBatchWizard> {
+  final PageController _pageCtrl = PageController();
+  bool _submitting = false;
+
+  // Step 1
+  String? _productId;
+  String? _productName;
+  String? _sourceMarketId;
+  String? _destinationMarketId;
+  DateTime _purchaseDate = DateTime.now();
+  final _quantityCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  String _unit = 'kg';
+  String _transportPaidBy = 'purchaser';
+
+  // Step 2
+  List<Map<String, dynamic>> _partners = [];
+
+  // Step 3
+  List<Map<String, dynamic>> _packing = [];
+
+  // Step 4
+  final List<Map<String, dynamic>> _expenses = [];
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<BatchWizardProvider>().setStep(0);
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId != null && businessId.isNotEmpty) {
+      context.read<ProductProvider>().load(businessId);
+      context.read<MarketProvider>().load(businessId);
+    }
+  }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _pageCtrl.dispose();
+    _quantityCtrl.dispose();
+    _priceCtrl.dispose();
     super.dispose();
   }
 
-  void _createBatch() async {
-    final wizardState = ref.read(batchWizardProvider);
-    final authState = ref.read(authProvider);
-    final businessId = authState.user?.id ?? '';
+  void _next() {
+    final wizard = context.read<BatchWizardProvider>();
+    if (wizard.currentStep < 4) {
+      wizard.nextStep();
+      _pageCtrl.animateToPage(wizard.currentStep, duration: const Duration(milliseconds: 250), curve: Curves.ease);
+    }
+  }
 
-    final request = BatchCreateRequest(
+  void _prev() {
+    final wizard = context.read<BatchWizardProvider>();
+    if (wizard.currentStep > 0) {
+      wizard.previousStep();
+      _pageCtrl.animateToPage(wizard.currentStep, duration: const Duration(milliseconds: 250), curve: Curves.ease);
+    }
+  }
+
+  bool _validateStep(int step) {
+    switch (step) {
+      case 0:
+        return _productId != null &&
+            _sourceMarketId != null &&
+            _quantityCtrl.text.trim().isNotEmpty &&
+            _priceCtrl.text.trim().isNotEmpty;
+      case 1:
+        return _partners.isNotEmpty && _partners.first['partner_id'] != null;
+      case 2:
+        return true;
+      case 3:
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  Future<void> _submit() async {
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId == null || businessId.isEmpty) return;
+
+    final totalQty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
+    final pricePerUnit = double.tryParse(_priceCtrl.text.trim()) ?? 0;
+
+    final payload = BatchCreateRequest(
       businessId: businessId,
-      productId: wizardState.productId!,
-      sourceMarketId: wizardState.sourceMarketId,
-      destinationMarketId: wizardState.destinationMarketId,
-      purchaseDate: wizardState.purchaseDate ?? DateFormatter.toISO(DateTime.now()),
-      totalQuantity: wizardState.totalQuantity ?? 0,
-      quantityUnit: wizardState.quantityUnit ?? 'kg',
-      purchasePricePerUnit: wizardState.purchasePricePerUnit ?? 0,
-      transportPaidBy: wizardState.transportPaidBy,
+      productId: _productId!,
+      sourceMarketId: _sourceMarketId,
+      destinationMarketId: _destinationMarketId,
+      purchaseDate: _purchaseDate.toIso8601String().split('T').first,
+      totalQuantity: totalQty,
+      quantityUnit: _unit,
+      purchasePricePerUnit: pricePerUnit,
+      transportPaidBy: _transportPaidBy,
+      partners: _partners
+          .where((p) => p['partner_id'] != null)
+          .map((p) => BatchPartnerCreate(
+                partnerId: p['partner_id'] as String,
+                role: p['role'] as String,
+                dailyChargeRate: (p['daily_charge_rate'] as num?)?.toDouble() ?? 0,
+                daysInvolved: (p['days_involved'] as int?) ?? 1,
+              ))
+          .toList(),
+      packingRecords: _packing
+          .where((p) => (p['unit_count'] as int) > 0)
+          .map((p) => PackingRecordCreate(
+                unitType: p['unit_type'] as String,
+                unitLabel: p['unit_label'] as String?,
+                unitCount: p['unit_count'] as int,
+                costPerUnit: (p['cost_per_unit'] as num).toDouble(),
+              ))
+          .toList(),
+      expenses: _expenses
+          .where((e) => (e['amount'] as double) > 0)
+          .map((e) => ExpenseCreate(
+                partnerId: e['partner_id'] as String?,
+                expenseSide: e['expense_side'] as String,
+                expenseType: e['expense_type'] as String,
+                amount: (e['amount'] as num).toDouble(),
+                description: e['description'] as String?,
+                paidBy: e['paid_by'] as String?,
+                paymentMode: e['payment_mode'] as String?,
+                paymentReference: e['payment_reference'] as String?,
+                expenseDate: e['expense_date'] as String?,
+              ))
+          .toList(),
     );
 
+    setState(() => _submitting = true);
     try {
-      final repo = ref.read(batchRepositoryProvider);
-      final batch = await repo.create(request);
-      ref.read(batchWizardProvider.notifier).reset();
-      if (mounted) context.go('/batches/${batch.id}');
+      final ok = await context.read<BatchListProvider>().create(payload);
+      if (!mounted) return;
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Batch created')),
+        );
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.read<BatchListProvider>().error ?? 'Failed to create batch')),
+        );
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create batch: $e')),
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
       );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final wizardState = ref.watch(batchWizardProvider);
-    final authState = ref.watch(authProvider);
-    final businessId = authState.user?.id ?? '';
-    final productsAsync = ref.watch(productListProvider(businessId));
-    final marketsAsync = ref.watch(marketListProvider(businessId));
+    final theme = Theme.of(context);
+    final step = context.watch<BatchWizardProvider>().currentStep;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Batch'),
+        title: const Text('New Batch Wizard'),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () {
-            ref.read(batchWizardProvider.notifier).reset();
-            context.pop();
-          },
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: Column(
         children: [
-          _StepIndicator(currentStep: wizardState.currentStep),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (page) => ref.read(batchWizardProvider.notifier).setStep(page),
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            color: theme.colorScheme.surface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Step1ProductPurchase(productsAsync: productsAsync, marketsAsync: marketsAsync),
-                _Step2Partners(),
-                _Step3Packing(),
-                _Step4Expenses(),
-                _Step5Review(onConfirm: _createBatch),
+                Text('Step ${step + 1} of 5', style: theme.textTheme.labelMedium),
+                const SizedBox(height: 6),
+                LinearProgressIndicator(value: (step + 1) / 5),
+                const SizedBox(height: 8),
+                Text(_stepTitle(step), style: theme.textTheme.titleLarge),
               ],
             ),
           ),
-          _BottomNavigation(
-            currentStep: wizardState.currentStep,
-            onBack: () {
-              if (wizardState.currentStep > 0) {
-                ref.read(batchWizardProvider.notifier).previousStep();
-                _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-              }
-            },
-            onNext: () {
-              if (wizardState.currentStep < 4) {
-                ref.read(batchWizardProvider.notifier).nextStep();
-                _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-              }
-            },
+          Expanded(
+            child: PageView(
+              controller: _pageCtrl,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _step1(theme),
+                _step2(),
+                _step3(),
+                _step4(),
+                _step5(theme),
+              ],
+            ),
+          ),
+          SafeArea(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(top: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.2))),
+              ),
+              child: Row(
+                children: [
+                  if (step > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _submitting ? null : _prev,
+                        child: const Text('Back'),
+                      ),
+                    ),
+                  if (step > 0) const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _submitting || !_validateStep(step)
+                          ? null
+                          : () {
+                              if (step == 4) {
+                                _submit();
+                              } else {
+                                _next();
+                              }
+                            },
+                      child: _submitting
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text(step == 4 ? 'Confirm & Create' : 'Next'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _StepIndicator extends StatelessWidget {
-  final int currentStep;
-  const _StepIndicator({required this.currentStep});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: List.generate(5, (index) {
-          return Expanded(
-            child: Container(
-              height: 4,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: index <= currentStep ? Colors.green : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
+  String _stepTitle(int s) {
+    switch (s) {
+      case 0: return 'Product & Purchase';
+      case 1: return 'Purchasing Partners';
+      case 2: return 'Packing';
+      case 3: return 'Purchaser Expenses';
+      case 4: return 'Review & Confirm';
+      default: return '';
+    }
   }
-}
 
-class _Step1ProductPurchase extends ConsumerWidget {
-  final AsyncValue productsAsync;
-  final AsyncValue marketsAsync;
-
-  const _Step1ProductPurchase({required this.productsAsync, required this.marketsAsync});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget _step1(ThemeData theme) {
+    final productsProvider = context.watch<ProductProvider>();
+    final marketsProvider = context.watch<MarketProvider>();
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Step 1: Product & Purchase', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text('Product', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          productsProvider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : productsProvider.error != null
+                  ? Text(productsProvider.error!)
+                  : _productDropdown(theme, productsProvider.products),
           const SizedBox(height: 16),
-          productsAsync.when(
-            data: (products) => SearchableDropdown<ProductModel>(
-              items: products as List<ProductModel>,
-              itemLabel: (p) => '${p.name} (${p.category ?? 'No category'})',
-              hintText: 'Search product...',
-              createNewLabel: 'Create New Product',
-              onChanged: (product) {
-                if (product != null) ref.read(batchWizardProvider.notifier).updateProduct(product.id);
-              },
-            ),
-            loading: () => const CircularProgressIndicator(),
-            error: (e, _) => Text('$e'),
-          ),
+          Text('Markets', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          marketsProvider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : marketsProvider.error != null
+                  ? Text(marketsProvider.error!)
+                  : Column(
+                      children: [
+                        _marketDropdown(theme, marketsProvider.markets, isSource: true),
+                        const SizedBox(height: 12),
+                        _marketDropdown(theme, marketsProvider.markets, isSource: false),
+                      ],
+                    ),
           const SizedBox(height: 16),
-          marketsAsync.when(
-            data: (markets) => CityMarketDropdown(
-              markets: markets as List<MarketModel>,
-              label: 'Source Market',
-              onCityChanged: (city) {},
-              onMarketChanged: (marketId) {
-                ref.read(batchWizardProvider.notifier).updateMarkets(marketId, null);
-              },
-            ),
-            loading: () => const CircularProgressIndicator(),
-            error: (e, _) => Text('$e'),
-          ),
-          const SizedBox(height: 16),
-          CityMarketDropdown(
-            markets: marketsAsync.asData?.value ?? [],
-            label: 'Destination Market',
-            onCityChanged: (city) {},
-            onMarketChanged: (marketId) {
-              ref.read(batchWizardProvider.notifier).updateMarkets(
-                ref.read(batchWizardProvider).sourceMarketId, marketId);
+          Text('Purchase Date', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _purchaseDate,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) setState(() => _purchaseDate = picked);
             },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 18),
+                  const SizedBox(width: 8),
+                  Text('${_purchaseDate.year}-${_purchaseDate.month.toString().padLeft(2, '0')}-${_purchaseDate.day.toString().padLeft(2, '0')}'),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
-          TextField(
-            decoration: const InputDecoration(labelText: 'Quantity'),
-            keyboardType: TextInputType.number,
-            onChanged: (v) => ref.read(batchWizardProvider.notifier).updatePurchaseDetails(
-              quantity: double.tryParse(v),
-            ),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _quantityCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Quantity'),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _unit,
+                  decoration: const InputDecoration(labelText: 'Unit'),
+                  items: const [
+                    DropdownMenuItem(value: 'kg', child: Text('kg')),
+                    DropdownMenuItem(value: 'g', child: Text('g')),
+                    DropdownMenuItem(value: 'L', child: Text('L')),
+                    DropdownMenuItem(value: 'pcs', child: Text('pcs')),
+                    DropdownMenuItem(value: 'bag', child: Text('bag')),
+                    DropdownMenuItem(value: 'crate', child: Text('crate')),
+                  ],
+                  onChanged: (v) => setState(() => _unit = v ?? 'kg'),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           TextField(
-            decoration: const InputDecoration(labelText: 'Purchase Price Per Unit'),
-            keyboardType: TextInputType.number,
-            onChanged: (v) => ref.read(batchWizardProvider.notifier).updatePurchaseDetails(
-              price: double.tryParse(v),
-            ),
+            controller: _priceCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Price per unit'),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          Text('Total: ${CurrencyFormatter.format((double.tryParse(_quantityCtrl.text) ?? 0) * (double.tryParse(_priceCtrl.text) ?? 0))}',
+              style: theme.textTheme.titleSmall),
+          const SizedBox(height: 16),
+          Text('Transport Paid By', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'purchaser', label: Text('Purchaser')),
+              ButtonSegment(value: 'seller', label: Text('Seller')),
+            ],
+            selected: {_transportPaidBy},
+            onSelectionChanged: (v) => setState(() => _transportPaidBy = v.first),
           ),
         ],
       ),
     );
   }
-}
 
-class _Step2Partners extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget _productDropdown(ThemeData theme, List<ProductModel> products) {
+    return DropdownButtonFormField<String>(
+      initialValue: _productId,
+      decoration: const InputDecoration(labelText: 'Select product'),
+      items: products
+          .map((p) => DropdownMenuItem(value: p.id, child: Text(p.name)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) {
+          final p = products.firstWhere((x) => x.id == v);
+          setState(() {
+            _productId = v;
+            _productName = p.name;
+            _unit = p.baseUnit;
+          });
+        }
+      },
+    );
+  }
+
+  Widget _marketDropdown(ThemeData theme, List<MarketModel> markets, {required bool isSource}) {
+    return DropdownButtonFormField<String>(
+      initialValue: isSource ? _sourceMarketId : _destinationMarketId,
+      decoration: InputDecoration(labelText: isSource ? 'Source market' : 'Destination market'),
+      items: markets
+          .map((m) => DropdownMenuItem(value: m.id, child: Text('${m.name} • ${m.city}')))
+          .toList(),
+      onChanged: (v) {
+        setState(() {
+          if (isSource) {
+            _sourceMarketId = v;
+          } else {
+            _destinationMarketId = v;
+          }
+        });
+      },
+    );
+  }
+
+  Widget _step2() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Step 2: Purchasing Partners', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Text('Add partners who are involved in purchasing this batch.'),
+          const Text(
+            'Add at least one purchasing partner. Daily charge × days will be added to cost automatically.',
+          ),
           const SizedBox(height: 16),
           PartnerSelector(
-            selectedPartners: const [],
-            partnerDetails: const [],
-            onChanged: (details) {},
-            onAddPartner: () {},
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: 'purchaser',
-            decoration: const InputDecoration(labelText: 'Transport Paid By'),
-            items: const [
-              DropdownMenuItem(value: 'purchaser', child: Text('Purchaser')),
-              DropdownMenuItem(value: 'seller', child: Text('Seller')),
-            ],
-            onChanged: (v) => ref.read(batchWizardProvider.notifier).updatePurchaseDetails(
-              transportPaidBy: v,
-            ),
+            selectedPartners: const <PartnerModel>[],
+            onChanged: (partners) => _partners = partners,
           ),
         ],
       ),
     );
   }
-}
 
-class _Step3Packing extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget _step3() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Step 3: Packing', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Add packing records (optional). Total cost = count × cost per unit.'),
           const SizedBox(height: 16),
           PackingEntryForm(
-            records: const [],
-            onChanged: (records) => ref.read(batchWizardProvider.notifier).updatePackingRecords(records),
+            entries: const [],
+            onChanged: (records) => _packing = records,
           ),
         ],
       ),
     );
   }
-}
 
-class _Step4Expenses extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget _step4() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Step 4: Purchaser Expenses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Add expenses (optional). These will appear in batch P&L breakdown.'),
           const SizedBox(height: 16),
-          _ExpenseField(label: 'Labor Cost'),
-          _ExpenseField(label: 'Accountant/Admin Cost'),
-          _ExpenseField(label: 'Source Stall Fee'),
-          _ExpenseField(label: 'Miscellaneous'),
-        ],
-      ),
-    );
-  }
-}
-
-class _ExpenseField extends StatelessWidget {
-  final String label;
-  const _ExpenseField({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        decoration: InputDecoration(labelText: '$label (PKR)'),
-        keyboardType: TextInputType.number,
-      ),
-    );
-  }
-}
-
-class _Step5Review extends StatelessWidget {
-  final VoidCallback onConfirm;
-  const _Step5Review({required this.onConfirm});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Step 5: Review & Confirm', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          BatchSummaryCard(data: const {
-            'product_name': 'Selected Product',
-            'total_quantity': 0,
-            'quantity_unit': 'kg',
-            'purchase_price_per_unit': 0,
-            'total_purchase_cost': 0,
-            'total_packing_cost': 0,
-            'transport_cost': 0,
-            'estimated_total': 0,
-          }),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: onConfirm,
-              icon: const Icon(Icons.check),
-              label: const Text('Confirm & Create Batch', style: TextStyle(fontSize: 16)),
+          _expenseList(),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _addExpense,
+              icon: const Icon(Icons.add),
+              label: const Text('Add expense'),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _BottomNavigation extends StatelessWidget {
-  final int currentStep;
-  final VoidCallback onBack;
-  final VoidCallback onNext;
+  void _addExpense() {
+    setState(() => _expenses.add({
+          'expense_side': _transportPaidBy == 'purchaser' ? 'purchaser' : 'transport',
+          'expense_type': 'misc',
+          'amount': 0.0,
+          'description': null,
+          'paid_by': null,
+          'payment_mode': 'cash',
+          'payment_reference': null,
+          'expense_date': DateTime.now().toIso8601String().split('T').first,
+        }));
+  }
 
-  const _BottomNavigation({
-    required this.currentStep,
-    required this.onBack,
-    required this.onNext,
-  });
+  Widget _expenseList() {
+    final theme = Theme.of(context);
+    return Column(
+      children: List.generate(_expenses.length, (i) {
+        final e = _expenses[i];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: e['expense_side'] as String,
+                      decoration: const InputDecoration(labelText: 'Side'),
+                      items: const [
+                        DropdownMenuItem(value: 'purchaser', child: Text('Purchaser')),
+                        DropdownMenuItem(value: 'transport', child: Text('Transport')),
+                        DropdownMenuItem(value: 'seller', child: Text('Seller')),
+                      ],
+                      onChanged: (v) => setState(() => e['expense_side'] = v ?? 'purchaser'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: e['expense_type'] as String,
+                      decoration: const InputDecoration(labelText: 'Type'),
+                      items: const [
+                        DropdownMenuItem(value: 'daily_charge', child: Text('Daily Charge')),
+                        DropdownMenuItem(value: 'labor', child: Text('Labor')),
+                        DropdownMenuItem(value: 'accountant', child: Text('Accountant')),
+                        DropdownMenuItem(value: 'packing', child: Text('Packing')),
+                        DropdownMenuItem(value: 'stall_fee', child: Text('Stall Fee')),
+                        DropdownMenuItem(value: 'transport', child: Text('Transport')),
+                        DropdownMenuItem(value: 'local_transport', child: Text('Local Transport')),
+                        DropdownMenuItem(value: 'misc', child: Text('Misc')),
+                      ],
+                      onChanged: (v) => setState(() => e['expense_type'] = v ?? 'misc'),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => setState(() => _expenses.removeAt(i)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: e['amount'].toString(),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Amount'),
+                onChanged: (v) => e['amount'] = double.tryParse(v) ?? 0.0,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: e['description']?.toString(),
+                decoration: const InputDecoration(labelText: 'Description'),
+                onChanged: (v) => e['description'] = v.isEmpty ? null : v,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: e['payment_mode'] as String,
+                      decoration: const InputDecoration(labelText: 'Payment'),
+                      items: const [
+                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                        DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                      ],
+                      onChanged: (v) => setState(() => e['payment_mode'] = v ?? 'cash'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: e['expense_date']?.toString(),
+                      decoration: const InputDecoration(labelText: 'Date (YYYY-MM-DD)'),
+                      onChanged: (v) => e['expense_date'] = v.isEmpty
+                          ? DateTime.now().toIso8601String().split('T').first
+                          : v,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            if (currentStep > 0)
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onBack,
-                  child: const Text('Back'),
+  Widget _step5(ThemeData theme) {
+    final qty = double.tryParse(_quantityCtrl.text) ?? 0;
+    final price = double.tryParse(_priceCtrl.text) ?? 0;
+    final purchaseCost = qty * price;
+    final packingCost = _packing.fold<double>(0, (acc, p) {
+      final count = (p['unit_count'] as int?) ?? 0;
+      final cost = (p['cost_per_unit'] as num?)?.toDouble() ?? 0;
+      return acc + count * cost;
+    });
+    final expenseCost = _expenses.fold<double>(0, (acc, e) => acc + ((e['amount'] as num?)?.toDouble() ?? 0));
+    final dailyCharges = _partners.fold<double>(0, (acc, p) {
+      final rate = (p['daily_charge_rate'] as num?)?.toDouble() ?? 0;
+      final days = (p['days_involved'] as int?) ?? 1;
+      return acc + rate * days;
+    });
+    final total = purchaseCost + packingCost + expenseCost + dailyCharges;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Summary', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 12),
+                _summaryRow('Product', _productName ?? '-'),
+                _summaryRow('Quantity', '$qty $_unit'),
+                _summaryRow('Purchase cost', CurrencyFormatter.format(purchaseCost)),
+                _summaryRow('Partners', '${_partners.length}'),
+                _summaryRow('Daily charges', CurrencyFormatter.format(dailyCharges)),
+                _summaryRow('Packing', CurrencyFormatter.format(packingCost)),
+                _summaryRow('Expenses', CurrencyFormatter.format(expenseCost)),
+                const Divider(height: 24),
+                _summaryRow('Total estimated cost', CurrencyFormatter.format(total), isBold: true),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Backend will auto-generate a batch code (GM-YYYY-NNNN) and recompute totals.',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ),
-              ),
-            if (currentStep > 0) const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: onNext,
-                child: Text(currentStep == 4 ? 'Review' : 'Next'),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.w700 : FontWeight.w400)),
+          Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.w700 : FontWeight.w500)),
+        ],
       ),
     );
   }

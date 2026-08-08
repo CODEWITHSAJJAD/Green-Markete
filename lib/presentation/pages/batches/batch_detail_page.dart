@@ -1,323 +1,659 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../../data/repositories/batch_repository.dart';
-import '../../../data/repositories/expense_repository.dart';
-import '../../../data/repositories/sale_repository.dart';
+import 'package:provider/provider.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/batch_model.dart';
+import '../../../data/models/expense_model.dart';
+import '../../../data/models/sale_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
+import '../../widgets/confirm_dialog.dart';
+import '../../widgets/expense_entry_sheet.dart';
+import '../../widgets/sale_entry_sheet.dart';
 import '../../widgets/status_pill.dart';
-import '../../widgets/amount_text.dart';
-import '/core/utils/currency_formatter.dart';
-import '/core/utils/date_formatter.dart';
-import 'widgets/status_timeline.dart';
-import 'widgets/expense_entry_sheet.dart';
-import 'widgets/sale_entry_sheet.dart';
+import '../../widgets/status_timeline.dart';
+import 'batch_pl_page.dart';
 
-class BatchDetailPage extends ConsumerStatefulWidget {
+class BatchDetailPage extends StatefulWidget {
   final String batchId;
+
   const BatchDetailPage({super.key, required this.batchId});
 
   @override
-  ConsumerState<BatchDetailPage> createState() => _BatchDetailPageState();
+  State<BatchDetailPage> createState() => _BatchDetailPageState();
 }
 
-class _BatchDetailPageState extends ConsumerState<BatchDetailPage> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProviderStateMixin {
+  static const _statusFlow = [
+    'purchased',
+    'packed',
+    'in_transit',
+    'delivered',
+    'selling',
+    'closed',
+  ];
+
+  late final TabController _tabCtrl;
+
+  String get batchId => widget.batchId;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabCtrl = TabController(length: 5, vsync: this);
+    _tabCtrl.addListener(() => setState(() {}));
+    context.read<BatchDetailProvider>().load(batchId);
+    context.read<BatchPLProvider>().load(batchId);
+    context.read<ExpenseProvider>().load(batchId);
+    context.read<SaleProvider>().loadByBatch(batchId);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabCtrl.dispose();
     super.dispose();
-  }
-
-  Future<void> _updateStatus(String newStatus) async {
-    final repo = ref.read(batchRepositoryProvider);
-    await repo.updateStatus(widget.batchId, newStatus);
-    ref.invalidate(batchDetailProvider(widget.batchId));
-    ref.invalidate(batchPLProvider(widget.batchId));
-  }
-
-  String _nextStatus(String current) {
-    switch (current) {
-      case 'purchased': return 'packed';
-      case 'packed': return 'in_transit';
-      case 'in_transit': return 'delivered';
-      case 'delivered': return 'selling';
-      case 'selling': return 'closed';
-      default: return current;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final batchAsync = ref.watch(batchDetailProvider(widget.batchId));
+    final theme = Theme.of(context);
+    final batchProvider = context.watch<BatchDetailProvider>();
+    final userRole = context.watch<AuthProvider>().user?.role ?? '';
+    final canEdit = userRole != 'accountant' && userRole != 'viewer';
+    final canDelete = userRole == 'owner';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Batch Detail'),
+        title: const Text('Batch Details'),
+        actions: [
+          IconButton(
+            tooltip: 'Open P&L report',
+            icon: const Icon(Icons.bar_chart_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BatchPLPage(batchId: batchId)),
+            ),
+          ),
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _confirmDelete(context),
+            ),
+        ],
         bottom: TabBar(
-          controller: _tabController,
+          controller: _tabCtrl,
           isScrollable: true,
           tabs: const [
             Tab(text: 'Overview'),
-            Tab(text: 'Expenses'),
             Tab(text: 'Packing'),
+            Tab(text: 'Expenses'),
             Tab(text: 'Sales'),
             Tab(text: 'P&L'),
           ],
         ),
       ),
-      body: batchAsync.when(
-        data: (batch) => TabBarView(
-          controller: _tabController,
-          children: [
-            _OverviewTab(batch: batch, onUpdateStatus: _updateStatus, nextStatus: _nextStatus(batch.status)),
-            _ExpensesTab(batchId: widget.batchId),
-            _PackingTab(batchId: widget.batchId),
-            _SalesTab(batchId: widget.batchId),
-            _PLTab(batchId: widget.batchId),
-          ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-      ),
+      body: _buildBody(context, theme, batchProvider),
+      floatingActionButton: canEdit ? _buildFab(context) : null,
     );
   }
-}
 
-class _OverviewTab extends StatelessWidget {
-  final dynamic batch;
-  final Function(String) onUpdateStatus;
-  final String nextStatus;
-
-  const _OverviewTab({required this.batch, required this.onUpdateStatus, required this.nextStatus});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
+  Widget _buildBody(BuildContext context, ThemeData theme, BatchDetailProvider batchProvider) {
+    final batch = batchProvider.batch;
+    if (batch == null) {
+      if (batchProvider.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (batchProvider.error != null) {
+        return Center(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(batch.batchCode as String? ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                StatusTimeline(currentStatus: batch.status as String? ?? 'purchased'),
-                const SizedBox(height: 16),
-                if (batch.status != 'closed')
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => onUpdateStatus(nextStatus),
-                      child: Text('Mark as ${nextStatus[0].toUpperCase()}${nextStatus.substring(1)}'),
-                    ),
-                  ),
+                Text(batchProvider.error!),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => context.read<BatchDetailProvider>().load(batchId),
+                  child: const Text('Retry'),
+                ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Summary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                const Divider(),
-                _InfoRow(label: 'Product ID', value: batch.productId as String? ?? '-'),
-                _InfoRow(label: 'Quantity', value: '${batch.totalQuantity ?? '-'} ${batch.quantityUnit ?? ''}'),
-                _InfoRow(label: 'Status', value: batch.status as String? ?? '-'),
-                _InfoRow(label: 'Purchase Date', value: batch.purchaseDate as String? ?? '-'),
-                _InfoRow(label: 'Total Cost', value: CurrencyFormatter.format((batch.totalPurchaseCost as num?)?.toDouble() ?? 0)),
+        );
+      }
+      return const Center(child: Text('No batch data'));
+    }
+    return TabBarView(
+      controller: _tabCtrl,
+      children: [
+        _overviewTab(context, theme, batch),
+        _packingTab(context, batch),
+        _expensesTab(context, batch),
+        _salesTab(context, batch),
+        _plTab(theme),
+      ],
+    );
+  }
+
+  Widget _buildFab(BuildContext context) {
+    final tabIndex = _tabCtrl.index;
+    if (tabIndex == 1) {
+      return FloatingActionButton.extended(
+        heroTag: 'add-packing',
+        onPressed: () => _showAddPackingDialog(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Packing'),
+      );
+    }
+    if (tabIndex == 2) {
+      return FloatingActionButton.extended(
+        heroTag: 'add-expense',
+        onPressed: () async {
+          await showExpenseEntrySheet(context, batchId: batchId);
+          if (!context.mounted) return;
+          context.read<ExpenseProvider>().load(batchId);
+          context.read<BatchPLProvider>().load(batchId);
+          context.read<BatchDetailProvider>().load(batchId);
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Expense'),
+      );
+    }
+    if (tabIndex == 3) {
+      final batch = context.read<BatchDetailProvider>().batch;
+      if (batch == null) return const SizedBox.shrink();
+      return FloatingActionButton.extended(
+        heroTag: 'add-sale',
+        onPressed: () async {
+          await showSaleEntrySheet(context, batch: batch);
+          if (!context.mounted) return;
+          context.read<SaleProvider>().loadByBatch(batchId);
+          context.read<BatchPLProvider>().load(batchId);
+          context.read<BatchDetailProvider>().load(batchId);
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Sale'),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _overviewTab(BuildContext context, ThemeData theme, BatchModel batch) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withValues(alpha: 0.10),
+                theme.colorScheme.surface,
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(batch.productName ?? 'Batch', style: theme.textTheme.headlineMedium),
+                        const SizedBox(height: 6),
+                        Text(batch.batchCode, style: theme.textTheme.bodyMedium),
+                      ],
+                    ),
+                  ),
+                  StatusPill(status: batch.status),
+                ],
+              ),
+              const SizedBox(height: 18),
+              StatusTimeline(currentStatus: batch.status),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _metric(theme, 'Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'),
+                  _metric(theme, 'Purchase Cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
+                  _metric(theme, 'Price / Unit', CurrencyFormatter.format(batch.purchasePricePerUnit)),
+                  _metric(theme, 'Transport', batch.transportPaidBy ?? '-'),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _advanceStatus(context, batch.status),
+                  icon: const Icon(Icons.track_changes_rounded),
+                  label: const Text('Advance Status'),
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
-}
 
-class _ExpensesTab extends ConsumerWidget {
-  final String batchId;
-  const _ExpensesTab({required this.batchId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final expensesAsync = ref.watch(batchExpensesProvider(batchId));
-    return Scaffold(
-      body: expensesAsync.when(
-        data: (expenses) => expenses.isEmpty
-            ? const Center(child: Text('No expenses'))
-            : ListView.builder(
-                itemCount: expenses.length,
-                itemBuilder: (context, index) => ListTile(
-                  title: Text(expenses[index].expenseType),
-                  subtitle: Text(CurrencyFormatter.format(expenses[index].amount)),
-                ),
-              ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await showExpenseEntrySheet(context);
-          if (result != null) {
-            final repo = ref.read(expenseRepositoryProvider);
-            await repo.create(batchId, result as dynamic);
-            ref.invalidate(batchExpensesProvider(batchId));
-            ref.invalidate(batchPLProvider(batchId));
-          }
-        },
-        child: const Icon(Icons.add),
+  Widget _packingTab(BuildContext context, BatchModel batch) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inventory_2_outlined, size: 48, color: theme.colorScheme.outline),
+            const SizedBox(height: 12),
+            Text('Packing records were attached at creation', style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(
+              'Tap the + button to add a packing entry for this batch.',
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _PackingTab extends ConsumerWidget {
-  final String batchId;
-  const _PackingTab({required this.batchId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return const Center(child: Text('Packing records'));
-  }
-}
-
-class _SalesTab extends ConsumerWidget {
-  final String batchId;
-  const _SalesTab({required this.batchId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final salesAsync = ref.watch(batchSalesProvider(batchId));
-    return Scaffold(
-      body: salesAsync.when(
-        data: (sales) => sales.isEmpty
-            ? const Center(child: Text('No sales'))
-            : ListView.builder(
-                itemCount: sales.length,
-                itemBuilder: (context, index) => ListTile(
-                  title: Text('Qty: ${sales[index].quantitySold}'),
-                  subtitle: Text(CurrencyFormatter.format(sales[index].totalAmount)),
-                ),
+  Widget _expensesTab(BuildContext context, BatchModel batch) {
+    final theme = Theme.of(context);
+    final expenseProvider = context.watch<ExpenseProvider>();
+    if (expenseProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (expenseProvider.error != null) {
+      return Center(child: Text(expenseProvider.error!));
+    }
+    final expenses = expenseProvider.expenses;
+    if (expenses.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('No expenses yet. Tap + to add one.', style: theme.textTheme.bodyMedium),
+        ),
+      );
+    }
+    final grouped = <String, List<dynamic>>{};
+    for (final e in expenses) {
+      grouped.putIfAbsent(e.expenseSide, () => []).add(e);
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      children: grouped.entries.map((entry) {
+        final sideLabel = entry.key.toUpperCase();
+        final sideTotal = entry.value.fold<double>(0, (acc, e) => acc + e.amount);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Row(
+                children: [
+                  Text(sideLabel, style: theme.textTheme.titleMedium),
+                  const Spacer(),
+                  Text(CurrencyFormatter.format(sideTotal), style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary)),
+                ],
               ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+            ),
+            ...entry.value.map((e) => _expenseTile(context, e)),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _expenseTile(BuildContext context, ExpenseModel expense) {
+    final theme = Theme.of(context);
+    return Dismissible(
+      key: ValueKey(expense.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: theme.colorScheme.error.withValues(alpha: 0.15),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Icon(Icons.delete_outline, color: theme.colorScheme.error),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await showSaleEntrySheet(context);
-          if (result != null) {
-            final repo = ref.read(saleRepositoryProvider);
-            await repo.create(result as dynamic);
-            ref.invalidate(batchSalesProvider(batchId));
-            ref.invalidate(batchPLProvider(batchId));
+      confirmDismiss: (_) async => showConfirmDialog(
+        context,
+        title: 'Delete expense?',
+        message: 'This action cannot be undone.',
+        confirmLabel: 'Delete',
+        isDestructive: true,
+      ),
+      onDismissed: (_) async {
+        try {
+          await context.read<ExpenseProvider>().delete(expense.id);
+          if (!context.mounted) return;
+          context.read<ExpenseProvider>().load(batchId);
+          context.read<BatchPLProvider>().load(batchId);
+          context.read<BatchDetailProvider>().load(batchId);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
           }
-        },
-        child: const Icon(Icons.add),
+        }
+      },
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        title: Text(expense.expenseType, style: const TextStyle(fontWeight: FontWeight.w500)),
+        subtitle: Text([
+          expense.description,
+          expense.expenseDate,
+          expense.paymentMode,
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' • ')),
+        trailing: Text(
+          CurrencyFormatter.format(expense.amount),
+          style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
+        ),
       ),
     );
   }
-}
 
-class _PLTab extends ConsumerWidget {
-  final String batchId;
-  const _PLTab({required this.batchId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final plAsync = ref.watch(batchPLProvider(batchId));
-    return plAsync.when(
-      data: (pl) => ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('Batch P&L', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 16),
-          _PLSection(title: 'Purchase Cost', amount: pl.costBreakdown.purchaseCost),
-          _PLSection(title: 'Purchaser Daily Charges', amount: pl.costBreakdown.purchaserDailyCharges),
-          _PLSection(title: 'Packing Cost', amount: pl.costBreakdown.packingCost),
-          _PLSection(title: 'Transport Cost', amount: pl.costBreakdown.transportCost),
-          _PLSection(title: 'Seller Expenses', amount: pl.costBreakdown.sellerExpenses),
-          const Divider(thickness: 2),
-          _PLSection(title: 'Total Cost', amount: pl.costBreakdown.totalCost, isTotal: true),
-          const SizedBox(height: 16),
-          _PLSection(title: 'Total Revenue', amount: pl.revenue.totalRevenue, color: Colors.green),
-          _PLSection(title: 'Cash Received', amount: pl.revenue.cashReceived),
-          _PLSection(title: 'Credit Outstanding', amount: pl.revenue.creditOutstanding, color: Colors.amber),
-          const Divider(thickness: 2),
-          _PLSection(
-            title: 'Net Profit/Loss',
-            amount: pl.netProfitLoss,
-            isTotal: true,
-            color: pl.netProfitLoss >= 0 ? Colors.green : Colors.red,
+  Widget _salesTab(BuildContext context, BatchModel batch) {
+    final theme = Theme.of(context);
+    final saleProvider = context.watch<SaleProvider>();
+    if (saleProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (saleProvider.error != null) {
+      return Center(child: Text(saleProvider.error!));
+    }
+    final sales = saleProvider.sales;
+    if (sales.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('No sales yet. Tap + to record a sale.', style: theme.textTheme.bodyMedium),
+        ),
+      );
+    }
+    final totalQty = sales.fold<double>(0, (acc, s) => acc + s.quantitySold);
+    final totalRev = sales.fold<double>(0, (acc, s) => acc + s.totalAmount);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(14),
           ),
-        ],
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('$e')),
+          child: Row(
+            children: [
+              Expanded(child: _metric(theme, 'Sold', '${totalQty.toStringAsFixed(0)} ${batch.unit}')),
+              Expanded(child: _metric(theme, 'Revenue', CurrencyFormatter.format(totalRev))),
+            ],
+          ),
+        ),
+        ...sales.map((s) => _saleTile(context, s)),
+      ],
     );
   }
-}
 
-class _PLSection extends StatelessWidget {
-  final String title;
-  final double amount;
-  final bool isTotal;
-  final Color? color;
+  Widget _saleTile(BuildContext context, SaleModel sale) {
+    final theme = Theme.of(context);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      leading: CircleAvatar(
+        backgroundColor: _paymentColor(theme, sale.paymentMode).withValues(alpha: 0.15),
+        child: Icon(_paymentIcon(sale.paymentMode), color: _paymentColor(theme, sale.paymentMode), size: 18),
+      ),
+      title: Text('${sale.quantitySold.toStringAsFixed(0)} @ ${CurrencyFormatter.format(sale.pricePerUnit)}'),
+      subtitle: Text('${sale.saleDate} • ${sale.paymentMode}'),
+      trailing: Text(
+        CurrencyFormatter.format(sale.totalAmount),
+        style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
+      ),
+    );
+  }
 
-  const _PLSection({required this.title, required this.amount, this.isTotal = false, this.color});
+  Widget _plTab(ThemeData theme) {
+    final plProvider = context.watch<BatchPLProvider>();
+    if (plProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (plProvider.error != null) {
+      return Center(child: Text(plProvider.error!));
+    }
+    final pl = plProvider.pl;
+    if (pl == null) {
+      return const Center(child: Text('No P&L data yet'));
+    }
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withValues(alpha: 0.10),
+                theme.colorScheme.surface,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Net P&L', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(
+                CurrencyFormatter.format(pl.netProfitLoss),
+                style: theme.textTheme.displayMedium?.copyWith(
+                  color: pl.netProfitLoss >= 0 ? theme.colorScheme.primary : theme.colorScheme.error,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _sectionHeader(theme, 'Cost Breakdown'),
+        _costLine(theme, 'Purchase Cost', pl.costBreakdown.purchaseCost),
+        _costLine(theme, 'Purchaser Daily Charges', pl.costBreakdown.purchaserDailyCharges),
+        _costLine(theme, 'Purchaser Expenses', pl.costBreakdown.purchaserExpenses),
+        _costLine(theme, 'Packing Cost', pl.costBreakdown.packingCost),
+        _costLine(theme, 'Transport', pl.costBreakdown.transportCost),
+        _costLine(theme, 'Seller Daily Charges', pl.costBreakdown.sellerDailyCharges),
+        _costLine(theme, 'Seller Expenses', pl.costBreakdown.sellerExpenses),
+        const Divider(),
+        _costLine(theme, 'TOTAL COST', pl.costBreakdown.totalCost, bold: true),
+        const SizedBox(height: 16),
+        _sectionHeader(theme, 'Revenue'),
+        _costLine(theme, 'Total Revenue', pl.revenue.totalRevenue),
+        _costLine(theme, 'Cash Received', pl.revenue.cashReceived),
+        _costLine(theme, 'Credit Outstanding', pl.revenue.creditOutstanding),
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _sectionHeader(ThemeData theme, String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(text, style: theme.textTheme.titleLarge),
+      );
+
+  Widget _costLine(ThemeData theme, String title, double value, {bool bold = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: TextStyle(
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            fontSize: isTotal ? 16 : 14,
-            color: color,
-          )),
-          AmountText(
-            amount: amount,
-            fontSize: isTotal ? 18 : 14,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-            color: color,
+          Text(title, style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
+          Text(
+            CurrencyFormatter.format(value),
+            style: TextStyle(
+              fontFamily: 'Roboto Mono',
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: bold ? theme.colorScheme.primary : null,
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoRow({required this.label, required this.value});
+  Future<void> _advanceStatus(BuildContext context, String currentStatus) async {
+    final index = _statusFlow.indexOf(currentStatus);
+    if (index < 0 || index == _statusFlow.length - 1) return;
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final nextStatus = _statusFlow[index + 1];
+    try {
+      await context.read<BatchDetailProvider>().updateStatus(nextStatus);
+      if (!context.mounted) return;
+      context.read<BatchPLProvider>().load(batchId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Batch moved to $nextStatus')),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirm = await showConfirmDialog(
+      context,
+      title: 'Delete batch?',
+      message: 'This batch will be hidden from all queries. Data is retained for audit.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (!confirm) return;
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Export available in a later build')),
+    );
+  }
+
+  Future<void> _showAddPackingDialog(BuildContext context) async {
+    final unitTypeCtrl = TextEditingController(text: 'bag');
+    final countCtrl = TextEditingController();
+    final costCtrl = TextEditingController();
+    String unitType = 'bag';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setSt) {
+          return AlertDialog(
+            title: const Text('Add Packing Record'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: unitType,
+                    decoration: const InputDecoration(labelText: 'Unit type'),
+                    items: const [
+                      DropdownMenuItem(value: 'bag', child: Text('Bag')),
+                      DropdownMenuItem(value: 'packet', child: Text('Packet')),
+                      DropdownMenuItem(value: 'crate', child: Text('Crate')),
+                      DropdownMenuItem(value: 'box', child: Text('Box')),
+                      DropdownMenuItem(value: 'custom', child: Text('Custom')),
+                    ],
+                    onChanged: (v) => setSt(() {
+                      unitType = v ?? 'bag';
+                      unitTypeCtrl.text = unitType;
+                    }),
+                  ),
+                  TextField(controller: unitTypeCtrl, decoration: const InputDecoration(labelText: 'Unit label (optional)')),
+                  TextField(controller: countCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Count')),
+                  TextField(controller: costCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Cost per unit')),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: () async {
+                  final count = int.tryParse(countCtrl.text.trim()) ?? 0;
+                  final cost = double.tryParse(costCtrl.text.trim()) ?? 0;
+                  if (count <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Count must be > 0')));
+                    return;
+                  }
+                  try {
+                    await context.read<BatchDetailProvider>().addPacking(
+                          PackingRecordCreate(
+                            unitType: unitType,
+                            unitLabel: unitTypeCtrl.text.trim().isEmpty ? null : unitTypeCtrl.text.trim(),
+                            unitCount: count,
+                            costPerUnit: cost,
+                          ),
+                        );
+                    if (!context.mounted) return;
+                    context.read<BatchPLProvider>().load(batchId);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.toString())));
+                    }
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  Widget _metric(ThemeData theme, String label, String value) {
+    return Container(
+      width: 155,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(label, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 8),
+          Text(value, style: theme.textTheme.titleSmall),
         ],
       ),
     );
+  }
+
+  IconData _paymentIcon(String mode) {
+    switch (mode) {
+      case 'cash': return Icons.payments_outlined;
+      case 'credit': return Icons.access_time;
+      case 'bank_transfer': return Icons.account_balance_outlined;
+      case 'partial_credit': return Icons.pie_chart_outline;
+      default: return Icons.receipt_long_outlined;
+    }
+  }
+
+  Color _paymentColor(ThemeData theme, String mode) {
+    switch (mode) {
+      case 'cash': return theme.colorScheme.primary;
+      case 'credit': return theme.colorScheme.error;
+      case 'bank_transfer': return Colors.blue;
+      case 'partial_credit': return theme.colorScheme.secondary;
+      default: return theme.colorScheme.outline;
+    }
   }
 }
