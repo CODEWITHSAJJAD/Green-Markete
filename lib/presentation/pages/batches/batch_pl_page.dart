@@ -3,6 +3,8 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../core/export/csv_export.dart';
+import '../../../core/export/csv_writer.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../providers/batch_provider.dart';
 
@@ -36,16 +38,58 @@ class _BatchPLPageState extends State<BatchPLPage> {
         title: const Text('Batch P&L'),
         actions: [
           IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Export available in a later build')),
-              );
-            },
+            tooltip: 'Export P&L CSV',
+            onPressed: () => _exportCsv(context, batchProvider, plProvider),
             icon: const Icon(MingCuteIcons.mgc_share_2_line),
           ),
         ],
       ),
       body: _buildBody(context, theme, batchProvider, plProvider),
+    );
+  }
+
+  Future<void> _exportCsv(
+    BuildContext context,
+    BatchDetailProvider batchProvider,
+    BatchPLProvider plProvider,
+  ) async {
+    final batch = batchProvider.batch;
+    final pl = plProvider.pl;
+    if (batch == null || pl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('P&L not ready yet')),
+      );
+      return;
+    }
+    final csv = buildCsv(
+      columns: const ['Item', 'Amount (PKR)'],
+      rows: [
+        ['Batch Code', batch.batchCode],
+        ['Product', batch.productName ?? ''],
+        ['Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'],
+        [],
+        ['COST BREAKDOWN'],
+        ['Purchase Cost', pl.costBreakdown.purchaseCost.toStringAsFixed(2)],
+        ['Purchaser Daily Charges', pl.costBreakdown.purchaserDailyCharges.toStringAsFixed(2)],
+        ['Purchaser Expenses', pl.costBreakdown.purchaserExpenses.toStringAsFixed(2)],
+        ['Packing Cost', pl.costBreakdown.packingCost.toStringAsFixed(2)],
+        ['Transport Cost', pl.costBreakdown.transportCost.toStringAsFixed(2)],
+        ['Seller Daily Charges', pl.costBreakdown.sellerDailyCharges.toStringAsFixed(2)],
+        ['Seller Expenses', pl.costBreakdown.sellerExpenses.toStringAsFixed(2)],
+        ['Total Cost', pl.costBreakdown.totalCost.toStringAsFixed(2)],
+        [],
+        ['REVENUE'],
+        ['Total Revenue', pl.revenue.totalRevenue.toStringAsFixed(2)],
+        ['Cash Received', pl.revenue.cashReceived.toStringAsFixed(2)],
+        ['Credit Outstanding', pl.revenue.creditOutstanding.toStringAsFixed(2)],
+        [],
+        ['NET PROFIT / LOSS', pl.netProfitLoss.toStringAsFixed(2)],
+      ],
+    );
+    await shareCsv(
+      csv: csv,
+      fileName: '${batch.batchCode}_PL.csv',
+      subject: 'Green Market — ${batch.batchCode} P&L',
     );
   }
 

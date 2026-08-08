@@ -3,6 +3,7 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../core/export/csv_export.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/report_model.dart';
 import '../../providers/auth_provider.dart';
@@ -152,9 +153,22 @@ class _CreditReportPageState extends State<CreditReportPage> {
     );
   }
 
-  void _exportCsv(String businessId) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export available in a later build')),
+  Future<void> _exportCsv(String businessId) async {
+    final rows = context.read<ReportProvider>().credit;
+    if (rows.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No credit data to export')),
+      );
+      return;
+    }
+    await exportAndShareCsv(
+      columns: const ['Customer', 'Phone', 'City', 'Outstanding Balance (PKR)'],
+      rows: [
+        for (final r in rows)
+          [r.fullName, r.phone ?? '', r.city ?? '', r.outstandingBalance.toStringAsFixed(2)],
+      ],
+      fileName: 'credit_report.csv',
+      subject: 'Green Market — Credit Report',
     );
   }
 }

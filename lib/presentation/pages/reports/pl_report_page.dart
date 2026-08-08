@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../core/export/csv_export.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/report_model.dart';
 import '../../providers/auth_provider.dart';
@@ -160,9 +161,29 @@ class _PLReportPageState extends State<PLReportPage> {
     );
   }
 
-  void _exportCsv(String businessId) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export available in a later build')),
+  Future<void> _exportCsv(String businessId) async {
+    final pl = context.read<ReportProvider>().plSummary;
+    if (pl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('P&L summary not ready yet')),
+      );
+      return;
+    }
+    await exportAndShareCsv(
+      columns: const ['Batch Code', 'Cost (PKR)', 'Revenue (PKR)', 'Net (PKR)'],
+      rows: [
+        for (final b in pl.batchSummaries)
+          [
+            b.batchCode ?? '',
+            b.costBreakdown.totalCost.toStringAsFixed(2),
+            b.revenue.totalRevenue.toStringAsFixed(2),
+            b.netProfitLoss.toStringAsFixed(2),
+          ],
+        [],
+        ['TOTAL', pl.totalCost.toStringAsFixed(2), pl.totalRevenue.toStringAsFixed(2), pl.totalProfitLoss.toStringAsFixed(2)],
+      ],
+      fileName: 'pl_report.csv',
+      subject: 'Green Market — P&L Report',
     );
   }
 
