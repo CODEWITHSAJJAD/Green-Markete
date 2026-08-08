@@ -1,47 +1,66 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
-import '../../../data/repositories/customer_repository.dart';
 
-class CreateCustomerPage extends ConsumerStatefulWidget {
+class CreateCustomerPage extends StatefulWidget {
   const CreateCustomerPage({super.key});
 
   @override
-  ConsumerState<CreateCustomerPage> createState() => _CreateCustomerPageState();
+  State<CreateCustomerPage> createState() => _CreateCustomerPageState();
 }
 
-class _CreateCustomerPageState extends ConsumerState<CreateCustomerPage> {
+class _CreateCustomerPageState extends State<CreateCustomerPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _shopController = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _shopCtrl = TextEditingController();
+  bool _saving = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _cityController.dispose();
-    _shopController.dispose();
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _cityCtrl.dispose();
+    _shopCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final authState = ref.read(authProvider);
-    final businessId = authState.user?.id ?? '';
-    final repo = ref.read(customerRepositoryProvider);
-    await repo.create({
-      'business_id': businessId,
-      'full_name': _nameController.text.trim(),
-      'phone': _phoneController.text.trim(),
-      'city': _cityController.text.trim(),
-      'shop_name': _shopController.text.trim(),
-    });
-    ref.invalidate(customerListProvider(businessId));
-    if (mounted) context.pop();
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId == null || businessId.isEmpty) return;
+
+    setState(() => _saving = true);
+    try {
+      final customer = await context.read<CustomerProvider>().create({
+        'business_id': businessId,
+        'full_name': _nameCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+        'city': _cityCtrl.text.trim(),
+        'shop_name': _shopCtrl.text.trim(),
+      });
+      if (!mounted) return;
+      if (customer != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Customer created successfully')),
+        );
+        Navigator.of(context).pop();
+      } else {
+        final err = context.read<CustomerProvider>().error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err?.toString() ?? 'Failed to create customer')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -49,40 +68,42 @@ class _CreateCustomerPageState extends ConsumerState<CreateCustomerPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Create Customer')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name *'),
-                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                controller: _nameCtrl,
+                decoration: const InputDecoration(labelText: 'Full name'),
+                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Phone'),
+                controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone'),
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _cityController,
+                controller: _cityCtrl,
                 decoration: const InputDecoration(labelText: 'City'),
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _shopController,
-                decoration: const InputDecoration(labelText: 'Shop Name'),
+                controller: _shopCtrl,
+                decoration: const InputDecoration(labelText: 'Shop / stall'),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  child: const Text('Save Customer'),
-                ),
+              ElevatedButton(
+                onPressed: _saving ? null : _submit,
+                child: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Save Customer'),
               ),
             ],
           ),

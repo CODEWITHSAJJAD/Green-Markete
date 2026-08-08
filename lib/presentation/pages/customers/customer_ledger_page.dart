@@ -1,106 +1,195 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../providers/customer_provider.dart';
-import '../../widgets/amount_text.dart';
-import '../../widgets/credit_indicator.dart';
+import 'package:provider/provider.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../core/utils/date_formatter.dart';
+import '../../../data/models/customer_model.dart';
+import '../../providers/customer_provider.dart';
+import '../../widgets/credit_indicator.dart';
+import 'record_payment_page.dart';
 
-class CustomerLedgerPage extends ConsumerWidget {
-  final String customerId;
-  const CustomerLedgerPage({super.key, required this.customerId});
+class CustomerLedgerPage extends StatefulWidget {
+  final CustomerModel customer;
+
+  const CustomerLedgerPage({super.key, required this.customer});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ledgerAsync = ref.watch(customerLedgerProvider(customerId));
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Customer Ledger')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/customers/$customerId/payment'),
-        icon: const Icon(Icons.payments),
-        label: const Text('Record Payment'),
-      ),
-      body: ledgerAsync.when(
-        data: (entries) {
-          final totalPurchased = entries.fold<double>(0, (sum, e) => e.type == 'sale' ? sum + e.amount : sum);
-          final totalPaid = entries.fold<double>(0, (sum, e) => e.type == 'payment' ? sum + (-e.amount) : sum);
-          final balance = totalPurchased - totalPaid;
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Text('Customer Name', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _Stat(label: 'Total Purchased', amount: totalPurchased),
-                          _Stat(label: 'Total Paid', amount: totalPaid, color: Colors.green),
-                          _Stat(label: 'Balance', amount: balance, color: balance > 0 ? Colors.amber : Colors.green),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      CreditIndicator(totalPurchased: totalPurchased, totalPaid: totalPaid),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Transaction History', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              ...entries.map((entry) => ListTile(
-                dense: true,
-                leading: Icon(
-                  entry.type == 'payment' ? Icons.payments : Icons.shopping_cart,
-                  size: 20,
-                  color: entry.type == 'payment' ? Colors.green : Colors.amber,
-                ),
-                title: Text(entry.description, style: const TextStyle(fontSize: 13)),
-                subtitle: Text(entry.date, style: const TextStyle(fontSize: 11)),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    AmountText(amount: entry.amount, fontSize: 13),
-                    Text(
-                      'Bal: ${CurrencyFormatter.format(entry.runningBalance)}',
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              )),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
-      ),
-    );
-  }
+  State<CustomerLedgerPage> createState() => _CustomerLedgerPageState();
 }
 
-class _Stat extends StatelessWidget {
-  final String label;
-  final double amount;
-  final Color? color;
+class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CustomerProvider>().loadLedger(widget.customer.id);
+    });
+  }
 
-  const _Stat({required this.label, required this.amount, this.color});
+  Future<void> _openRecordPayment() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => RecordPaymentPage(customer: widget.customer)),
+    );
+    if (!mounted) return;
+    context.read<CustomerProvider>().loadLedger(widget.customer.id);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        const SizedBox(height: 4),
-        AmountText(amount: amount, fontSize: 16, color: color),
-      ],
+    final provider = context.watch<CustomerProvider>();
+    final theme = Theme.of(context);
+
+    Widget ledgerSection;
+    if (provider.isLoading) {
+      ledgerSection = const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    } else if (provider.error != null) {
+      ledgerSection = Text(provider.error!.toString());
+    } else if (provider.ledger.isEmpty) {
+      ledgerSection = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Text('No credit or payment activity yet.'),
+      );
+    } else {
+      ledgerSection = Column(
+        children: provider.ledger
+            .map(
+              (entry) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: entry.type == 'payment'
+                          ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                          : theme.colorScheme.secondary.withValues(alpha: 0.12),
+                      child: Icon(
+                        entry.type == 'payment' ? Icons.south_west_rounded : Icons.north_east_rounded,
+                        color: entry.type == 'payment' ? theme.colorScheme.primary : theme.colorScheme.secondary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(entry.description, style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 4),
+                          Text(entry.date, style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(CurrencyFormatter.format(entry.amount), style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text('Bal: ${CurrencyFormatter.format(entry.runningBalance)}', style: theme.textTheme.bodySmall),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Customer Ledger'),
+        actions: [
+          IconButton(
+            onPressed: _openRecordPayment,
+            icon: const Icon(Icons.payments_outlined),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary.withValues(alpha: 0.08),
+                  theme.colorScheme.surface,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.customer.fullName, style: theme.textTheme.headlineMedium),
+                const SizedBox(height: 6),
+                Text(
+                  [widget.customer.shopName, widget.customer.city, widget.customer.phone]
+                      .where((item) => item != null && item.isNotEmpty)
+                      .join('  •  '),
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _metric(theme, 'Purchased', CurrencyFormatter.format(widget.customer.totalPurchased)),
+                    _metric(theme, 'Paid', CurrencyFormatter.format(widget.customer.totalPaid)),
+                    _metric(theme, 'Outstanding', CurrencyFormatter.format(widget.customer.outstandingBalance)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                CreditIndicator(
+                  totalPurchased: widget.customer.totalPurchased,
+                  totalPaid: widget.customer.totalPaid,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text('Transaction history', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          ledgerSection,
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openRecordPayment,
+        icon: const Icon(Icons.add),
+        label: const Text('Record Payment'),
+      ),
+    );
+  }
+
+  Widget _metric(ThemeData theme, String label, String value) {
+    return Container(
+      width: 150,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 8),
+          Text(value, style: theme.textTheme.titleMedium),
+        ],
+      ),
     );
   }
 }
