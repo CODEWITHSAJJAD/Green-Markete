@@ -127,11 +127,18 @@ class BatchDetailProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateStatus(String status) async {
-    final id = _batch?.id;
-    if (id == null) return;
-    await _repo.updateStatus(id, status);
-    await load(id);
+  Future<bool> updateStatus(String status, {String? id}) async {
+    final batchId = id ?? _batch?.id;
+    if (batchId == null) return false;
+    try {
+      await _repo.updateStatus(batchId, status);
+      if (_batch?.id == batchId) await load(batchId);
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<void> addPacking(PackingRecordCreate packing) async {

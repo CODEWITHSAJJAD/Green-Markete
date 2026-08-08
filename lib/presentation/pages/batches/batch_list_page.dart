@@ -23,6 +23,9 @@ class BatchListPage extends StatefulWidget {
 }
 
 class _BatchListPageState extends State<BatchListPage> {
+  bool _selecting = false;
+  final Set<String> _selectedIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +47,45 @@ class _BatchListPageState extends State<BatchListPage> {
     _load();
   }
 
+  void _toggleSelect(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) _selecting = false;
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _exitSelect() {
+    setState(() {
+      _selecting = false;
+      _selectedIds.clear();
+    });
+  }
+
+  Future<void> _bulkClose() async {
+    final ids = _selectedIds.toList();
+    final provider = context.read<BatchDetailProvider>();
+    int ok = 0;
+    for (final id in ids) {
+      try {
+        await provider.updateStatus('closed', id: id);
+        ok++;
+      } catch (_) {
+        // Continue with the remaining items.
+      }
+    }
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(content: Text('Marked $ok of ${ids.length} batches as closed')),
+    );
+    _exitSelect();
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -53,13 +95,29 @@ class _BatchListPageState extends State<BatchListPage> {
     final error = batchesProvider.error;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.batchesScreenTitle),
-        leading: IconButton(
-          icon: const Icon(MingCuteIcons.mgc_menu_line),
-          onPressed: widget.onMenu,
-        ),
-      ),
+      appBar: _selecting
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(MingCuteIcons.mgc_close_line),
+                onPressed: _exitSelect,
+                tooltip: 'Cancel selection',
+              ),
+              title: Text('${_selectedIds.length} selected'),
+              actions: [
+                IconButton(
+                  tooltip: 'Mark as closed',
+                  onPressed: _selectedIds.isEmpty ? null : _bulkClose,
+                  icon: const Icon(MingCuteIcons.mgc_archive_line),
+                ),
+              ],
+            )
+          : AppBar(
+              title: Text(AppLocalizations.of(context)!.batchesScreenTitle),
+              leading: IconButton(
+                icon: const Icon(MingCuteIcons.mgc_menu_line),
+                onPressed: widget.onMenu,
+              ),
+            ),
       body: RefreshIndicator(
         onRefresh: () async => _load(),
         child: NotificationListener<ScrollNotification>(
@@ -109,26 +167,48 @@ class _BatchListPageState extends State<BatchListPage> {
                 )
               else ...[
                 ...batches.map((batch) {
-                  return GreenCard(
+                  final isSelected = _selectedIds.contains(batch.id);
+                  final card = GreenCard(
                     margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.all(AppSpacing.lg),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => BatchDetailPage(batchId: batch.id)),
-                    ),
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: 0.06)
+                        : null,
+                    borderColor: isSelected ? AppColors.primary : null,
+                    onTap: _selecting
+                        ? () => _toggleSelect(batch.id)
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => BatchDetailPage(batchId: batch.id),
+                              ),
+                            ),
                     child: Column(
                       children: [
                         Row(
                           children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(15),
+                            if (_selecting)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: Icon(
+                                  isSelected
+                                      ? MingCuteIcons.mgc_check_fill
+                                      : MingCuteIcons.mgc_check_line,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : theme.colorScheme.outline,
+                                ),
+                              )
+                            else
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, color: AppColors.primary),
                               ),
-                              child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, color: AppColors.primary),
-                            ),
-                            const SizedBox(width: 14),
+                            SizedBox(width: _selecting ? 0 : 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,21 +222,26 @@ class _BatchListPageState extends State<BatchListPage> {
                             StatusPill(status: batch.status),
                           ],
                         ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _meta(theme, 'Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _meta(theme, 'Purchase cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _meta(theme, 'Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _meta(theme, 'Purchase cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                  if (!_selecting) return card;
+                  return GestureDetector(
+                    onLongPress: () => _toggleSelect(batch.id),
+                    child: card,
+                  );
                 }),
                 if (batchesProvider.isLoadingMore)
                   const Padding(
