@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 
+import '../pages/markets/market_list_page.dart';
+import '../pages/partners/partner_list_page.dart';
+import '../pages/products/product_list_page.dart';
+import '../pages/reports/reports_page.dart';
+import '../pages/settings/settings_page.dart';
+import '../pages/transactions/transaction_list_page.dart';
+
 class SidebarDrawer extends StatelessWidget {
   const SidebarDrawer({
     super.key,
@@ -65,19 +72,19 @@ class SidebarDrawer extends StatelessWidget {
                   icon: MingCuteIcons.mgc_package_line,
                   activeIcon: MingCuteIcons.mgc_package_fill,
                   label: 'Products',
-                  onTap: () => onOpenPage(const PlaceholderPage(label: 'Products')),
+                  onTap: () => onOpenPage(const ProductListPage()),
                 ),
                 _NavTile(
                   icon: MingCuteIcons.mgc_user_4_line,
                   activeIcon: MingCuteIcons.mgc_user_4_fill,
                   label: 'Partners',
-                  onTap: () => onOpenPage(const PlaceholderPage(label: 'Partners')),
+                  onTap: () => onOpenPage(const PartnerListPage()),
                 ),
                 _NavTile(
                   icon: MingCuteIcons.mgc_store_2_line,
                   activeIcon: MingCuteIcons.mgc_store_2_fill,
                   label: 'Markets',
-                  onTap: () => onOpenPage(const PlaceholderPage(label: 'Markets')),
+                  onTap: () => onOpenPage(const MarketListPage()),
                 ),
                 const SizedBox(height: 8),
                 const _SectionHeader('Insights'),
@@ -85,13 +92,13 @@ class SidebarDrawer extends StatelessWidget {
                   icon: MingCuteIcons.mgc_chart_bar_line,
                   activeIcon: MingCuteIcons.mgc_chart_bar_fill,
                   label: 'Reports',
-                  onTap: () => onOpenPage(const PlaceholderPage(label: 'Reports')),
+                  onTap: () => onOpenPage(const ReportsPage()),
                 ),
                 _NavTile(
                   icon: MingCuteIcons.mgc_exchange_dollar_line,
                   activeIcon: MingCuteIcons.mgc_exchange_dollar_fill,
                   label: 'Transactions',
-                  onTap: () => onOpenPage(const PlaceholderPage(label: 'Transactions')),
+                  onTap: () => onOpenPage(const TransactionListPage()),
                 ),
                 const SizedBox(height: 8),
                 const _SectionHeader('Account'),
@@ -99,7 +106,7 @@ class SidebarDrawer extends StatelessWidget {
                   icon: MingCuteIcons.mgc_settings_3_line,
                   activeIcon: MingCuteIcons.mgc_settings_3_fill,
                   label: 'Settings',
-                  onTap: () => onOpenPage(const PlaceholderPage(label: 'Settings')),
+                  onTap: () => onOpenPage(const SettingsPage()),
                 ),
                 _NavTile(
                   icon: MingCuteIcons.mgc_exit_door_line,
@@ -335,34 +342,6 @@ class _NavTile extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class PlaceholderPage extends StatelessWidget {
-  const PlaceholderPage({super.key, required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(title: Text(label)),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(MingCuteIcons.mgc_information_line, size: 44, color: scheme.primary.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            Text(
-              '$label coming soon',
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-          ],
         ),
       ),
     );

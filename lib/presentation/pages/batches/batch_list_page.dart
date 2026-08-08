@@ -159,6 +159,7 @@ class _BatchListPageState extends State<BatchListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'new-batch',
         onPressed: _openCreate,
         icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('New Batch'),

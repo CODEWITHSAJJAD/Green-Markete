@@ -14,7 +14,7 @@ class ReportRepository {
     final response = await _client.rpc(
       'get_business_pl_summary',
       params: {
-        'p_business_id': businessId,
+        'p_businessid': businessId,
         if (dateFrom != null && dateFrom.isNotEmpty) 'p_from_date': dateFrom,
         if (dateTo != null && dateTo.isNotEmpty) 'p_to_date': dateTo,
       },

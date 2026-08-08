@@ -46,7 +46,10 @@ class GreenCard extends StatelessWidget {
 
     final content = Padding(
       padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
-      child: child,
+      child: Material(
+        color: Colors.transparent,
+        child: child,
+      ),
     );
 
     final card = Container(

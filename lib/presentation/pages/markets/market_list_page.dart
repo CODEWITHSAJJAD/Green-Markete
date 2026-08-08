@@ -156,6 +156,7 @@ class _MarketListPageState extends State<MarketListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'new-market',
         onPressed: _openCreate,
         icon: const Icon(MingCuteIcons.mgc_map_pin_line),
         label: const Text('New Market'),

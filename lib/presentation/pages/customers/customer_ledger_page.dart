@@ -166,6 +166,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'record-payment',
         onPressed: _openRecordPayment,
         icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('Record Payment'),

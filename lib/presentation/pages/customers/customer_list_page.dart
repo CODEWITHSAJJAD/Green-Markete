@@ -277,6 +277,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'new-customer',
         onPressed: _openCreateCustomer,
         icon: const Icon(MingCuteIcons.mgc_user_4_line),
         label: const Text('New Customer'),

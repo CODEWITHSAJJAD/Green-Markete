@@ -8,7 +8,6 @@ import '../widgets/sidebar_drawer.dart';
 import 'batches/batch_list_page.dart';
 import 'customers/customer_list_page.dart';
 import 'dashboard/dashboard_page.dart';
-import 'more_menu_page.dart';
 import 'sales/sales_list_page.dart';
 
 class MainShell extends StatefulWidget {
@@ -24,7 +23,7 @@ class _MainShellState extends State<MainShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<GlobalKey<NavigatorState>> _keys = List.generate(
-    5,
+    4,
     (_) => GlobalKey<NavigatorState>(),
   );
 
@@ -52,7 +51,6 @@ class _MainShellState extends State<MainShell> {
         BatchListPage(onMenu: _openDrawer),
         SalesListPage(onMenu: _openDrawer),
         CustomerListPage(onMenu: _openDrawer),
-        MoreMenuPage(onMenu: _openDrawer),
       ];
 
   @override
@@ -100,11 +98,6 @@ class _MainShellState extends State<MainShell> {
             icon: MingCuteIcons.mgc_user_3_line,
             activeIcon: MingCuteIcons.mgc_user_3_fill,
             label: 'Customers',
-          ),
-          GoogleNavItem(
-            icon: MingCuteIcons.mgc_more_2_line,
-            activeIcon: MingCuteIcons.mgc_more_2_fill,
-            label: 'More',
           ),
         ],
       ),

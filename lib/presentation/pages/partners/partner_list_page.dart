@@ -197,6 +197,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'new-partner',
         onPressed: _openCreate,
         icon: const Icon(MingCuteIcons.mgc_user_4_line),
         label: const Text('New Partner'),
