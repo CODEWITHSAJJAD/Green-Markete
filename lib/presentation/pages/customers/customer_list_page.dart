@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/confirm_dialog.dart';
@@ -224,7 +225,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Customers'),
+        title: Text(AppLocalizations.of(context)!.customersScreenTitle),
         leading: IconButton(
           icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,

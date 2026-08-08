@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/theme.dart';
 import 'core/supabase/supabase_service.dart';
+import 'l10n/app_localizations.dart';
 import 'presentation/pages/auth/auth_navigator.dart';
 import 'presentation/pages/auth/onboarding_page.dart';
 import 'presentation/pages/auth/splash_page.dart';
@@ -110,6 +111,9 @@ class GreenMarketApp extends StatelessWidget {
       title: 'Green Market',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      onGenerateTitle: (ctx) => AppLocalizations.of(ctx)!.appTitle,
       home: const AuthWrapper(),
     );
   }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../widgets/empty_state.dart';
@@ -53,7 +54,7 @@ class _BatchListPageState extends State<BatchListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Batches'),
+        title: Text(AppLocalizations.of(context)!.batchesScreenTitle),
         leading: IconButton(
           icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,

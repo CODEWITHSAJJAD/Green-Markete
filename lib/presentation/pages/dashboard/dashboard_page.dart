@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../providers/auth_provider.dart';
@@ -223,6 +224,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildHeader(ThemeData theme) {
     final auth = context.watch<AuthProvider>();
+    final l10n = AppLocalizations.of(context)!;
     final firstName = (auth.user?.fullName ?? '').trim().split(' ').first;
 
     return Row(
@@ -234,7 +236,9 @@ class _DashboardPageState extends State<DashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                firstName.isEmpty ? 'Good to see you' : 'Good to see you, $firstName',
+                firstName.isEmpty
+                    ? l10n.dashboardGreetingFallback
+                    : l10n.dashboardGreeting(firstName),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.headlineMedium,

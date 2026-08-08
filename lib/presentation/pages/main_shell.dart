@@ -3,6 +3,7 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../widgets/google_nav_bar.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/sidebar_drawer.dart';
@@ -86,26 +87,26 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: GoogleNavBar(
         currentIndex: _index,
         onTap: (index) => setState(() => _index = index),
-        items: const [
+        items: [
           GoogleNavItem(
             icon: MingCuteIcons.mgc_home_5_line,
             activeIcon: MingCuteIcons.mgc_home_5_fill,
-            label: 'Home',
+            label: AppLocalizations.of(context)!.navHome,
           ),
           GoogleNavItem(
             icon: MingCuteIcons.mgc_shopping_bag_2_line,
             activeIcon: MingCuteIcons.mgc_shopping_bag_2_fill,
-            label: 'Batches',
+            label: AppLocalizations.of(context)!.navBatches,
           ),
           GoogleNavItem(
             icon: MingCuteIcons.mgc_bill_line,
             activeIcon: MingCuteIcons.mgc_bill_fill,
-            label: 'Sales',
+            label: AppLocalizations.of(context)!.navSales,
           ),
           GoogleNavItem(
             icon: MingCuteIcons.mgc_user_3_line,
             activeIcon: MingCuteIcons.mgc_user_3_fill,
-            label: 'Customers',
+            label: AppLocalizations.of(context)!.navCustomers,
           ),
         ],
       ),
