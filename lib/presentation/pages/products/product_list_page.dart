@@ -155,7 +155,11 @@ class _ProductListPageState extends State<ProductListPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Product name')),
+            TextFormField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Product name'),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
             const SizedBox(height: 12),
             TextField(controller: catCtrl, decoration: const InputDecoration(labelText: 'Category')),
             const SizedBox(height: 12),
@@ -166,6 +170,7 @@ class _ProductListPageState extends State<ProductListPage> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
               final productProvider = context.read<ProductProvider>();
               await productProvider.create({
                 'business_id': businessId,

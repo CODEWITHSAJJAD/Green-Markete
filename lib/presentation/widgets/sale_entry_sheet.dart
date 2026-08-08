@@ -43,6 +43,7 @@ class _SaleEntrySheet extends StatefulWidget {
 }
 
 class _SaleEntrySheetState extends State<_SaleEntrySheet> {
+  final _formKey = GlobalKey<FormState>();
   final _quantityCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _cashCtrl = TextEditingController();
@@ -75,6 +76,7 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
   }
 
   Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final qty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
     final price = double.tryParse(_priceCtrl.text.trim()) ?? 0;
     final remaining = widget.batch.totalQuantity - widget.soldQuantity;
@@ -133,9 +135,11 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('Record Sale', style: theme.textTheme.titleLarge),
             const SizedBox(height: 4),
@@ -165,7 +169,7 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _quantityCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
@@ -173,13 +177,26 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
                 helperText: 'Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining (of ${widget.batch.totalQuantity.toStringAsFixed(0)})',
                 errorText: overLimit ? 'Exceeds remaining quantity' : null,
               ),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Required';
+                final n = double.tryParse(v.trim());
+                if (n == null || n <= 0) return 'Enter a positive number';
+                if (n > remaining + 0.0001) return 'Exceeds remaining quantity';
+                return null;
+              },
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _priceCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Price per unit'),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Required';
+                final n = double.tryParse(v.trim());
+                if (n == null || n <= 0) return 'Enter a positive number';
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -222,6 +239,7 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
                   : const Text('Save Sale'),
             ),
           ],
+          ),
         ),
       ),
     );

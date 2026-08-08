@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/utils/validators.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
@@ -90,7 +91,7 @@ class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
                         controller: _amountCtrl,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(labelText: 'Amount'),
-                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                        validator: (value) => Validators.positiveNumber(value, 'Amount'),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
