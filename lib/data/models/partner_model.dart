@@ -7,6 +7,7 @@ class PartnerModel {
   final String? accessLevel;
   final bool isClaimed;
   final String? businessId;
+  final String? userId;
 
   PartnerModel({
     required this.id,
@@ -17,6 +18,7 @@ class PartnerModel {
     this.accessLevel,
     this.isClaimed = false,
     this.businessId,
+    this.userId,
   });
 
   factory PartnerModel.fromJson(Map<String, dynamic> json) {
@@ -27,8 +29,9 @@ class PartnerModel {
       city: json['city'] as String?,
       role: json['role'] as String? ?? 'partner',
       accessLevel: json['access_level'] as String?,
-      isClaimed: json['is_claimed'] as bool? ?? false,
+      isClaimed: json['is_claimed'] as bool? ?? json['user_id'] != null,
       businessId: json['business_id'] as String?,
+      userId: json['user_id'] as String?,
     );
   }
 
@@ -38,5 +41,6 @@ class PartnerModel {
     'city': city,
     'role': role,
     'business_id': businessId,
+    if (userId != null) 'user_id': userId,
   };
 }

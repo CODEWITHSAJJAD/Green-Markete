@@ -1,15 +1,14 @@
 import 'dart:async';
-import 'dart:ui';
 
 class Debouncer {
-  final Duration delay;
+  final Duration duration;
   Timer? _timer;
 
-  Debouncer({this.delay = const Duration(milliseconds: 300)});
+  Debouncer({this.duration = const Duration(milliseconds: 300)});
 
-  void call(VoidCallback action) {
+  void call(void Function() action) {
     _timer?.cancel();
-    _timer = Timer(delay, action);
+    _timer = Timer(duration, action);
   }
 
   void dispose() {

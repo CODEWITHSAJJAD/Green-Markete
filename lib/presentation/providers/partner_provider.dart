@@ -1,40 +1,81 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../core/utils/debouncer.dart';
 import '../../data/models/partner_model.dart';
 import '../../data/repositories/partner_repository.dart';
-import '../pages/partners/partner_directory_page.dart';
-import 'auth_provider.dart';
 
-final partnerSearchProvider = FutureProvider.family<List<PartnerModel>, Map<String, dynamic>>((ref, params) async {
-  final query = params['query'] as String? ?? '';
-  final businessId = params['business_id'] as String? ?? '';
-  final repo = ref.watch(partnerRepositoryProvider);
-  return repo.search(query, businessId);
-});
+class PartnerProvider extends ChangeNotifier {
+  PartnerProvider(this._repo);
 
-final partnerListProvider = FutureProvider.family<List<PartnerModel>, String>((ref, businessId) async {
-  final repo = ref.watch(partnerRepositoryProvider);
-  return repo.list(businessId);
-});
-
-class PartnerSearchNotifier extends StateNotifier<AsyncValue<List<PartnerModel>>> {
   final PartnerRepository _repo;
   final Debouncer _debouncer = Debouncer();
 
-  PartnerSearchNotifier(this._repo) : super(const AsyncData([]));
+  List<PartnerModel> _partners = const [];
+  List<PartnerModel> get partners => _partners;
+
+  List<PartnerModel> _searchResults = const [];
+  List<PartnerModel> get searchResults => _searchResults;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  String? _error;
+  String? get error => _error;
+
+  Future<void> load(String businessId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _partners = await _repo.list(businessId);
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   void search(String query, String businessId) {
     if (query.length < 3) {
-      state = const AsyncData([]);
+      _searchResults = const [];
+      notifyListeners();
       return;
     }
     _debouncer(() async {
-      state = const AsyncLoading();
-      state = await AsyncValue.guard(() => _repo.search(query, businessId));
+      _isLoading = true;
+      notifyListeners();
+      try {
+        _searchResults = await _repo.search(query, businessId);
+      } catch (e) {
+        _error = e.toString().replaceAll('Exception: ', '');
+      } finally {
+        _isLoading = false;
+        notifyListeners();
+      }
     });
   }
-}
 
-final partnerSearchNotifierProvider = StateNotifierProvider<PartnerSearchNotifier, AsyncValue<List<PartnerModel>>>((ref) {
-  return PartnerSearchNotifier(ref.watch(partnerRepositoryProvider));
-});
+  Future<PartnerModel?> create(Map<String, dynamic> data) async {
+    try {
+      final partner = await _repo.create(data);
+      return partner;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> updateAccess(String partnerId, String accessLevel, String businessId) async {
+    try {
+      await _repo.updateAccess(partnerId, accessLevel, businessId);
+      await load(businessId);
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+}

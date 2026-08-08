@@ -1,93 +1,201 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-part 'batch_model.freezed.dart';
-part 'batch_model.g.dart';
+class BatchModel {
+  final String id;
+  final String businessId;
+  final String productId;
+  final String? productName;
+  final String batchCode;
+  final String? sourceMarketId;
+  final String? destinationMarketId;
+  final String purchaseDate;
+  final double totalQuantity;
+  final String quantityUnit;
+  final double purchasePricePerUnit;
+  final double totalPurchaseCost;
+  final String status;
+  final String? transportPaidBy;
+  final String? notes;
+  final String? createdAt;
+  final String? startDate;
+  final String? endDate;
+  final double? totalAmount;
+  final double? expenseAmount;
+  final double? margin;
 
-@freezed
-class BatchModel with _$BatchModel {
-  const factory BatchModel({
-    required String id,
-    required String businessId,
-    required String productId,
-    required String batchCode,
-    String? sourceMarketId,
-    String? destinationMarketId,
-    required String purchaseDate,
-    required double totalQuantity,
-    required String quantityUnit,
-    required double purchasePricePerUnit,
-    required double totalPurchaseCost,
-    required String status,
-    String? transportPaidBy,
-    String? notes,
-    String? createdAt,
-  }) = _BatchModel;
+  BatchModel({
+    required this.id,
+    required this.businessId,
+    required this.productId,
+    this.productName,
+    required this.batchCode,
+    this.sourceMarketId,
+    this.destinationMarketId,
+    required this.purchaseDate,
+    required this.totalQuantity,
+    required this.quantityUnit,
+    required this.purchasePricePerUnit,
+    required this.totalPurchaseCost,
+    required this.status,
+    this.transportPaidBy,
+    this.notes,
+    this.createdAt,
+    this.startDate,
+    this.endDate,
+    this.totalAmount,
+    this.expenseAmount,
+    this.margin,
+  });
 
-  factory BatchModel.fromJson(Map<String, dynamic> json) =>
-      _$BatchModelFromJson(json);
+  String get unit => quantityUnit;
+
+  factory BatchModel.fromJson(Map<String, dynamic> json) {
+    return BatchModel(
+      id: json['id'] as String? ?? '',
+      businessId: json['business_id'] as String? ?? json['businessId'] as String? ?? '',
+      productId: json['product_id'] as String? ?? json['productId'] as String? ?? '',
+      productName: json['product_name'] as String? ?? json['productName'] as String?,
+      batchCode: json['batch_code'] as String? ?? json['batchCode'] as String? ?? '',
+      sourceMarketId: json['source_market_id'] as String? ?? json['sourceMarketId'] as String?,
+      destinationMarketId: json['destination_market_id'] as String? ?? json['destinationMarketId'] as String?,
+      purchaseDate: json['purchase_date'] as String? ?? json['purchaseDate'] as String? ?? '',
+      totalQuantity: (json['total_quantity'] as num?)?.toDouble() ?? (json['totalQuantity'] as num?)?.toDouble() ?? 0,
+      quantityUnit: json['quantity_unit'] as String? ?? json['quantityUnit'] as String? ?? 'kg',
+      purchasePricePerUnit: (json['purchase_price_per_unit'] as num?)?.toDouble() ?? (json['purchasePricePerUnit'] as num?)?.toDouble() ?? 0,
+      totalPurchaseCost: (json['total_purchase_cost'] as num?)?.toDouble() ?? (json['totalPurchaseCost'] as num?)?.toDouble() ?? 0,
+      status: json['status'] as String? ?? 'purchased',
+      transportPaidBy: json['transport_paid_by'] as String? ?? json['transportPaidBy'] as String?,
+      notes: json['notes'] as String?,
+      createdAt: json['created_at'] as String? ?? json['createdAt'] as String?,
+      startDate: json['start_date'] as String? ?? json['startDate'] as String?,
+      endDate: json['end_date'] as String? ?? json['endDate'] as String?,
+      totalAmount: (json['total_amount'] as num?)?.toDouble() ?? (json['totalAmount'] as num?)?.toDouble(),
+      expenseAmount: (json['expense_amount'] as num?)?.toDouble() ?? (json['expenseAmount'] as num?)?.toDouble(),
+      margin: (json['margin'] as num?)?.toDouble(),
+    );
+  }
 }
 
-@freezed
-class BatchCreateRequest with _$BatchCreateRequest {
-  const factory BatchCreateRequest({
-    required String businessId,
-    required String productId,
-    String? sourceMarketId,
-    String? destinationMarketId,
-    required String purchaseDate,
-    required double totalQuantity,
-    required String quantityUnit,
-    required double purchasePricePerUnit,
-    String? transportPaidBy,
-    String? notes,
-    List<BatchPartnerCreate>? partners,
-    List<PackingRecordCreate>? packingRecords,
-    List<ExpenseCreate>? expenses,
-  }) = _BatchCreateRequest;
+class BatchCreateRequest {
+  final String businessId;
+  final String productId;
+  final String? sourceMarketId;
+  final String? destinationMarketId;
+  final String purchaseDate;
+  final double totalQuantity;
+  final String quantityUnit;
+  final double purchasePricePerUnit;
+  final String? transportPaidBy;
+  final String? notes;
+  final List<BatchPartnerCreate>? partners;
+  final List<PackingRecordCreate>? packingRecords;
+  final List<ExpenseCreate>? expenses;
 
-  factory BatchCreateRequest.fromJson(Map<String, dynamic> json) =>
-      _$BatchCreateRequestFromJson(json);
+  BatchCreateRequest({
+    required this.businessId,
+    required this.productId,
+    this.sourceMarketId,
+    this.destinationMarketId,
+    required this.purchaseDate,
+    required this.totalQuantity,
+    required this.quantityUnit,
+    required this.purchasePricePerUnit,
+    this.transportPaidBy,
+    this.notes,
+    this.partners,
+    this.packingRecords,
+    this.expenses,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'business_id': businessId,
+    'product_id': productId,
+    'source_market_id': sourceMarketId,
+    'destination_market_id': destinationMarketId,
+    'purchase_date': purchaseDate,
+    'total_quantity': totalQuantity,
+    'quantity_unit': quantityUnit,
+    'purchase_price_per_unit': purchasePricePerUnit,
+    'transport_paid_by': transportPaidBy,
+    'notes': notes,
+    'partners': partners?.map((e) => e.toJson()).toList(),
+    'packing_records': packingRecords?.map((e) => e.toJson()).toList(),
+    'expenses': expenses?.map((e) => e.toJson()).toList(),
+  };
 }
 
-@freezed
-class BatchPartnerCreate with _$BatchPartnerCreate {
-  const factory BatchPartnerCreate({
-    required String partnerId,
-    required String role,
-    double? dailyChargeRate,
-    int? daysInvolved,
-  }) = _BatchPartnerCreate;
+class BatchPartnerCreate {
+  final String partnerId;
+  final String role;
+  final double? dailyChargeRate;
+  final int? daysInvolved;
 
-  factory BatchPartnerCreate.fromJson(Map<String, dynamic> json) =>
-      _$BatchPartnerCreateFromJson(json);
+  BatchPartnerCreate({
+    required this.partnerId,
+    required this.role,
+    this.dailyChargeRate,
+    this.daysInvolved,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'partner_id': partnerId,
+    'role': role,
+    'daily_charge_rate': dailyChargeRate,
+    'days_involved': daysInvolved,
+  };
 }
 
-@freezed
-class PackingRecordCreate with _$PackingRecordCreate {
-  const factory PackingRecordCreate({
-    required String unitType,
-    String? unitLabel,
-    required int unitCount,
-    required double costPerUnit,
-  }) = _PackingRecordCreate;
+class PackingRecordCreate {
+  final String unitType;
+  final String? unitLabel;
+  final int unitCount;
+  final double costPerUnit;
 
-  factory PackingRecordCreate.fromJson(Map<String, dynamic> json) =>
-      _$PackingRecordCreateFromJson(json);
+  PackingRecordCreate({
+    required this.unitType,
+    this.unitLabel,
+    required this.unitCount,
+    required this.costPerUnit,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'unit_type': unitType,
+    'unit_label': unitLabel,
+    'unit_count': unitCount,
+    'cost_per_unit': costPerUnit,
+  };
 }
 
-@freezed
-class ExpenseCreate with _$ExpenseCreate {
-  const factory ExpenseCreate({
-    String? partnerId,
-    required String expenseSide,
-    required String expenseType,
-    required double amount,
-    String? description,
-    String? paidBy,
-    String? paymentMode,
-    String? paymentReference,
-    String? expenseDate,
-  }) = _ExpenseCreate;
+class ExpenseCreate {
+  final String? partnerId;
+  final String expenseSide;
+  final String expenseType;
+  final double amount;
+  final String? description;
+  final String? paidBy;
+  final String? paymentMode;
+  final String? paymentReference;
+  final String? expenseDate;
 
-  factory ExpenseCreate.fromJson(Map<String, dynamic> json) =>
-      _$ExpenseCreateFromJson(json);
+  ExpenseCreate({
+    this.partnerId,
+    required this.expenseSide,
+    required this.expenseType,
+    required this.amount,
+    this.description,
+    this.paidBy,
+    this.paymentMode,
+    this.paymentReference,
+    this.expenseDate,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'partner_id': partnerId,
+    'expense_side': expenseSide,
+    'expense_type': expenseType,
+    'amount': amount,
+    'description': description,
+    'paid_by': paidBy,
+    'payment_mode': paymentMode,
+    'bank_reference': paymentReference,
+    'expense_date': expenseDate,
+  };
 }

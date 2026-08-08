@@ -1,13 +1,54 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../data/models/product_model.dart';
 import '../../data/repositories/product_repository.dart';
 
-final productListProvider = FutureProvider.family<List<ProductModel>, String>((ref, businessId) async {
-  final repo = ref.watch(productRepositoryProvider);
-  return repo.list(businessId);
-});
+class ProductProvider extends ChangeNotifier {
+  ProductProvider(this._repo);
 
-final productDetailProvider = FutureProvider.family<ProductModel, String>((ref, id) async {
-  final repo = ref.watch(productRepositoryProvider);
-  return repo.get(id);
-});
+  final ProductRepository _repo;
+
+  List<ProductModel> _products = const [];
+  List<ProductModel> get products => _products;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  String? _error;
+  String? get error => _error;
+
+  Future<void> load(String businessId, {String? category}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _products = await _repo.list(businessId, category: category);
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<ProductModel?> create(Map<String, dynamic> data) async {
+    try {
+      final product = await _repo.create(data);
+      return product;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<ProductModel?> get(String id) async {
+    try {
+      return await _repo.get(id);
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+}

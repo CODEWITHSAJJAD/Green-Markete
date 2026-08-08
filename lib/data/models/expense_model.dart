@@ -10,6 +10,10 @@ class ExpenseModel {
   final String? paymentMode;
   final String? paymentReference;
   final String? expenseDate;
+  final bool isVoided;
+  final String? voidedBy;
+  final String? voidedReason;
+  final String? createdBy;
 
   ExpenseModel({
     required this.id,
@@ -23,6 +27,10 @@ class ExpenseModel {
     this.paymentMode,
     this.paymentReference,
     this.expenseDate,
+    this.isVoided = false,
+    this.voidedBy,
+    this.voidedReason,
+    this.createdBy,
   });
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
@@ -36,8 +44,13 @@ class ExpenseModel {
       description: json['description'] as String?,
       paidBy: json['paid_by'] as String?,
       paymentMode: json['payment_mode'] as String?,
-      paymentReference: json['payment_reference'] as String?,
+      paymentReference:
+          json['bank_reference'] as String? ?? json['payment_reference'] as String?,
       expenseDate: json['expense_date'] as String?,
+      isVoided: json['is_voided'] as bool? ?? false,
+      voidedBy: json['voided_by'] as String?,
+      voidedReason: json['voided_reason'] as String?,
+      createdBy: json['created_by'] as String?,
     );
   }
 }
@@ -47,18 +60,24 @@ class ExpenseUpdateModel {
   final String? description;
   final String? paymentMode;
   final String? paymentReference;
+  final bool? isVoided;
+  final String? voidedReason;
 
   ExpenseUpdateModel({
     this.amount,
     this.description,
     this.paymentMode,
     this.paymentReference,
+    this.isVoided,
+    this.voidedReason,
   });
 
   Map<String, dynamic> toJson() => {
     if (amount != null) 'amount': amount,
     if (description != null) 'description': description,
     if (paymentMode != null) 'payment_mode': paymentMode,
-    if (paymentReference != null) 'payment_reference': paymentReference,
+    if (paymentReference != null) 'bank_reference': paymentReference,
+    if (isVoided != null) 'is_voided': isVoided,
+    if (voidedReason != null) 'voided_reason': voidedReason,
   };
 }

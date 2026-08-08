@@ -23,7 +23,7 @@ class CreditIndicator extends StatelessWidget {
           child: LinearProgressIndicator(
             value: paidRatio,
             minHeight: 8,
-            backgroundColor: AppColors.secondary.withOpacity(0.3),
+            backgroundColor: AppColors.secondary.withValues(alpha: 0.3),
             valueColor: AlwaysStoppedAnimation<Color>(
               paidRatio >= 1 ? AppColors.success : AppColors.secondary,
             ),

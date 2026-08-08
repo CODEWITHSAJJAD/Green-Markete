@@ -1,39 +1,39 @@
 class AppException implements Exception {
   final String message;
-  final String code;
-  AppException(this.message, {this.code = 'UNKNOWN'});
+  final String? code;
+  AppException(this.message, {this.code});
   @override
   String toString() => message;
 }
 
 class NetworkException extends AppException {
-  NetworkException(String message) : super(message, code: 'NETWORK_ERROR');
+  NetworkException(super.message);
 }
 
 class AuthException extends AppException {
-  AuthException(String message) : super(message, code: 'AUTH_ERROR');
-}
-
-class ForbiddenException extends AppException {
-  ForbiddenException(String message) : super(message, code: 'FORBIDDEN');
-}
-
-class NotFoundException extends AppException {
-  NotFoundException(String message) : super(message, code: 'NOT_FOUND');
+  AuthException(super.message);
 }
 
 class BadRequestException extends AppException {
-  BadRequestException(String message) : super(message, code: 'BAD_REQUEST');
+  BadRequestException(super.message);
+}
+
+class ForbiddenException extends AppException {
+  ForbiddenException(super.message);
+}
+
+class NotFoundException extends AppException {
+  NotFoundException(super.message);
 }
 
 class ValidationException extends AppException {
-  ValidationException(String message) : super(message, code: 'VALIDATION_ERROR');
+  ValidationException(super.message);
 }
 
 class RateLimitException extends AppException {
-  RateLimitException(String message) : super(message, code: 'RATE_LIMIT_EXCEEDED');
+  RateLimitException(super.message);
 }
 
 class ServerException extends AppException {
-  ServerException(String message) : super(message, code: 'INTERNAL_ERROR');
+  ServerException(super.message);
 }

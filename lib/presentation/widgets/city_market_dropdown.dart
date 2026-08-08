@@ -37,7 +37,7 @@ class _CityMarketDropdownState extends State<CityMarketDropdown> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          value: widget.selectedCity,
+          initialValue: widget.selectedCity,
           decoration: InputDecoration(labelText: '${widget.label} City'),
           items: _cities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
           onChanged: (city) {
@@ -47,7 +47,7 @@ class _CityMarketDropdownState extends State<CityMarketDropdown> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: widget.selectedMarketId,
+          initialValue: widget.selectedMarketId,
           decoration: InputDecoration(labelText: widget.label),
           items: _filteredMarkets
               .map((m) => DropdownMenuItem(value: m.id, child: Text(m.name)))

@@ -1,3 +1,5 @@
+import 'batch_model.dart';
+
 class PLSummaryModel {
   final String businessId;
   final String? dateFrom;
@@ -56,10 +58,10 @@ class BatchPLSummaryModel {
       batchId: json['batch_id'] as String,
       batchCode: json['batch_code'] as String?,
       costBreakdown: CostBreakdownModel.fromJson(
-        json['cost_breakdown'] as Map<String, dynamic>? ?? {},
+        json['cost_breakdown'] as Map<String, dynamic>? ?? json,
       ),
       revenue: RevenueModel.fromJson(
-        json['revenue'] as Map<String, dynamic>? ?? {},
+        json['revenue'] as Map<String, dynamic>? ?? json,
       ),
       netProfitLoss: (json['net_profit_loss'] as num?)?.toDouble() ?? 0,
     );
@@ -76,7 +78,7 @@ class CostBreakdownModel {
   final double sellerExpenses;
   final double totalCost;
 
-  CostBreakdownModel({
+  const CostBreakdownModel({
     this.purchaseCost = 0,
     this.purchaserDailyCharges = 0,
     this.purchaserExpenses = 0,
@@ -106,7 +108,7 @@ class RevenueModel {
   final double cashReceived;
   final double creditOutstanding;
 
-  RevenueModel({
+  const RevenueModel({
     this.totalRevenue = 0,
     this.cashReceived = 0,
     this.creditOutstanding = 0,
@@ -149,20 +151,40 @@ class CreditReportModel {
 
 class DashboardSummaryModel {
   final double todaySales;
+  final double todayRevenue;
   final int activeBatches;
+  final int totalBatches;
+  final int totalProducts;
+  final int totalCustomers;
   final double outstandingCredit;
+  final List<BatchModel> recentBatches;
 
   DashboardSummaryModel({
     this.todaySales = 0,
+    this.todayRevenue = 0,
     this.activeBatches = 0,
+    this.totalBatches = 0,
+    this.totalProducts = 0,
+    this.totalCustomers = 0,
     this.outstandingCredit = 0,
+    this.recentBatches = const [],
   });
 
   factory DashboardSummaryModel.fromJson(Map<String, dynamic> json) {
+    final recentRaw = json['recent_batches'] as List<dynamic>? ?? const <dynamic>[];
     return DashboardSummaryModel(
       todaySales: (json['today_sales'] as num?)?.toDouble() ?? 0,
+      todayRevenue: (json['today_revenue'] as num?)?.toDouble() ??
+          (json['today_sales'] as num?)?.toDouble() ??
+          0,
       activeBatches: json['active_batches'] as int? ?? 0,
+      totalBatches: json['total_batches'] as int? ?? 0,
+      totalProducts: json['total_products'] as int? ?? 0,
+      totalCustomers: json['total_customers'] as int? ?? 0,
       outstandingCredit: (json['outstanding_credit'] as num?)?.toDouble() ?? 0,
+      recentBatches: recentRaw
+          .map((e) => BatchModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -188,6 +210,111 @@ class PartnerPLModel {
     return PartnerPLModel(
       partnerId: json['partner_id'] as String,
       batchId: json['batch_id'] as String,
+      dailyCharges: (json['daily_charges'] as num?)?.toDouble() ?? 0,
+      expensesLogged: (json['expenses_logged'] as num?)?.toDouble() ?? 0,
+      salesMade: (json['sales_made'] as num?)?.toDouble() ?? 0,
+      netShare: (json['net_share'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}
+
+class MarketPerformanceModel {
+  final String marketId;
+  final String marketName;
+  final String city;
+  final int batchCount;
+  final double totalRevenue;
+  final double totalCost;
+  final double profitLoss;
+
+  MarketPerformanceModel({
+    required this.marketId,
+    required this.marketName,
+    required this.city,
+    this.batchCount = 0,
+    this.totalRevenue = 0,
+    this.totalCost = 0,
+    this.profitLoss = 0,
+  });
+
+  factory MarketPerformanceModel.fromJson(Map<String, dynamic> json) {
+    return MarketPerformanceModel(
+      marketId: json['market_id'] as String? ?? '',
+      marketName: json['market_name'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      batchCount: json['batch_count'] as int? ?? 0,
+      totalRevenue: (json['total_revenue'] as num?)?.toDouble() ?? 0,
+      totalCost: (json['total_cost'] as num?)?.toDouble() ?? 0,
+      profitLoss: (json['profit_loss'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}
+
+class BatchPLDetailModel {
+  final String batchId;
+  final String? batchCode;
+  final CostBreakdownModel costBreakdown;
+  final RevenueModel revenue;
+  final double netProfitLoss;
+  final double? soldQuantity;
+  final double? remainingQuantity;
+  final double? avgSalePrice;
+  final List<PartnerShareModel> partnerShares;
+
+  const BatchPLDetailModel({
+    required this.batchId,
+    this.batchCode,
+    this.costBreakdown = const CostBreakdownModel(),
+    this.revenue = const RevenueModel(),
+    this.netProfitLoss = 0,
+    this.soldQuantity,
+    this.remainingQuantity,
+    this.avgSalePrice,
+    this.partnerShares = const [],
+  });
+
+  factory BatchPLDetailModel.fromJson(Map<String, dynamic> json) {
+    return BatchPLDetailModel(
+      batchId: json['batch_id'] as String? ?? json['id'] as String? ?? '',
+      batchCode: json['batch_code'] as String?,
+      costBreakdown: CostBreakdownModel.fromJson(json),
+      revenue: RevenueModel.fromJson(json),
+      netProfitLoss: (json['net_profit_loss'] as num?)?.toDouble() ?? 0,
+      soldQuantity: (json['sold_quantity'] as num?)?.toDouble(),
+      remainingQuantity: (json['remaining_quantity'] as num?)?.toDouble(),
+      avgSalePrice: (json['avg_sale_price'] as num?)?.toDouble(),
+      partnerShares: (json['partner_shares'] as List<dynamic>?)
+              ?.map((e) => PartnerShareModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class PartnerShareModel {
+  final String partnerId;
+  final String? fullName;
+  final String role;
+  final double dailyCharges;
+  final double expensesLogged;
+  final double salesMade;
+  final double netShare;
+
+  PartnerShareModel({
+    required this.partnerId,
+    this.fullName,
+    this.role = 'partner',
+    this.dailyCharges = 0,
+    this.expensesLogged = 0,
+    this.salesMade = 0,
+    this.netShare = 0,
+  });
+
+  factory PartnerShareModel.fromJson(Map<String, dynamic> json) {
+    return PartnerShareModel(
+      partnerId: json['partner_id'] as String,
+      fullName: json['full_name'] as String?,
+      role: json['role'] as String? ?? 'partner',
       dailyCharges: (json['daily_charges'] as num?)?.toDouble() ?? 0,
       expensesLogged: (json['expenses_logged'] as num?)?.toDouble() ?? 0,
       salesMade: (json['sales_made'] as num?)?.toDouble() ?? 0,

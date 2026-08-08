@@ -1,6 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/network/connectivity_service.dart';
+import 'package:flutter/foundation.dart';
 
-final connectivityStateProvider = StreamProvider<bool>((ref) {
-  return ConnectivityService().onConnectivityChanged;
-});
+import '../../core/supabase/supabase_service.dart';
+
+class ConnectivityProvider extends ChangeNotifier {
+  bool _isOnline = true;
+  bool get isOnline => _isOnline;
+
+  Future<void> check() async {
+    _isOnline = await SupabaseService.instance.isConnected();
+    notifyListeners();
+  }
+}

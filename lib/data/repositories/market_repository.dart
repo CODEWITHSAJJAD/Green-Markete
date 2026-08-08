@@ -1,20 +1,34 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../datasources/remote/market_remote_ds.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/supabase/supabase_service.dart';
 import '../models/market_model.dart';
 
-final marketRepositoryProvider = Provider<MarketRepository>((ref) {
-  return MarketRepository(ref.watch(marketRemoteDsProvider));
-});
-
 class MarketRepository {
-  final MarketRemoteDs _remoteDs;
-  MarketRepository(this._remoteDs);
+  SupabaseClient get _client => SupabaseService.instance.client;
 
-  Future<List<MarketModel>> list(String businessId, {String? city}) {
-    return _remoteDs.list(businessId, city: city);
+  Future<List<MarketModel>> list(String businessId, {String? city}) async {
+    var query = _client
+        .from('markets')
+        .select()
+        .eq('business_id', businessId);
+    if (city != null && city.isNotEmpty) query = query.eq('city', city);
+    final rows = await query.order('name');
+    return rows.map(MarketModel.fromJson).toList();
   }
 
-  Future<MarketModel> create(Map<String, dynamic> data) {
-    return _remoteDs.create(data);
+  Future<MarketModel> create(Map<String, dynamic> data) async {
+    final row = await _client
+        .from('markets')
+        .insert({
+          'business_id': data['business_id'],
+          'name': data['name'],
+          'city': data['city'],
+          'address': data['address'],
+          'stall_number': data['stall_number'],
+          'market_type': data['market_type'],
+        })
+        .select()
+        .single();
+    return MarketModel.fromJson(row);
   }
 }

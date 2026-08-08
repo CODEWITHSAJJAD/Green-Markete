@@ -1,36 +1,83 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../datasources/remote/report_remote_ds.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/supabase/supabase_service.dart';
 import '../models/report_model.dart';
 
-final reportRepositoryProvider = Provider<ReportRepository>((ref) {
-  return ReportRepository(ref.watch(reportRemoteDsProvider));
-});
-
 class ReportRepository {
-  final ReportRemoteDs _remoteDs;
-  ReportRepository(this._remoteDs);
+  SupabaseClient get _client => SupabaseService.instance.client;
 
-  Future<PLSummaryModel> getPLSummary(String businessId, {String? dateFrom, String? dateTo}) {
-    return _remoteDs.getPLSummary(businessId, dateFrom: dateFrom, dateTo: dateTo);
+  Future<PLSummaryModel> getPLSummary(
+    String businessId, {
+    String? dateFrom,
+    String? dateTo,
+  }) async {
+    final response = await _client.rpc(
+      'get_business_pl_summary',
+      params: {
+        'p_business_id': businessId,
+        if (dateFrom != null && dateFrom.isNotEmpty) 'p_from_date': dateFrom,
+        if (dateTo != null && dateTo.isNotEmpty) 'p_to_date': dateTo,
+      },
+    );
+    final data = response is Map<String, dynamic>
+        ? response['data']
+        : response;
+    if (data is Map<String, dynamic>) {
+      return PLSummaryModel.fromJson({...data, 'business_id': businessId});
+    }
+    return PLSummaryModel(businessId: businessId);
   }
 
-  Future<String> exportBatchPDF(String batchId) {
-    return _remoteDs.exportBatchPDF(batchId);
+  Future<List<CreditReportModel>> getCustomerCredit(
+    String businessId, {
+    double threshold = 0,
+  }) async {
+    final rows = await _client
+        .from('customers')
+        .select('id, full_name, phone, city, outstanding_balance')
+        .eq('business_id', businessId)
+        .gt('outstanding_balance', threshold)
+        .order('outstanding_balance', ascending: false);
+    return rows.map(CreditReportModel.fromJson).toList();
   }
 
-  Future<List<CreditReportModel>> getCustomerCredit(String businessId, {double threshold = 0}) {
-    return _remoteDs.getCustomerCredit(businessId, threshold: threshold);
+  Future<List<CreditReportModel>> getOverdueCustomers(
+    String businessId, {
+    double threshold = 50000,
+  }) async {
+    final rows = await _client
+        .from('customers')
+        .select('id, full_name, phone, city, outstanding_balance')
+        .eq('business_id', businessId)
+        .gt('outstanding_balance', threshold)
+        .order('outstanding_balance', ascending: false);
+    return rows.map(CreditReportModel.fromJson).toList();
   }
 
-  Future<List<CreditReportModel>> getOverdueCustomers(String businessId, {double threshold = 50000}) {
-    return _remoteDs.getOverdueCustomers(businessId, threshold: threshold);
+  Future<PartnerPLModel> getPartnerPL(String partnerId, String batchId) async {
+    final response = await _client.rpc(
+      'get_partner_pl',
+      params: {'p_partner_id': partnerId, 'p_batch_id': batchId},
+    );
+    final data = response is Map<String, dynamic> ? response['data'] : response;
+    if (data is Map<String, dynamic>) {
+      return PartnerPLModel.fromJson({
+        ...data,
+        'partner_id': partnerId,
+        'batch_id': batchId,
+      });
+    }
+    return PartnerPLModel(partnerId: partnerId, batchId: batchId);
   }
 
-  Future<PartnerPLModel> getPartnerPL(String partnerId, String batchId) {
-    return _remoteDs.getPartnerPL(partnerId, batchId);
-  }
-
-  Future<String> getPLExportCSV(String businessId, {String? dateFrom, String? dateTo}) {
-    return _remoteDs.getPLExportCSV(businessId, dateFrom: dateFrom, dateTo: dateTo);
+  Future<List<MarketPerformanceModel>> getCityMarketPerformance(
+    String businessId,
+  ) async {
+    final rows = await _client
+        .from('v_city_market_performance')
+        .select()
+        .eq('business_id', businessId)
+        .order('profit_loss', ascending: false);
+    return rows.map(MarketPerformanceModel.fromJson).toList();
   }
 }

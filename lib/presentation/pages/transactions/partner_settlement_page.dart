@@ -125,8 +125,9 @@ class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
                                 if (!_formKey.currentState!.validate()) return;
                                 final messenger = ScaffoldMessenger.of(context);
                                 final navigator = Navigator.of(context);
+                                final txProvider = context.read<TransactionProvider>();
                                 setState(() => _isSaving = true);
-                                final transaction = await context.read<TransactionProvider>().create(
+                                final transaction = await txProvider.create(
                                       TransactionCreateRequest(
                                         businessId: businessId,
                                         fromPartnerId: _fromPartnerId!,
@@ -140,7 +141,7 @@ class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
                                       ),
                                     );
                                 if (!mounted) return;
-                                final errorText = context.read<TransactionProvider>().error ?? 'Unknown error';
+                                final errorText = txProvider.error ?? 'Unknown error';
                                 setState(() => _isSaving = false);
                                 if (transaction != null) {
                                   messenger.showSnackBar(

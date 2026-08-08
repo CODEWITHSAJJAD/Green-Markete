@@ -1,97 +1,203 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../core/network/connectivity_service.dart';
-import '../../data/datasources/remote/auth_remote_ds.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../data/models/user_model.dart';
+import '../../data/repositories/auth_repository.dart';
 
-class AuthState {
-  final bool isAuthenticated;
-  final bool needsOnboarding;
-  final UserModel? user;
-  final bool isLoading;
-  final String? error;
-
-  const AuthState({
-    this.isAuthenticated = false,
-    this.needsOnboarding = false,
-    this.user,
-    this.isLoading = false,
-    this.error,
-  });
-
-  AuthState copyWith({
-    bool? isAuthenticated,
-    bool? needsOnboarding,
-    UserModel? user,
-    bool? isLoading,
-    String? error,
-  }) {
-    return AuthState(
-      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      needsOnboarding: needsOnboarding ?? this.needsOnboarding,
-      user: user ?? this.user,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
+class AuthProvider extends ChangeNotifier {
+  AuthProvider(this._repo) {
+    Future.microtask(restoreSession);
   }
-}
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthRemoteDs _remoteDs;
-  final _storage = const FlutterSecureStorage();
-  final ConnectivityService _connectivity;
+  final AuthRepository _repo;
 
-  AuthNotifier(this._remoteDs, this._connectivity) : super(const AuthState());
+  UserModel? _user;
+  UserModel? get user => _user;
 
-  Future<void> checkSession() async {
-    final token = await _storage.read(key: 'access_token');
-    if (token != null) {
-      state = state.copyWith(isAuthenticated: true, isLoading: false);
+  bool get isAuthenticated => _user != null;
+
+  bool _needsOnboarding = false;
+  bool get needsOnboarding => _needsOnboarding;
+
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
+
+  String? _error;
+  String? get error => _error;
+
+  String? get userId => _repo.currentUserId;
+  String? get businessId => _user?.businessId;
+
+  Future<void> restoreSession() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final userId = _repo.currentUserId;
+      if (userId == null) {
+        _user = null;
+        _needsOnboarding = false;
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+      var profile = await _repo.fetchUserProfile(userId);
+      if (profile == null && _repo.currentUserPhone != null) {
+        profile = await _repo.createUserProfile(
+          userId: userId,
+          phone: _repo.currentUserPhone,
+        );
+      }
+      final businessId = await _repo.getMyBusinessId(userId);
+      final role = profile?.role;
+      _user = UserModel(
+        id: userId,
+        fullName: profile?.fullName,
+        phone: profile?.phone ?? _repo.currentUserPhone,
+        email: profile?.email ?? _repo.currentUserEmail,
+        city: profile?.city,
+        role: role,
+        businessId: businessId,
+        isActive: profile?.isActive ?? true,
+      );
+      _needsOnboarding = businessId == null;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<bool> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
     try {
-      final response = await _remoteDs.login(email, password);
-      final data = response['data'] as Map<String, dynamic>? ?? response;
-      final userJson = data['user'] as Map<String, dynamic>? ?? data;
-      final tokens = data['tokens'] as Map<String, dynamic>? ?? data;
-      final accessToken = tokens['access_token'] as String? ?? '';
-      final refreshToken = tokens['refresh_token'] as String? ?? '';
-      if (accessToken.isNotEmpty) {
-        await _storage.write(key: 'access_token', value: accessToken);
-      }
-      if (refreshToken.isNotEmpty) {
-        await _storage.write(key: 'refresh_token', value: refreshToken);
-      }
-      final user = UserModel.fromJson(userJson);
-      state = state.copyWith(
-        isAuthenticated: true,
-        user: user,
-        isLoading: false,
-        needsOnboarding: false,
-      );
-      return true;
+      await _repo.signInWithEmail(email: email, password: password);
+      await restoreSession();
+      return isAuthenticated;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
   }
 
+  Future<bool> signup({
+    required String fullName,
+    required String email,
+    required String password,
+    String? phone,
+    String? city,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final user = await _repo.signUpWithEmail(email: email, password: password);
+      await _repo.createUserProfile(
+        userId: user.id,
+        fullName: fullName,
+        phone: phone,
+        email: email,
+        city: city,
+      );
+      await restoreSession();
+      return isAuthenticated;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> sendOtp(String phone) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _repo.sendPhoneOtp(phone);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtp(String phone, String token) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _repo.verifyPhoneOtp(phone, token);
+      await _repo.claimBusinessByPhone(
+        userId: _repo.currentUserId ?? '',
+        phone: phone,
+      );
+      await restoreSession();
+      return isAuthenticated;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> completeOnboarding({
+    required String fullName,
+    String? city,
+    String? phone,
+  }) async {
+    final userId = _repo.currentUserId;
+    if (userId == null) return;
+    await _repo.createUserProfile(
+      userId: userId,
+      fullName: fullName,
+      phone: phone ?? _repo.currentUserPhone,
+      city: city,
+    );
+    if (phone != null && phone.isNotEmpty) {
+      await _repo.claimBusinessByPhone(userId: userId, phone: phone);
+    }
+    await restoreSession();
+  }
+
+  void setBusinessId(String businessId) {
+    final current = _user;
+    if (current == null) return;
+    _user = UserModel(
+      id: current.id,
+      fullName: current.fullName,
+      phone: current.phone,
+      email: current.email,
+      city: current.city,
+      role: current.role,
+      businessId: businessId,
+      isActive: current.isActive,
+    );
+    _needsOnboarding = false;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
-    await _storage.deleteAll();
-    state = const AuthState();
+    try {
+      await _repo.signOut();
+    } catch (_) {}
+    _user = null;
+    _needsOnboarding = false;
+    _error = null;
+    notifyListeners();
   }
 
   void clearError() {
-    state = state.copyWith(error: null);
+    _error = null;
+    notifyListeners();
   }
 }
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(
-    ref.watch(authRemoteDsProvider),
-    ConnectivityService(),
-  );
-});

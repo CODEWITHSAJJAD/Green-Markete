@@ -15,11 +15,11 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: json['id'] as String,
-      businessId: json['business_id'] as String,
-      name: json['name'] as String,
+      id: json['id'] as String? ?? '',
+      businessId: json['business_id'] as String? ?? json['businessId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
       category: json['category'] as String?,
-      baseUnit: json['base_unit'] as String? ?? 'kg',
+      baseUnit: json['base_unit'] as String? ?? json['baseUnit'] as String? ?? 'kg',
     );
   }
 
@@ -30,3 +30,5 @@ class ProductModel {
     'base_unit': baseUnit,
   };
 }
+
+

@@ -17,12 +17,12 @@ class BatchPartnerModel {
 
   factory BatchPartnerModel.fromJson(Map<String, dynamic> json) {
     return BatchPartnerModel(
-      id: json['id'] as String,
-      batchId: json['batch_id'] as String,
-      partnerId: json['partner_id'] as String,
-      role: json['role'] as String,
-      dailyChargeRate: (json['daily_charge_rate'] as num?)?.toDouble() ?? 0,
-      daysInvolved: json['days_involved'] as int? ?? 1,
+      id: json['id'] as String? ?? '',
+      batchId: json['batch_id'] as String? ?? json['batchId'] as String? ?? '',
+      partnerId: json['partner_id'] as String? ?? json['partnerId'] as String? ?? '',
+      role: json['role'] as String? ?? 'purchaser',
+      dailyChargeRate: (json['daily_charge_rate'] as num?)?.toDouble() ?? (json['dailyChargeRate'] as num?)?.toDouble() ?? 0,
+      daysInvolved: (json['days_involved'] as int?) ?? (json['daysInvolved'] as int?) ?? 1,
     );
   }
 }

@@ -33,10 +33,10 @@ class PartnerChip extends StatelessWidget {
         ),
       ),
       label: Text(
-        role != null ? '$name (${role})' : name,
+        role != null ? '$name ($role)' : name,
         style: const TextStyle(fontSize: 13),
       ),
-      backgroundColor: chipColor.withOpacity(0.1),
+      backgroundColor: chipColor.withValues(alpha: 0.1),
       side: BorderSide.none,
       padding: const EdgeInsets.symmetric(horizontal: 4),
     );

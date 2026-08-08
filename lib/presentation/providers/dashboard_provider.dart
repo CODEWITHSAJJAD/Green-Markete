@@ -1,36 +1,59 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/models/report_model.dart';
-import '../../data/repositories/report_repository.dart';
-import '../../data/repositories/batch_repository.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../data/models/batch_model.dart';
+import '../../data/repositories/dashboard_repository.dart';
 
-final dashboardSummaryProvider = FutureProvider.family<DashboardSummaryModel, String>((ref, businessId) async {
-  final repo = ref.watch(reportRepositoryProvider);
-  // The dashboard/summary endpoint returns DashboardSummaryModel
-  // For now we use the report repository
-  final creditReport = await repo.getCustomerCredit(businessId);
-  final totalCredit = creditReport.fold<double>(0, (sum, c) => sum + c.outstandingBalance);
+class DashboardProvider extends ChangeNotifier {
+  DashboardProvider(this._repo);
 
-  final batchRepo = ref.watch(batchRepositoryProvider);
-  final batchesResult = await batchRepo.list(businessId: businessId);
-  final data = batchesResult['data'] as Map<String, dynamic>?;
-  final items = data?['items'] as List<dynamic>? ?? [];
-  final activeBatches = items.where((e) {
-    final status = (e as Map<String, dynamic>)['status'] as String?;
-    return status != 'closed';
-  }).length;
+  final DashboardRepository _repo;
 
-  return DashboardSummaryModel(
-    todaySales: 0,
-    activeBatches: activeBatches,
-    outstandingCredit: totalCredit,
-  );
-});
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-final activeBatchesProvider = FutureProvider.family<List<BatchModel>, String>((ref, businessId) async {
-  final repo = ref.watch(batchRepositoryProvider);
-  final result = await repo.list(businessId: businessId, status: 'selling');
-  final data = result['data'] as Map<String, dynamic>?;
-  final items = data?['items'] as List<dynamic>? ?? [];
-  return items.map((e) => BatchModel.fromJson(e as Map<String, dynamic>)).toList();
-});
+  String? _error;
+  String? get error => _error;
+
+  double _todaySales = 0;
+  double get todaySales => _todaySales;
+
+  double _outstandingCredit = 0;
+  double get outstandingCredit => _outstandingCredit;
+
+  int _activeBatchesCount = 0;
+  int get activeBatchesCount => _activeBatchesCount;
+
+  int _batchesCount = 0;
+  int get batchesCount => _batchesCount;
+
+  int _productsCount = 0;
+  int get productsCount => _productsCount;
+
+  int _customersCount = 0;
+  int get customersCount => _customersCount;
+
+  List<BatchModel> _recentBatches = const [];
+  List<BatchModel> get recentBatches => _recentBatches;
+
+  Future<void> load(String businessId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final summary = await _repo.getSummary(businessId);
+      _todaySales = summary.todaySales;
+      _outstandingCredit = summary.outstandingCredit;
+      _activeBatchesCount = summary.activeBatches;
+      _batchesCount = summary.totalBatches;
+      _productsCount = summary.totalProducts;
+      _customersCount = summary.totalCustomers;
+      _recentBatches = summary.recentBatches;
+      _error = null;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+}

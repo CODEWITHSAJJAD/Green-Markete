@@ -1,24 +1,43 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../datasources/remote/product_remote_ds.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/supabase/supabase_service.dart';
 import '../models/product_model.dart';
 
-final productRepositoryProvider = Provider<ProductRepository>((ref) {
-  return ProductRepository(ref.watch(productRemoteDsProvider));
-});
-
 class ProductRepository {
-  final ProductRemoteDs _remoteDs;
-  ProductRepository(this._remoteDs);
+  SupabaseClient get _client => SupabaseService.instance.client;
 
-  Future<List<ProductModel>> list(String businessId, {String? category}) {
-    return _remoteDs.list(businessId, category: category);
+  Future<List<ProductModel>> list(String businessId, {String? category}) async {
+    var query = _client
+        .from('products')
+        .select()
+        .eq('business_id', businessId);
+    if (category != null && category.isNotEmpty) {
+      query = query.eq('category', category);
+    }
+    final rows = await query.order('name');
+    return rows.map(ProductModel.fromJson).toList();
   }
 
-  Future<ProductModel> create(Map<String, dynamic> data) {
-    return _remoteDs.create(data);
+  Future<ProductModel> create(Map<String, dynamic> data) async {
+    final row = await _client
+        .from('products')
+        .insert({
+          'business_id': data['business_id'],
+          'name': data['name'],
+          'category': data['category'],
+          'base_unit': data['base_unit'] ?? data['default_unit'] ?? 'kg',
+        })
+        .select()
+        .single();
+    return ProductModel.fromJson(row);
   }
 
-  Future<ProductModel> get(String id) {
-    return _remoteDs.get(id);
+  Future<ProductModel> get(String id) async {
+    final row = await _client.from('products').select().eq('id', id).single();
+    return ProductModel.fromJson(row);
+  }
+
+  Future<void> delete(String id) async {
+    await _client.from('products').delete().eq('id', id);
   }
 }
