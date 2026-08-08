@@ -11,6 +11,7 @@ import '../../../data/models/expense_model.dart';
 import '../../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
+import '../../providers/capability.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/expense_entry_sheet.dart';
 import '../../widgets/sale_entry_sheet.dart';
@@ -134,8 +135,8 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     final batchProvider = context.watch<BatchDetailProvider>();
     final batch = batchProvider.batch;
     final userRole = context.watch<AuthProvider>().user?.role ?? '';
-    final canEdit = userRole != 'accountant' && userRole != 'viewer';
-    final canDelete = userRole == 'owner';
+    final canEdit = userRole.canEditBatch;
+    final canDelete = userRole.canCloseBatch;
 
     return Scaffold(
       appBar: AppBar(
@@ -445,6 +446,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     );
 
     if (isVoided) return tile;
+
+    final canVoid = (context.read<AuthProvider>().user?.role ?? '').canVoidExpense;
+    if (!canVoid) return tile;
 
     return Dismissible(
       key: ValueKey('expense-${expense.id}'),
