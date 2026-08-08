@@ -1,82 +1,84 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/config/theme.dart';
+import 'package:provider/provider.dart';
 
-class AccessManagementPage extends ConsumerWidget {
+import '../../../data/models/partner_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/partner_provider.dart';
+
+class AccessManagementPage extends StatefulWidget {
   const AccessManagementPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Sample users for now; will be fetched from backend
-    final users = [
-      _UserEntry('Ahmed Khan', 'ahmed@example.com', 'admin', true),
-      _UserEntry('Sara Ali', 'sara@example.com', 'manager', true),
-      _UserEntry('Usman Raza', 'usman@example.com', 'sales', true),
-      _UserEntry('Fatima Noor', 'fatima@example.com', 'viewer', false),
-    ];
+  State<AccessManagementPage> createState() => _AccessManagementPageState();
+}
+
+class _AccessManagementPageState extends State<AccessManagementPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  void _load() {
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    context.read<PartnerProvider>().load(businessId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final partnersProvider = context.watch<PartnerProvider>();
+    final businessId = context.watch<AuthProvider>().businessId ?? '';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Access Management')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.person_add),
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: users.length,
-        separatorBuilder: (_, __) => const Divider(),
-        itemBuilder: (context, index) {
-          final user = users[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              child: Text(
-                user.name[0],
-                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+      body: partnersProvider.error != null
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(partnersProvider.error!),
+                  const SizedBox(height: 8),
+                  TextButton(onPressed: _load, child: const Text('Retry')),
+                ],
               ),
-            ),
-            title: Text(user.name),
-            subtitle: Text(user.email),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: user.isActive
-                        ? AppColors.success.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    user.role.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: user.isActive ? AppColors.success : Colors.grey,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  user.isActive ? Icons.check_circle : Icons.cancel,
-                  color: user.isActive ? AppColors.success : Colors.grey,
-                  size: 18,
-                ),
-              ],
-            ),
-            onTap: () {},
-          );
-        },
-      ),
+            )
+          : partnersProvider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildList(partnersProvider.partners, businessId),
     );
   }
-}
 
-class _UserEntry {
-  final String name;
-  final String email;
-  final String role;
-  final bool isActive;
-  const _UserEntry(this.name, this.email, this.role, this.isActive);
+  Widget _buildList(List<PartnerModel> partners, String businessId) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: partners.length,
+      itemBuilder: (context, index) {
+        final partner = partners[index];
+        final access = partner.accessLevel ?? 'viewer';
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            title: Text(partner.fullName),
+            subtitle: Text(partner.role),
+            trailing: DropdownButton<String>(
+              value: access,
+              items: const [
+                DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
+                DropdownMenuItem(value: 'editor', child: Text('Editor')),
+              ],
+              onChanged: (value) => _update(partner, businessId, value),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _update(PartnerModel partner, String businessId, String? value) async {
+    if (value == null) return;
+    await context.read<PartnerProvider>().updateAccess(partner.id, value, businessId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${partner.fullName} updated to $value')));
+    }
+  }
 }

@@ -1,117 +1,206 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/report_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../widgets/amount_text.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/report_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/report_provider.dart';
 
-class PLReportPage extends ConsumerStatefulWidget {
+class PLReportPage extends StatefulWidget {
   const PLReportPage({super.key});
 
   @override
-  ConsumerState<PLReportPage> createState() => _PLReportPageState();
+  State<PLReportPage> createState() => _PLReportPageState();
 }
 
-class _PLReportPageState extends ConsumerState<PLReportPage> {
-  DateTimeRange? _dateRange;
+class _PLReportPageState extends State<PLReportPage> {
+  DateTime? _from;
+  DateTime? _to;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  void _load() {
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    context.read<ReportProvider>().loadPLSummary(
+      businessId,
+      dateFrom: _from != null ? DateFormat('yyyy-MM-dd').format(_from!) : null,
+      dateTo: _to != null ? DateFormat('yyyy-MM-dd').format(_to!) : null,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final businessId = authState.user?.id ?? '';
-
-    final params = <String, dynamic>{
-      'business_id': businessId,
-      if (_dateRange != null) 'date_from': '${_dateRange!.start.year}-${_dateRange!.start.month.toString().padLeft(2, '0')}-${_dateRange!.start.day.toString().padLeft(2, '0')}',
-      if (_dateRange != null) 'date_to': '${_dateRange!.end.year}-${_dateRange!.end.month.toString().padLeft(2, '0')}-${_dateRange!.end.day.toString().padLeft(2, '0')}',
-    };
-
-    final plAsync = ref.watch(plSummaryProvider(params));
+    final businessId = context.watch<AuthProvider>().businessId ?? '';
+    final report = context.watch<ReportProvider>();
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('P&L Summary'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.date_range),
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'Date range',
             onPressed: () async {
               final picked = await showDateRangePicker(
                 context: context,
                 firstDate: DateTime(2020),
                 lastDate: DateTime.now(),
-                initialDateRange: _dateRange,
+                initialDateRange: (_from != null && _to != null)
+                    ? DateTimeRange(start: _from!, end: _to!)
+                    : null,
               );
-              if (picked != null) setState(() => _dateRange = picked);
+              if (picked != null) {
+                setState(() {
+                  _from = picked.start;
+                  _to = picked.end;
+                });
+                _load();
+              }
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Export CSV',
+            onPressed: () => _exportCsv(businessId),
           ),
         ],
       ),
-      body: plAsync.when(
-        data: (pl) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text('P&L Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Divider(),
-                    _PLRow('Total Batches', pl.totalBatches.toString()),
-                    _PLRow('Total Cost', CurrencyFormatter.format(pl.totalCost)),
-                    _PLRow('Total Revenue', CurrencyFormatter.format(pl.totalRevenue)),
-                    const Divider(thickness: 2),
-                    Text(
-                      'Net ${pl.totalProfitLoss >= 0 ? 'Profit' : 'Loss'}: ${CurrencyFormatter.format(pl.totalProfitLoss)}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: pl.totalProfitLoss >= 0 ? Colors.green : Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
+      body: report.error != null
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(report.error!),
+                  const SizedBox(height: 8),
+                  TextButton(onPressed: _load, child: const Text('Retry')),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Batch Details', style: TextStyle(fontWeight: FontWeight.w600)),
-            ...pl.batchSummaries.map((batch) => Card(
-              margin: const EdgeInsets.only(top: 8),
-              child: ListTile(
-                title: Text(batch.batchCode ?? batch.batchId),
-                subtitle: Text('Cost: ${CurrencyFormatter.format(batch.costBreakdown.totalCost)}'),
-                trailing: AmountText(
-                  amount: batch.netProfitLoss,
-                  fontSize: 14,
-                  color: batch.netProfitLoss >= 0 ? Colors.green : Colors.red,
-                ),
-              ),
-            )),
-          ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
-      ),
+            )
+          : report.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : report.plSummary == null
+                  ? const Center(child: Text('No data available.'))
+                  : _buildContent(theme, report.plSummary!),
     );
   }
-}
 
-class _PLRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _PLRow(this.label, this.value);
+  Widget _buildContent(ThemeData theme, PLSummaryModel pl) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        if (_from != null && _to != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Wrap(
+              spacing: 6,
+              children: [
+                Chip(
+                  label: Text('From: ${DateFormat('yyyy-MM-dd').format(_from!)}'),
+                  onDeleted: () {
+                    setState(() => _from = null);
+                    _load();
+                  },
+                ),
+                Chip(
+                  label: Text('To: ${DateFormat('yyyy-MM-dd').format(_to!)}'),
+                  onDeleted: () {
+                    setState(() => _to = null);
+                    _load();
+                  },
+                ),
+              ],
+            ),
+          ),
+        SizedBox(
+          height: 240,
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 44)),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      final idx = value.toInt();
+                      if (idx == 0) return const Text('Rev');
+                      if (idx == 1) return const Text('Cost');
+                      return const Text('P/L');
+                    },
+                  ),
+                ),
+              ),
+              borderData: FlBorderData(show: false),
+              barGroups: [
+                _group(0, pl.totalRevenue, theme.colorScheme.primary),
+                _group(1, pl.totalCost, theme.colorScheme.secondary),
+                _group(2, pl.totalProfitLoss, pl.totalProfitLoss >= 0 ? Colors.green : Colors.red),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _tile(theme, 'Total Revenue', pl.totalRevenue),
+        _tile(theme, 'Total Cost', pl.totalCost),
+        _tile(theme, 'Net Profit / Loss', pl.totalProfitLoss, highlight: true),
+        _textTile(theme, 'Batches Included', '${pl.totalBatches}'),
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  void _exportCsv(String businessId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Export available in a later build')),
+    );
+  }
+
+  BarChartGroupData _group(int x, double y, Color color) {
+    return BarChartGroupData(x: x, barRods: [BarChartRodData(toY: y, color: color, width: 28, borderRadius: BorderRadius.circular(8))]);
+  }
+
+  Widget _tile(ThemeData theme, String title, double value, {bool highlight = false}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(title, style: theme.textTheme.titleMedium),
+          Text(
+            CurrencyFormatter.format(value),
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: highlight ? (value >= 0 ? Colors.green : Colors.red) : null,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _textTile(ThemeData theme, String title, String value) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [Text(title), Text(value, style: theme.textTheme.titleMedium)],
       ),
     );
   }
