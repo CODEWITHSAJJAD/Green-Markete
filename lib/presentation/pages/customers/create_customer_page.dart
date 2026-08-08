@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 
@@ -83,6 +84,10 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(labelText: 'Phone'),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null;
+                  return Validators.phone(v);
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(

@@ -3,6 +3,7 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/brand_mark.dart';
 import '../../widgets/green_card.dart';
@@ -107,7 +108,7 @@ class _SignupPageState extends State<SignupPage> {
                           ),
                           keyboardType: TextInputType.phone,
                           textInputAction: TextInputAction.next,
-                          validator: (v) => v == null || v.isEmpty ? 'Phone is required' : null,
+                          validator: Validators.phone,
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
