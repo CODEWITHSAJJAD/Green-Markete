@@ -20,7 +20,9 @@ class CustomerRepository {
       query = query.or('is_archived.is.null,is_archived.eq.false');
     }
     if (search != null && search.isNotEmpty) {
-      query = query.ilike('full_name', '%$search%');
+      query = query.or(
+        'full_name.ilike.%$search%,phone.ilike.%$search%,shop_name.ilike.%$search%',
+      );
     }
     final rows = await query.order('full_name');
     return rows.map(CustomerModel.fromJson).toList();
