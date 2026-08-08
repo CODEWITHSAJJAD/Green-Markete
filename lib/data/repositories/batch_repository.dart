@@ -7,6 +7,42 @@ import '../models/report_model.dart';
 class BatchRepository {
   SupabaseClient get _client => SupabaseService.instance.client;
 
+  Future<Map<String, dynamic>> _insertBatchWithRetry(
+    BatchCreateRequest request, {
+    int maxAttempts = 4,
+  }) async {
+    final payload = {
+      'business_id': request.businessId,
+      'product_id': request.productId,
+      'source_market_id': request.sourceMarketId,
+      'destination_market_id': request.destinationMarketId,
+      'purchase_date': request.purchaseDate,
+      'total_quantity': request.totalQuantity,
+      'quantity_unit': request.quantityUnit,
+      'purchase_price_per_unit': request.purchasePricePerUnit,
+      'total_purchase_cost': request.purchasePricePerUnit * request.totalQuantity,
+      'transport_paid_by': request.transportPaidBy,
+      'notes': request.notes,
+    };
+    Object? lastError;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await _client
+            .from('product_batches')
+            .insert(payload)
+            .select()
+            .single();
+      } catch (e) {
+        lastError = e;
+        final isDuplicateBatchCode = e.toString().contains('product_batches_batch_code') ||
+            (e is PostgrestException && e.code == '23505');
+        if (!isDuplicateBatchCode || attempt == maxAttempts) rethrow;
+        await Future<void>.delayed(Duration(milliseconds: 80 * attempt));
+      }
+    }
+    throw lastError ?? Exception('Failed to create batch');
+  }
+
   Future<List<BatchModel>> list({
     required String businessId,
     String? status,
@@ -28,23 +64,7 @@ class BatchRepository {
   }
 
   Future<BatchModel> create(BatchCreateRequest request) async {
-    final row = await _client
-        .from('product_batches')
-        .insert({
-          'business_id': request.businessId,
-          'product_id': request.productId,
-          'source_market_id': request.sourceMarketId,
-          'destination_market_id': request.destinationMarketId,
-          'purchase_date': request.purchaseDate,
-          'total_quantity': request.totalQuantity,
-          'quantity_unit': request.quantityUnit,
-          'purchase_price_per_unit': request.purchasePricePerUnit,
-          'total_purchase_cost': request.purchasePricePerUnit * request.totalQuantity,
-          'transport_paid_by': request.transportPaidBy,
-          'notes': request.notes,
-        })
-        .select()
-        .single();
+    final row = await _insertBatchWithRetry(request);
 
     final batchId = row['id'] as String;
 

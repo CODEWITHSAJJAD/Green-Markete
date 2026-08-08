@@ -186,12 +186,13 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: _partners[i]['role'] as String,
                         decoration: const InputDecoration(labelText: 'Role'),
                         items: const [
-                          DropdownMenuItem(value: 'purchaser', child: Text('Purchaser')),
-                          DropdownMenuItem(value: 'seller', child: Text('Seller')),
-                          DropdownMenuItem(value: 'both', child: Text('Both')),
+                          DropdownMenuItem(value: 'purchaser', child: Text('Purchaser', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                          DropdownMenuItem(value: 'seller', child: Text('Seller', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                          DropdownMenuItem(value: 'both', child: Text('Both', overflow: TextOverflow.ellipsis, maxLines: 1)),
                         ],
                         onChanged: (v) {
                           setState(() => _partners[i]['role'] = v ?? 'purchaser');
