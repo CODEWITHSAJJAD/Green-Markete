@@ -9,12 +9,14 @@ import '../../../data/models/batch_model.dart';
 import '../../../data/models/market_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/partner_model.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/batch_wizard_provider.dart';
 import '../../providers/market_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../providers/transaction_provider.dart';
 import '../../widgets/partner_selector.dart';
 import '../../widgets/packing_entry_form.dart';
 
@@ -185,6 +187,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       final ok = await context.read<BatchListProvider>().create(payload);
       if (!mounted) return;
       if (ok) {
+        await _createTransportDebt(businessId);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Batch created')),
         );
@@ -202,6 +206,35 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _createTransportDebt(String businessId) async {
+    if (_transportPaidBy != 'seller') return;
+    if (_sellerId == null) return;
+    final purchaserId = _partners
+        .firstWhere(
+          (p) => p['partner_id'] != null,
+          orElse: () => {},
+        )['partner_id'] as String?;
+    if (purchaserId == null) return;
+    if (purchaserId == _sellerId) return;
+    final transportTotal = _expenses.fold<double>(
+      0,
+      (acc, e) =>
+          e['expense_side'] == 'transport' ? acc + ((e['amount'] as num?)?.toDouble() ?? 0) : acc,
+    );
+    if (transportTotal <= 0) return;
+    await context.read<TransactionProvider>().create(
+          TransactionCreateRequest(
+            businessId: businessId,
+            fromPartnerId: purchaserId,
+            toPartnerId: _sellerId!,
+            amount: transportTotal,
+            transactionType: 'transport_debt',
+            transactionDate: DateTime.now().toIso8601String().split('T').first,
+            notes: 'Auto: seller paid transport for ${_generateBatchCode()}',
+          ),
+        );
   }
 
   @override
