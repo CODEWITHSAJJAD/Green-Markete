@@ -24,7 +24,7 @@ class DashboardRepository {
     final activeBatches = await _client
         .from('product_batches')
         .count()
-        .not('status', 'in', ['completed', 'cancelled']);
+        .not('status', 'eq', 'closed');
 
     final totalProducts = await _client.from('products').count();
 
