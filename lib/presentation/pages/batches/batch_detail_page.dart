@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
 import '../../../data/models/expense_model.dart';
@@ -59,6 +60,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final batchProvider = context.watch<BatchDetailProvider>();
+    final batch = batchProvider.batch;
     final userRole = context.watch<AuthProvider>().user?.role ?? '';
     final canEdit = userRole != 'accountant' && userRole != 'viewer';
     final canDelete = userRole == 'owner';
@@ -76,8 +78,14 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           ),
           if (canDelete)
             IconButton(
-              icon: const Icon(MingCuteIcons.mgc_delete_3_line),
-              onPressed: () => _confirmDelete(context),
+              tooltip: batch?.status == 'closed' ? 'Batch closed' : 'Mark as closed',
+              icon: Icon(
+                batch?.status == 'closed'
+                    ? MingCuteIcons.mgc_check_circle_fill
+                    : MingCuteIcons.mgc_archive_line,
+                color: batch?.status == 'closed' ? AppColors.primary : null,
+              ),
+              onPressed: batch?.status == 'closed' ? null : () => _confirmClose(context),
             ),
         ],
         bottom: TabBar(
@@ -612,19 +620,28 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context) async {
+  Future<void> _confirmClose(BuildContext context) async {
     final confirm = await showConfirmDialog(
       context,
-      title: 'Delete batch?',
-      message: 'This batch will be hidden from all queries. Data is retained for audit.',
-      confirmLabel: 'Delete',
+      title: 'Mark batch as closed?',
+      message: 'Closing a batch is permanent — it locks all edits, sales, packing, and expenses for this batch. Use this when the batch is fully settled.',
+      confirmLabel: 'Mark as closed',
       isDestructive: true,
     );
     if (!confirm) return;
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export available in a later build')),
-    );
+    final provider = context.read<BatchDetailProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await provider.updateStatus('closed');
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Batch marked as closed')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    }
   }
 
   Future<void> _showAddPackingDialog(BuildContext context) async {
