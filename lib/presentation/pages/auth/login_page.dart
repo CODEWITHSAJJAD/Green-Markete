@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/brand_mark.dart';
+import '../../widgets/green_card.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -45,87 +49,75 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(Icons.eco_rounded, size: 40, color: theme.colorScheme.primary),
-                  ),
+                  const BrandMark(size: 84),
                   const SizedBox(height: 24),
-                  Text('Welcome back', style: theme.textTheme.displayMedium),
-                  const SizedBox(height: 8),
+                  Text('Welcome back', style: theme.textTheme.displayMedium, textAlign: TextAlign.center),
+                  const SizedBox(height: 6),
                   Text(
-                    'Sign in to your Green Market account',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                    'Sign in to manage your produce business',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 40),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) => v == null || v.isEmpty ? 'Email is required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
-                    obscureText: _obscurePassword,
-                    validator: (v) => v == null || v.isEmpty ? 'Password is required' : null,
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: auth.isLoading ? null : _login,
-                      child: auth.isLoading
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                          : const Text('Sign In'),
-                    ),
-                  ),
-                  if (auth.error != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, size: 20, color: Theme.of(context).colorScheme.error),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(auth.error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+                  const SizedBox(height: 28),
+                  GreenCard(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(MingCute.mail_line),
                           ),
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          validator: (v) => v == null || v.isEmpty ? 'Email is required' : null,
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(MingCute.lock_line),
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscurePassword ? MingCute.eye_line : MingCute.eye_close_line),
+                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            ),
+                          ),
+                          obscureText: _obscurePassword,
+                          onFieldSubmitted: (_) => _login(),
+                          validator: (v) => v == null || v.isEmpty ? 'Password is required' : null,
+                        ),
+                        if (auth.error != null) ...[
+                          const SizedBox(height: 14),
+                          _errorBanner(theme, auth.error!),
                         ],
-                      ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: auth.isLoading ? null : _login,
+                          child: auth.isLoading
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                              : const Text('Sign In'),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Don't have an account? ", style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+                      Text(
+                        "Don't have an account? ",
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                      ),
                       TextButton(
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const SignupPage()),
@@ -139,6 +131,23 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _errorBanner(ThemeData theme, String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Icon(MingCute.information_line, size: 20, color: theme.colorScheme.error),
+          const SizedBox(width: 10),
+          Expanded(child: Text(message, style: TextStyle(color: theme.colorScheme.error, fontSize: 13, fontWeight: FontWeight.w500))),
+        ],
       ),
     );
   }

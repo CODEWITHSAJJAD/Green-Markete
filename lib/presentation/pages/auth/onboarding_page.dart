@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
+import '../../widgets/brand_mark.dart';
+import '../../widgets/green_card.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -54,68 +58,69 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(Icons.store_rounded, size: 36, color: theme.colorScheme.primary),
-                  ),
-                  const SizedBox(height: 24),
-                  Text('Set Up Your Business', style: theme.textTheme.displayMedium),
-                  const SizedBox(height: 8),
+                  const BrandMark(size: 72),
+                  const SizedBox(height: 20),
+                  Text('Set up your business', style: theme.textTheme.displayMedium, textAlign: TextAlign.center),
+                  const SizedBox(height: 6),
                   Text(
-                    'Create your business profile to get started with Green Market',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                  ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Business Name',
-                      prefixIcon: Icon(Icons.business_outlined),
-                    ),
-                    validator: (v) => v == null || v.isEmpty ? 'Business name is required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _cityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Your City',
-                      prefixIcon: Icon(Icons.location_city_outlined),
-                    ),
-                    validator: (v) => v == null || v.isEmpty ? 'City is required' : null,
+                    'A few details to get you started with Green Market',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  Text('Business Type', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'single', label: Text('Single Owner')),
-                      ButtonSegment(value: 'multi_partner', label: Text('Multi Partner')),
-                    ],
-                    selected: {_businessType},
-                    onSelectionChanged: (v) => setState(() => _businessType = v.first),
-                    style: SegmentedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submit,
-                      child: _isLoading
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                          : const Text('Continue to Dashboard'),
+                  GreenCard(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Business Name',
+                            prefixIcon: Icon(MingCute.store_line),
+                          ),
+                          textInputAction: TextInputAction.next,
+                          validator: (v) => v == null || v.isEmpty ? 'Business name is required' : null,
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _cityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Your City',
+                            prefixIcon: Icon(MingCute.building_2_line),
+                          ),
+                          textInputAction: TextInputAction.next,
+                          validator: (v) => v == null || v.isEmpty ? 'City is required' : null,
+                        ),
+                        const SizedBox(height: 20),
+                        Text('Business Type', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 12),
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(value: 'single', label: Text('Single Owner')),
+                            ButtonSegment(value: 'multi_partner', label: Text('Multi Partner')),
+                          ],
+                          selected: {_businessType},
+                          onSelectionChanged: (v) => setState(() => _businessType = v.first),
+                          style: SegmentedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _submit,
+                          child: _isLoading
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                              : const Text('Continue to Dashboard'),
+                        ),
+                      ],
                     ),
                   ),
                 ],
