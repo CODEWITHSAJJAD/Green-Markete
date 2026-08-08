@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/partner_model.dart';
 import '../../providers/transaction_provider.dart';
+import '../../widgets/date_range_filter_button.dart';
 
 class PartnerBalancePage extends StatefulWidget {
   final String partnerId;
@@ -16,6 +17,8 @@ class PartnerBalancePage extends StatefulWidget {
 }
 
 class _PartnerBalancePageState extends State<PartnerBalancePage> {
+  DateTimeRange? _range;
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +34,15 @@ class _PartnerBalancePageState extends State<PartnerBalancePage> {
     final transactionProvider = context.watch<TransactionProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.partner?.fullName ?? 'Partner Balance')),
+      appBar: AppBar(
+        title: Text(widget.partner?.fullName ?? 'Partner Balance'),
+        actions: [
+          DateRangeFilterButton(
+            value: _range,
+            onChanged: (r) => setState(() => _range = r),
+          ),
+        ],
+      ),
       body: transactionProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : transactionProvider.error != null
@@ -55,7 +66,13 @@ class _PartnerBalancePageState extends State<PartnerBalancePage> {
   Widget _buildLedger(BuildContext context, ThemeData theme, TransactionProvider transactionProvider) {
     final ledger = transactionProvider.ledger;
     final data = ledger?['data'] as Map<String, dynamic>? ?? {};
-    final entries = data['entries'] as List<dynamic>? ?? [];
+    final entries = (data['entries'] as List<dynamic>? ?? []).where((entry) {
+      if (_range == null) return true;
+      final dateStr = entry['date']?.toString() ?? '';
+      final d = DateTime.tryParse(dateStr);
+      if (d == null) return true;
+      return !d.isBefore(_range!.start) && !d.isAfter(_range!.end);
+    }).toList();
     final balance = data['balance'] as Map<String, dynamic>? ?? {};
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -69,7 +86,20 @@ class _PartnerBalancePageState extends State<PartnerBalancePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Net Balance', style: theme.textTheme.titleMedium),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Net Balance', style: theme.textTheme.titleMedium),
+                  ),
+                  if (_range != null)
+                    Chip(
+                      label: Text(
+                        '${_range!.start.toString().split(' ').first} → ${_range!.end.toString().split(' ').first}',
+                      ),
+                      onDeleted: () => setState(() => _range = null),
+                    ),
+                ],
+              ),
               const SizedBox(height: 8),
               Text(
                 CurrencyFormatter.format((balance['net_balance'] as num?)?.toDouble() ?? 0),
@@ -82,16 +112,27 @@ class _PartnerBalancePageState extends State<PartnerBalancePage> {
           ),
         ),
         const SizedBox(height: 16),
-        ...entries.map(
-          (entry) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              title: Text(entry['description']?.toString() ?? '-'),
-              subtitle: Text('${entry['date'] ?? '-'} • ${entry['type'] ?? '-'}'),
-              trailing: Text(CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)),
+        if (entries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Text(
+                'No transactions in this date range',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          )
+        else
+          ...entries.map(
+            (entry) => Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                title: Text(entry['description']?.toString() ?? '-'),
+                subtitle: Text('${entry['date'] ?? '-'} • ${entry['type'] ?? '-'}'),
+                trailing: Text(CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
