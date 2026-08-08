@@ -53,6 +53,10 @@ class _PartnerSelectorState extends State<PartnerSelector> {
         ? widget.businessId
         : (widget.selectedPartners.isNotEmpty ? widget.selectedPartners.first.businessId : '') ??
             '';
+    if (businessId.isNotEmpty && provider.partners.isEmpty) {
+      await provider.load(businessId);
+    }
+    if (!mounted) return;
 
     final result = await showModalBottomSheet<PartnerModel>(
       context: context,
@@ -61,8 +65,12 @@ class _PartnerSelectorState extends State<PartnerSelector> {
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: StatefulBuilder(builder: (ctx, setSt) {
-            final results = ctx.watch<PartnerProvider>().searchResults;
-            final searching = ctx.watch<PartnerProvider>().isLoading;
+            final partnerProvider = ctx.watch<PartnerProvider>();
+            final searching = partnerProvider.isLoading;
+            final searchingQuery = query.text.trim().length >= 3;
+            final results = searchingQuery
+                ? partnerProvider.searchResults
+                : partnerProvider.partners;
             return Container(
               padding: const EdgeInsets.all(20),
               constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.7),
@@ -94,9 +102,9 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                                   children: [
                                     const Icon(Icons.person_search_outlined, size: 48),
                                     const SizedBox(height: 8),
-                                    Text(query.text.length < 3
-                                        ? 'Type at least 3 letters'
-                                        : 'No partners found'),
+                                    Text(searchingQuery
+                                        ? 'No partners found'
+                                        : 'No partners yet'),
                                   ],
                                 ),
                               )

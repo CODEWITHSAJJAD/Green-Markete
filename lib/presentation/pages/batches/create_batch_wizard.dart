@@ -435,6 +435,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           const SizedBox(height: 16),
           PartnerSelector(
             selectedPartners: const <PartnerModel>[],
+            businessId: context.read<AuthProvider>().businessId ?? '',
             onChanged: (partners) => _partners = partners,
           ),
         ],
