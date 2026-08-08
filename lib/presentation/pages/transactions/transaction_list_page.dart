@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -69,7 +69,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PartnerSettlementPage()),
                   ),
-                  icon: const Icon(MingCute.exchange_dollar_line),
+                  icon: const Icon(MingCuteIcons.mgc_exchange_dollar_line),
                   label: const Text('Record Settlement'),
                 ),
               ],
@@ -101,7 +101,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: EmptyState(
-                icon: MingCute.exchange_dollar_line,
+                icon: MingCuteIcons.mgc_exchange_dollar_line,
                 title: 'No partners yet',
                 subtitle: 'Add partners to track balances and settlements.',
               ),

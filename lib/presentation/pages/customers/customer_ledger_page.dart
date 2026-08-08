@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -71,7 +71,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                           ? theme.colorScheme.primary.withValues(alpha: 0.12)
                           : theme.colorScheme.secondary.withValues(alpha: 0.12),
                       child: Icon(
-                        entry.type == 'payment' ? MingCute.arrow_down_line : MingCute.arrow_up_line,
+                        entry.type == 'payment' ? MingCuteIcons.mgc_arrow_down_line : MingCuteIcons.mgc_arrow_up_line,
                         color: entry.type == 'payment' ? theme.colorScheme.primary : theme.colorScheme.secondary,
                       ),
                     ),
@@ -108,7 +108,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
         actions: [
           IconButton(
             onPressed: _openRecordPayment,
-            icon: const Icon(MingCute.wallet_3_line),
+            icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
           ),
         ],
       ),
@@ -167,7 +167,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openRecordPayment,
-        icon: const Icon(MingCute.add_line),
+        icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('Record Payment'),
       ),
     );

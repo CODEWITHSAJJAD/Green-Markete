@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../core/config/theme.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -22,7 +22,7 @@ class RecentActivityList extends StatelessWidget {
         alignment: Alignment.center,
         child: Column(
           children: [
-            Icon(MingCute.inbox_line, size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
+            Icon(MingCuteIcons.mgc_inbox_line, size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
             const SizedBox(height: 12),
             Text('No recent activity', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
           ],
@@ -44,7 +44,7 @@ class RecentActivityList extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(MingCute.shopping_bag_2_line, size: 20, color: AppColors.primary),
+                child: Icon(MingCuteIcons.mgc_shopping_bag_2_line, size: 20, color: AppColors.primary),
               ),
               const SizedBox(width: 12),
               Expanded(

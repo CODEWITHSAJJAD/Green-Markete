@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../core/config/theme.dart';
 
@@ -43,7 +43,7 @@ class SectionHeader extends StatelessWidget {
                       style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 2),
-                    Icon(MingCute.arrow_right_line, size: 16, color: theme.colorScheme.primary),
+                    Icon(MingCuteIcons.mgc_arrow_right_line, size: 16, color: theme.colorScheme.primary),
                   ],
                 ),
               ),

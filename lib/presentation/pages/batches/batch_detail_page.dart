@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/utils/currency_formatter.dart';
@@ -69,14 +69,14 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         actions: [
           IconButton(
             tooltip: 'Open P&L report',
-            icon: const Icon(MingCute.chart_bar_line),
+            icon: const Icon(MingCuteIcons.mgc_chart_bar_line),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => BatchPLPage(batchId: batchId)),
             ),
           ),
           if (canDelete)
             IconButton(
-              icon: const Icon(MingCute.delete_3_line),
+              icon: const Icon(MingCuteIcons.mgc_delete_3_line),
               onPressed: () => _confirmDelete(context),
             ),
         ],
@@ -141,7 +141,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       return FloatingActionButton.extended(
         heroTag: 'add-packing',
         onPressed: () => _showAddPackingDialog(context),
-        icon: const Icon(MingCute.add_line),
+        icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('Packing'),
       );
     }
@@ -155,7 +155,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           context.read<BatchPLProvider>().load(batchId);
           context.read<BatchDetailProvider>().load(batchId);
         },
-        icon: const Icon(MingCute.add_line),
+        icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('Expense'),
       );
     }
@@ -171,7 +171,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           context.read<BatchPLProvider>().load(batchId);
           context.read<BatchDetailProvider>().load(batchId);
         },
-        icon: const Icon(MingCute.add_line),
+        icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('Sale'),
       );
     }
@@ -233,7 +233,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                 alignment: Alignment.centerRight,
                 child: FilledButton.tonalIcon(
                   onPressed: () => _advanceStatus(context, batch.status),
-                  icon: const Icon(MingCute.route_line),
+                  icon: const Icon(MingCuteIcons.mgc_route_line),
                   label: const Text('Advance Status'),
                 ),
               ),
@@ -252,7 +252,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(MingCute.box_3_line, size: 48, color: theme.colorScheme.outline),
+            Icon(MingCuteIcons.mgc_box_3_line, size: 48, color: theme.colorScheme.outline),
             const SizedBox(height: 12),
             Text('Packing records were attached at creation', style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
             const SizedBox(height: 8),
@@ -323,7 +323,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         color: theme.colorScheme.error.withValues(alpha: 0.15),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(MingCute.delete_3_line, color: theme.colorScheme.error),
+        child: Icon(MingCuteIcons.mgc_delete_3_line, color: theme.colorScheme.error),
       ),
       confirmDismiss: (_) async => showConfirmDialog(
         context,
@@ -641,11 +641,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
 
   IconData _paymentIcon(String mode) {
     switch (mode) {
-      case 'cash': return MingCute.wallet_3_line;
-      case 'credit': return MingCute.time_line;
-      case 'bank_transfer': return MingCute.bank_line;
-      case 'partial_credit': return MingCute.chart_pie_line;
-      default: return MingCute.bill_line;
+      case 'cash': return MingCuteIcons.mgc_wallet_3_line;
+      case 'credit': return MingCuteIcons.mgc_time_line;
+      case 'bank_transfer': return MingCuteIcons.mgc_bank_line;
+      case 'partial_credit': return MingCuteIcons.mgc_chart_pie_line;
+      default: return MingCuteIcons.mgc_bill_line;
     }
   }
 

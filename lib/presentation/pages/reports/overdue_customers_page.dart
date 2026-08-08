@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -97,7 +97,7 @@ class _OverdueCustomersPageState extends State<OverdueCustomersPage> {
             contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
-              child: Icon(MingCute.alert_line, color: theme.colorScheme.secondary),
+              child: Icon(MingCuteIcons.mgc_alert_line, color: theme.colorScheme.secondary),
             ),
             title: Text(c.fullName),
             subtitle: Text(c.city ?? '-'),

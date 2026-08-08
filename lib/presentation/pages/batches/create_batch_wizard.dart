@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -186,7 +186,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       appBar: AppBar(
         title: const Text('New Batch Wizard'),
         leading: IconButton(
-          icon: const Icon(MingCute.close_line),
+          icon: const Icon(MingCuteIcons.mgc_close_line),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -322,7 +322,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               ),
               child: Row(
                 children: [
-                  const Icon(MingCute.calendar_3_line, size: 18),
+                  const Icon(MingCuteIcons.mgc_calendar_3_line, size: 18),
                   const SizedBox(width: 8),
                   Text('${_purchaseDate.year}-${_purchaseDate.month.toString().padLeft(2, '0')}-${_purchaseDate.day.toString().padLeft(2, '0')}'),
                 ],
@@ -474,7 +474,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: _addExpense,
-              icon: const Icon(MingCute.add_line),
+              icon: const Icon(MingCuteIcons.mgc_add_line),
               label: const Text('Add expense'),
             ),
           ),
@@ -544,7 +544,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(MingCute.delete_3_line),
+                    icon: const Icon(MingCuteIcons.mgc_delete_3_line),
                     onPressed: () => setState(() => _expenses.removeAt(i)),
                   ),
                 ],
@@ -650,7 +650,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             ),
             child: Row(
               children: [
-                const Icon(MingCute.information_line, size: 18),
+                const Icon(MingCuteIcons.mgc_information_line, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

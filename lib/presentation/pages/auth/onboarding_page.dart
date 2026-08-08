@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -83,7 +83,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           controller: _nameController,
                           decoration: const InputDecoration(
                             labelText: 'Business Name',
-                            prefixIcon: Icon(MingCute.store_line),
+                            prefixIcon: Icon(MingCuteIcons.mgc_store_line),
                           ),
                           textInputAction: TextInputAction.next,
                           validator: (v) => v == null || v.isEmpty ? 'Business name is required' : null,
@@ -93,7 +93,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           controller: _cityController,
                           decoration: const InputDecoration(
                             labelText: 'Your City',
-                            prefixIcon: Icon(MingCute.building_2_line),
+                            prefixIcon: Icon(MingCuteIcons.mgc_building_2_line),
                           ),
                           textInputAction: TextInputAction.next,
                           validator: (v) => v == null || v.isEmpty ? 'City is required' : null,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -75,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
                           controller: _emailController,
                           decoration: const InputDecoration(
                             labelText: 'Email',
-                            prefixIcon: Icon(MingCute.mail_line),
+                            prefixIcon: Icon(MingCuteIcons.mgc_mail_line),
                           ),
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
@@ -86,9 +86,9 @@ class _LoginPageState extends State<LoginPage> {
                           controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            prefixIcon: const Icon(MingCute.lock_line),
+                            prefixIcon: const Icon(MingCuteIcons.mgc_lock_line),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? MingCute.eye_line : MingCute.eye_close_line),
+                              icon: Icon(_obscurePassword ? MingCuteIcons.mgc_eye_line : MingCuteIcons.mgc_eye_close_line),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                           ),
@@ -144,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: Row(
         children: [
-          Icon(MingCute.information_line, size: 20, color: theme.colorScheme.error),
+          Icon(MingCuteIcons.mgc_information_line, size: 20, color: theme.colorScheme.error),
           const SizedBox(width: 10),
           Expanded(child: Text(message, style: TextStyle(color: theme.colorScheme.error, fontSize: 13, fontWeight: FontWeight.w500))),
         ],

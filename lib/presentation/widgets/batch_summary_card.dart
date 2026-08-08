@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../core/config/theme.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -65,7 +65,7 @@ class BatchSummaryCard extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(MingCute.truck_line, size: 16, color: AppColors.primary),
+                child: const Icon(MingCuteIcons.mgc_truck_line, size: 16, color: AppColors.primary),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -90,7 +90,7 @@ class BatchSummaryCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                netProfitLoss >= 0 ? MingCute.trending_up_line : MingCute.trending_down_line,
+                netProfitLoss >= 0 ? MingCuteIcons.mgc_trending_up_line : MingCuteIcons.mgc_trending_down_line,
                 size: 16,
                 color: netProfitLoss >= 0 ? theme.colorScheme.primary : theme.colorScheme.error,
               ),

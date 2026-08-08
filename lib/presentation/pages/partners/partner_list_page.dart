@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -58,7 +58,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
         title: const Text('Partners'),
         actions: [
           IconButton(
-            icon: const Icon(MingCute.add_line),
+            icon: const Icon(MingCuteIcons.mgc_add_line),
             onPressed: _openCreate,
           ),
         ],
@@ -98,7 +98,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
                   },
                   decoration: const InputDecoration(
                     hintText: 'Search by name or phone',
-                    prefixIcon: Icon(MingCute.search_2_line),
+                    prefixIcon: Icon(MingCuteIcons.mgc_search_2_line),
                   ),
                 ),
               ],
@@ -128,7 +128,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: EmptyState(
-                icon: MingCute.user_3_line,
+                icon: MingCuteIcons.mgc_user_3_line,
                 title: 'No partners found',
                 subtitle: 'Add partners to build your purchase and sales network.',
                 actionLabel: 'New Partner',
@@ -198,7 +198,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
-        icon: const Icon(MingCute.user_4_line),
+        icon: const Icon(MingCuteIcons.mgc_user_4_line),
         label: const Text('New Partner'),
       ),
     );

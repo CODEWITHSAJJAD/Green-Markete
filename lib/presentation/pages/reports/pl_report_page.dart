@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -48,7 +48,7 @@ class _PLReportPageState extends State<PLReportPage> {
         title: const Text('P&L Summary'),
         actions: [
           IconButton(
-            icon: const Icon(MingCute.calendar_3_line),
+            icon: const Icon(MingCuteIcons.mgc_calendar_3_line),
             tooltip: 'Date range',
             onPressed: () async {
               final picked = await showDateRangePicker(
@@ -69,7 +69,7 @@ class _PLReportPageState extends State<PLReportPage> {
             },
           ),
           IconButton(
-            icon: const Icon(MingCute.download_2_line),
+            icon: const Icon(MingCuteIcons.mgc_download_2_line),
             tooltip: 'Export CSV',
             onPressed: () => _exportCsv(businessId),
           ),

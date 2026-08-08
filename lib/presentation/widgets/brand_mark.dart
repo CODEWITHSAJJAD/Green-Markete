@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../core/config/theme.dart';
 
@@ -31,7 +31,7 @@ class BrandMark extends StatelessWidget {
         ],
       ),
       child: Icon(
-        MingCute.leaf_2_fill,
+        MingCuteIcons.mgc_leaf_2_fill,
         color: Colors.white,
         size: size * 0.52,
       ),

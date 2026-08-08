@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -82,28 +82,28 @@ class _MainShellState extends State<MainShell> {
         onTap: (index) => setState(() => _index = index),
         items: const [
           GoogleNavItem(
-            icon: MingCute.home_5_line,
-            activeIcon: MingCute.home_5_fill,
+            icon: MingCuteIcons.mgc_home_5_line,
+            activeIcon: MingCuteIcons.mgc_home_5_fill,
             label: 'Home',
           ),
           GoogleNavItem(
-            icon: MingCute.shopping_bag_2_line,
-            activeIcon: MingCute.shopping_bag_2_fill,
+            icon: MingCuteIcons.mgc_shopping_bag_2_line,
+            activeIcon: MingCuteIcons.mgc_shopping_bag_2_fill,
             label: 'Batches',
           ),
           GoogleNavItem(
-            icon: MingCute.bill_line,
-            activeIcon: MingCute.bill_fill,
+            icon: MingCuteIcons.mgc_bill_line,
+            activeIcon: MingCuteIcons.mgc_bill_fill,
             label: 'Sales',
           ),
           GoogleNavItem(
-            icon: MingCute.user_3_line,
-            activeIcon: MingCute.user_3_fill,
+            icon: MingCuteIcons.mgc_user_3_line,
+            activeIcon: MingCuteIcons.mgc_user_3_fill,
             label: 'Customers',
           ),
           GoogleNavItem(
-            icon: MingCute.more_2_line,
-            activeIcon: MingCute.more_2_fill,
+            icon: MingCuteIcons.mgc_more_2_line,
+            activeIcon: MingCuteIcons.mgc_more_2_fill,
             label: 'More',
           ),
         ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../../core/config/theme.dart';
 
@@ -58,7 +58,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  child: const Icon(MingCute.leaf_2_fill, size: 52, color: AppColors.primary),
+                  child: const Icon(MingCuteIcons.mgc_leaf_2_fill, size: 52, color: AppColors.primary),
                 ),
               ),
               const SizedBox(height: 28),

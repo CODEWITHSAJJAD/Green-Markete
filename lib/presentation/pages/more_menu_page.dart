@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/theme.dart';
@@ -25,19 +25,19 @@ class MoreMenuPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     final items = <({IconData icon, String label, Widget page})>[
-      (icon: MingCute.package_line, label: 'Products', page: const ProductListPage()),
-      (icon: MingCute.user_4_line, label: 'Partners', page: const PartnerListPage()),
-      (icon: MingCute.store_2_line, label: 'Markets', page: const MarketListPage()),
-      (icon: MingCute.chart_bar_line, label: 'Reports', page: const ReportsPage()),
-      (icon: MingCute.exchange_dollar_line, label: 'Transactions', page: const TransactionListPage()),
-      (icon: MingCute.settings_3_line, label: 'Settings', page: const SettingsPage()),
+      (icon: MingCuteIcons.mgc_package_line, label: 'Products', page: const ProductListPage()),
+      (icon: MingCuteIcons.mgc_user_4_line, label: 'Partners', page: const PartnerListPage()),
+      (icon: MingCuteIcons.mgc_store_2_line, label: 'Markets', page: const MarketListPage()),
+      (icon: MingCuteIcons.mgc_chart_bar_line, label: 'Reports', page: const ReportsPage()),
+      (icon: MingCuteIcons.mgc_exchange_dollar_line, label: 'Transactions', page: const TransactionListPage()),
+      (icon: MingCuteIcons.mgc_settings_3_line, label: 'Settings', page: const SettingsPage()),
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('More'),
         leading: IconButton(
-          icon: const Icon(MingCute.menu_line),
+          icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: onMenu,
         ),
       ),
@@ -54,11 +54,11 @@ class MoreMenuPage extends StatelessWidget {
               leading: CircleAvatar(
                 radius: 26,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: const Icon(MingCute.user_3_fill, color: AppColors.primary),
+                child: const Icon(MingCuteIcons.mgc_user_3_fill, color: AppColors.primary),
               ),
               title: Text(user?.fullName ?? 'User', style: theme.textTheme.titleMedium),
               subtitle: Text(user?.phone ?? user?.email ?? ''),
-              trailing: Icon(MingCute.arrow_right_line, color: AppColors.textTertiary),
+              trailing: Icon(MingCuteIcons.mgc_arrow_right_line, color: AppColors.textTertiary),
             ),
           ),
           const SizedBox(height: AppSpacing.xxl),
@@ -82,7 +82,7 @@ class MoreMenuPage extends StatelessWidget {
                       child: Icon(item.icon, size: 20, color: AppColors.primary),
                     ),
                     title: Text(item.label, style: theme.textTheme.titleSmall),
-                    trailing: Icon(MingCute.arrow_right_line, size: 18, color: AppColors.textTertiary),
+                    trailing: Icon(MingCuteIcons.mgc_arrow_right_line, size: 18, color: AppColors.textTertiary),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => item.page),
                     ),

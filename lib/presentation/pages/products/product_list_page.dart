@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -46,7 +46,7 @@ class _ProductListPageState extends State<ProductListPage> {
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Column(
           children: [
-            Icon(MingCute.package_line, size: 52, color: theme.colorScheme.outline),
+            Icon(MingCuteIcons.mgc_package_line, size: 52, color: theme.colorScheme.outline),
             const SizedBox(height: 12),
             Text('No products yet', style: theme.textTheme.titleLarge),
           ],
@@ -68,7 +68,7 @@ class _ProductListPageState extends State<ProductListPage> {
                         color: theme.colorScheme.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(MingCute.leaf_2_line, color: theme.colorScheme.primary),
+                      child: Icon(MingCuteIcons.mgc_leaf_2_line, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -102,7 +102,7 @@ class _ProductListPageState extends State<ProductListPage> {
         title: const Text('Products'),
         actions: [
           IconButton(
-            icon: const Icon(MingCute.add_line),
+            icon: const Icon(MingCuteIcons.mgc_add_line),
             onPressed: () => _showCreateDialog(context, businessId),
           ),
         ],

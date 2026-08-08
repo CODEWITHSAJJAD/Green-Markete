@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -53,12 +53,12 @@ class _SalesListPageState extends State<SalesListPage> {
       appBar: AppBar(
         title: const Text('Sales'),
         leading: IconButton(
-          icon: const Icon(MingCute.menu_line),
+          icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,
         ),
         actions: [
           IconButton(
-            icon: const Icon(MingCute.add_line),
+            icon: const Icon(MingCuteIcons.mgc_add_line),
             onPressed: _openCreate,
           ),
         ],
@@ -80,7 +80,7 @@ class _SalesListPageState extends State<SalesListPage> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(MingCute.wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                  Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
                   const SizedBox(height: 12),
                   Text(error, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 16),
@@ -96,7 +96,7 @@ class _SalesListPageState extends State<SalesListPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: EmptyState(
-                icon: MingCute.bill_line,
+                icon: MingCuteIcons.mgc_bill_line,
                 title: 'No batches on sale yet',
                 subtitle: 'Move a batch to \'selling\' status to start recording revenue against it.',
                 actionLabel: 'Record Sale',
@@ -119,7 +119,7 @@ class _SalesListPageState extends State<SalesListPage> {
                         color: AppColors.secondary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(MingCute.shopping_bag_2_line, size: 22, color: AppColors.secondary),
+                      child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, size: 22, color: AppColors.secondary),
                     ),
                     title: Text(batch.productName ?? batch.batchCode),
                     subtitle: Text(batch.batchCode),
@@ -169,7 +169,7 @@ class _SalesListPageState extends State<SalesListPage> {
                   color: AppColors.secondary.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(MingCute.bill_line, size: 26, color: AppColors.secondary),
+                child: const Icon(MingCuteIcons.mgc_bill_line, size: 26, color: AppColors.secondary),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -194,7 +194,7 @@ class _SalesListPageState extends State<SalesListPage> {
               backgroundColor: AppColors.secondary,
               minimumSize: const Size(0, 50),
             ),
-            icon: const Icon(MingCute.add_line, size: 18),
+            icon: const Icon(MingCuteIcons.mgc_add_line, size: 18),
             label: const Text('Record New Sale'),
           ),
         ],

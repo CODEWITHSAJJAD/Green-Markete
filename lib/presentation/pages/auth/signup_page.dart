@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -82,7 +82,7 @@ class _SignupPageState extends State<SignupPage> {
                           controller: _nameController,
                           decoration: const InputDecoration(
                             labelText: 'Full Name',
-                            prefixIcon: Icon(MingCute.user_2_line),
+                            prefixIcon: Icon(MingCuteIcons.mgc_user_2_line),
                           ),
                           textInputAction: TextInputAction.next,
                           validator: (v) => v == null || v.isEmpty ? 'Name is required' : null,
@@ -92,7 +92,7 @@ class _SignupPageState extends State<SignupPage> {
                           controller: _emailController,
                           decoration: const InputDecoration(
                             labelText: 'Email',
-                            prefixIcon: Icon(MingCute.mail_line),
+                            prefixIcon: Icon(MingCuteIcons.mgc_mail_line),
                           ),
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
@@ -103,7 +103,7 @@ class _SignupPageState extends State<SignupPage> {
                           controller: _phoneController,
                           decoration: const InputDecoration(
                             labelText: 'Phone (e.g., 03001234567)',
-                            prefixIcon: Icon(MingCute.phone_line),
+                            prefixIcon: Icon(MingCuteIcons.mgc_phone_line),
                           ),
                           keyboardType: TextInputType.phone,
                           textInputAction: TextInputAction.next,
@@ -114,7 +114,7 @@ class _SignupPageState extends State<SignupPage> {
                           controller: _cityController,
                           decoration: const InputDecoration(
                             labelText: 'City',
-                            prefixIcon: Icon(MingCute.building_2_line),
+                            prefixIcon: Icon(MingCuteIcons.mgc_building_2_line),
                           ),
                           textInputAction: TextInputAction.next,
                           validator: (v) => v == null || v.isEmpty ? 'City is required' : null,
@@ -124,9 +124,9 @@ class _SignupPageState extends State<SignupPage> {
                           controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            prefixIcon: const Icon(MingCute.lock_line),
+                            prefixIcon: const Icon(MingCuteIcons.mgc_lock_line),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? MingCute.eye_line : MingCute.eye_close_line),
+                              icon: Icon(_obscurePassword ? MingCuteIcons.mgc_eye_line : MingCuteIcons.mgc_eye_close_line),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                           ),
@@ -144,7 +144,7 @@ class _SignupPageState extends State<SignupPage> {
                             ),
                             child: Row(
                               children: [
-                                Icon(MingCute.information_line, size: 20, color: theme.colorScheme.error),
+                                Icon(MingCuteIcons.mgc_information_line, size: 20, color: theme.colorScheme.error),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(

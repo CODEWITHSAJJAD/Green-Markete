@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 class SidebarDrawer extends StatelessWidget {
   const SidebarDrawer({
@@ -32,29 +32,29 @@ class SidebarDrawer extends StatelessWidget {
               children: [
                 const _SectionHeader('Main'),
                 _NavTile(
-                  icon: MingCute.home_5_line,
-                  activeIcon: MingCute.home_5_fill,
+                  icon: MingCuteIcons.mgc_home_5_line,
+                  activeIcon: MingCuteIcons.mgc_home_5_fill,
                   label: 'Dashboard',
                   selected: currentTab == 0,
                   onTap: () => onSelectTab(0),
                 ),
                 _NavTile(
-                  icon: MingCute.shopping_bag_2_line,
-                  activeIcon: MingCute.shopping_bag_2_fill,
+                  icon: MingCuteIcons.mgc_shopping_bag_2_line,
+                  activeIcon: MingCuteIcons.mgc_shopping_bag_2_fill,
                   label: 'Batches',
                   selected: currentTab == 1,
                   onTap: () => onSelectTab(1),
                 ),
                 _NavTile(
-                  icon: MingCute.bill_line,
-                  activeIcon: MingCute.bill_fill,
+                  icon: MingCuteIcons.mgc_bill_line,
+                  activeIcon: MingCuteIcons.mgc_bill_fill,
                   label: 'Sales',
                   selected: currentTab == 2,
                   onTap: () => onSelectTab(2),
                 ),
                 _NavTile(
-                  icon: MingCute.user_3_line,
-                  activeIcon: MingCute.user_3_fill,
+                  icon: MingCuteIcons.mgc_user_3_line,
+                  activeIcon: MingCuteIcons.mgc_user_3_fill,
                   label: 'Customers',
                   selected: currentTab == 3,
                   onTap: () => onSelectTab(3),
@@ -62,48 +62,48 @@ class SidebarDrawer extends StatelessWidget {
                 const SizedBox(height: 8),
                 const _SectionHeader('Manage'),
                 _NavTile(
-                  icon: MingCute.package_line,
-                  activeIcon: MingCute.package_fill,
+                  icon: MingCuteIcons.mgc_package_line,
+                  activeIcon: MingCuteIcons.mgc_package_fill,
                   label: 'Products',
                   onTap: () => onOpenPage(const PlaceholderPage(label: 'Products')),
                 ),
                 _NavTile(
-                  icon: MingCute.user_4_line,
-                  activeIcon: MingCute.user_4_fill,
+                  icon: MingCuteIcons.mgc_user_4_line,
+                  activeIcon: MingCuteIcons.mgc_user_4_fill,
                   label: 'Partners',
                   onTap: () => onOpenPage(const PlaceholderPage(label: 'Partners')),
                 ),
                 _NavTile(
-                  icon: MingCute.store_2_line,
-                  activeIcon: MingCute.store_2_fill,
+                  icon: MingCuteIcons.mgc_store_2_line,
+                  activeIcon: MingCuteIcons.mgc_store_2_fill,
                   label: 'Markets',
                   onTap: () => onOpenPage(const PlaceholderPage(label: 'Markets')),
                 ),
                 const SizedBox(height: 8),
                 const _SectionHeader('Insights'),
                 _NavTile(
-                  icon: MingCute.chart_bar_line,
-                  activeIcon: MingCute.chart_bar_fill,
+                  icon: MingCuteIcons.mgc_chart_bar_line,
+                  activeIcon: MingCuteIcons.mgc_chart_bar_fill,
                   label: 'Reports',
                   onTap: () => onOpenPage(const PlaceholderPage(label: 'Reports')),
                 ),
                 _NavTile(
-                  icon: MingCute.exchange_dollar_line,
-                  activeIcon: MingCute.exchange_dollar_fill,
+                  icon: MingCuteIcons.mgc_exchange_dollar_line,
+                  activeIcon: MingCuteIcons.mgc_exchange_dollar_fill,
                   label: 'Transactions',
                   onTap: () => onOpenPage(const PlaceholderPage(label: 'Transactions')),
                 ),
                 const SizedBox(height: 8),
                 const _SectionHeader('Account'),
                 _NavTile(
-                  icon: MingCute.settings_3_line,
-                  activeIcon: MingCute.settings_3_fill,
+                  icon: MingCuteIcons.mgc_settings_3_line,
+                  activeIcon: MingCuteIcons.mgc_settings_3_fill,
                   label: 'Settings',
                   onTap: () => onOpenPage(const PlaceholderPage(label: 'Settings')),
                 ),
                 _NavTile(
-                  icon: MingCute.exit_door_line,
-                  activeIcon: MingCute.exit_door_fill,
+                  icon: MingCuteIcons.mgc_exit_door_line,
+                  activeIcon: MingCuteIcons.mgc_exit_door_fill,
                   label: 'Log out',
                   danger: true,
                   onTap: onLogout,
@@ -156,7 +156,7 @@ class _Header extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(MingCute.leaf_2_fill, color: Colors.white, size: 26),
+                child: const Icon(MingCuteIcons.mgc_leaf_2_fill, color: Colors.white, size: 26),
               ),
               const SizedBox(width: 12),
               const Column(
@@ -328,7 +328,7 @@ class _NavTile extends StatelessWidget {
                 ),
                 if (!selected && !danger)
                   Icon(
-                    MingCute.arrow_right_line,
+                    MingCuteIcons.mgc_arrow_right_line,
                     size: 18,
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
@@ -356,7 +356,7 @@ class PlaceholderPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(MingCute.information_line, size: 44, color: scheme.primary.withValues(alpha: 0.5)),
+            Icon(MingCuteIcons.mgc_information_line, size: 44, color: scheme.primary.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(
               '$label coming soon',

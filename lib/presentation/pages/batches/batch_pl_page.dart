@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -41,7 +41,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
                 const SnackBar(content: Text('Export available in a later build')),
               );
             },
-            icon: const Icon(MingCute.share_2_line),
+            icon: const Icon(MingCuteIcons.mgc_share_2_line),
           ),
         ],
       ),

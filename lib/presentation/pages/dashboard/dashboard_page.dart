@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -69,7 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Outstanding Credit',
                               value: CurrencyFormatter.format(provider.outstandingCredit),
-                              icon: MingCute.wallet_3_line,
+                              icon: MingCuteIcons.mgc_wallet_3_line,
                               color: AppColors.secondary,
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const ReportsPage()),
@@ -81,7 +81,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Customers',
                               value: '${provider.customersCount}',
-                              icon: MingCute.user_3_line,
+                              icon: MingCuteIcons.mgc_user_3_line,
                               color: const Color(0xFF8B5CF6),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const CustomerListPage()),
@@ -97,7 +97,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Total Batches',
                               value: '${provider.batchesCount}',
-                              icon: MingCute.archive_line,
+                              icon: MingCuteIcons.mgc_archive_line,
                               color: const Color(0xFF0EA5E9),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const BatchListPage()),
@@ -109,7 +109,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Products',
                               value: '${provider.productsCount}',
-                              icon: MingCute.package_line,
+                              icon: MingCuteIcons.mgc_package_line,
                               color: const Color(0xFF10B981),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const BatchListPage()),
@@ -147,7 +147,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   color: AppColors.success.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(MingCute.check_circle_line, size: 20, color: AppColors.success),
+                                child: const Icon(MingCuteIcons.mgc_check_circle_line, size: 20, color: AppColors.success),
                               ),
                               const SizedBox(width: 12),
                               Text('No overdue customers.', style: theme.textTheme.bodyMedium),
@@ -182,7 +182,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                       color: theme.colorScheme.secondary.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(13),
                                     ),
-                                    child: const Icon(MingCute.wallet_3_line, size: 20, color: AppColors.secondary),
+                                    child: const Icon(MingCuteIcons.mgc_wallet_3_line, size: 20, color: AppColors.secondary),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -286,7 +286,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(MingCute.trending_up_line, size: 14, color: Colors.white),
+                    const Icon(MingCuteIcons.mgc_trending_up_line, size: 14, color: Colors.white),
                     const SizedBox(width: 4),
                     Text(
                       '${provider.activeBatchesCount} active',
@@ -350,13 +350,13 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: tile(MingCute.add_line, 'New Batch', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateBatchWizard())), theme.colorScheme.primary)),
+            Expanded(child: tile(MingCuteIcons.mgc_add_line, 'New Batch', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateBatchWizard())), theme.colorScheme.primary)),
             const SizedBox(width: 8),
-            Expanded(child: tile(MingCute.bill_line, 'New Sale', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuickSalePage())), theme.colorScheme.secondary)),
+            Expanded(child: tile(MingCuteIcons.mgc_bill_line, 'New Sale', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuickSalePage())), theme.colorScheme.secondary)),
             const SizedBox(width: 8),
-            Expanded(child: tile(MingCute.exchange_dollar_line, 'Record Payment', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomerListPage())), Colors.deepPurple)),
+            Expanded(child: tile(MingCuteIcons.mgc_exchange_dollar_line, 'Record Payment', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomerListPage())), Colors.deepPurple)),
             const SizedBox(width: 8),
-            Expanded(child: tile(MingCute.chart_bar_line, 'Reports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportsPage())), const Color(0xFF0EA5E9))),
+            Expanded(child: tile(MingCuteIcons.mgc_chart_bar_line, 'Reports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportsPage())), const Color(0xFF0EA5E9))),
           ],
         ),
       ],
@@ -370,7 +370,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(MingCute.wifi_off_line, size: 64, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+            Icon(MingCuteIcons.mgc_wifi_off_line, size: 64, color: theme.colorScheme.error.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             Text('Could not load dashboard', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
@@ -378,7 +378,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: () => context.read<DashboardProvider>().load(businessId),
-              icon: const Icon(MingCute.refresh_3_line, size: 18),
+              icon: const Icon(MingCuteIcons.mgc_refresh_3_line, size: 18),
               label: const Text('Try Again'),
             ),
           ],
@@ -433,7 +433,7 @@ class _MenuButton extends StatelessWidget {
         onTap: onPressed,
         child: const Padding(
           padding: EdgeInsets.all(10),
-          child: Icon(MingCute.menu_line, size: 22),
+          child: Icon(MingCuteIcons.mgc_menu_line, size: 22),
         ),
       ),
     );

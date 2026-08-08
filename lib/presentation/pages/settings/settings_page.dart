@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -57,21 +57,21 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
           const SectionHeader(title: 'Account'),
           const SizedBox(height: 4),
-          _settingTile(theme, MingCute.user_1_line, 'Edit Profile', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePage()))),
-          _settingTile(theme, MingCute.building_2_line, 'Business Info', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSettingsPage()))),
-          _settingTile(theme, MingCute.shield_line, 'Access Management', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccessManagementPage()))),
-          _settingTile(theme, MingCute.notification_line, 'Notifications'),
+          _settingTile(theme, MingCuteIcons.mgc_user_1_line, 'Edit Profile', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePage()))),
+          _settingTile(theme, MingCuteIcons.mgc_building_2_line, 'Business Info', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSettingsPage()))),
+          _settingTile(theme, MingCuteIcons.mgc_shield_line, 'Access Management', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccessManagementPage()))),
+          _settingTile(theme, MingCuteIcons.mgc_notification_line, 'Notifications'),
           const SizedBox(height: 24),
           const SectionHeader(title: 'Support'),
           const SizedBox(height: 4),
-          _settingTile(theme, MingCute.question_line, 'Help Center'),
-          _settingTile(theme, MingCute.information_line, 'About'),
+          _settingTile(theme, MingCuteIcons.mgc_question_line, 'Help Center'),
+          _settingTile(theme, MingCuteIcons.mgc_information_line, 'About'),
           const SizedBox(height: 32),
           SizedBox(
             height: 48,
             child: OutlinedButton.icon(
               onPressed: () => context.read<AuthProvider>().logout(),
-              icon: const Icon(MingCute.exit_door_line, size: 18),
+              icon: const Icon(MingCuteIcons.mgc_exit_door_line, size: 18),
               label: const Text('Sign Out'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.error,
@@ -102,7 +102,7 @@ class SettingsPage extends StatelessWidget {
           child: Icon(icon, size: 20, color: AppColors.primary),
         ),
         title: Text(title, style: theme.textTheme.bodyLarge),
-        trailing: Icon(MingCute.arrow_right_line, color: AppColors.textTertiary),
+        trailing: Icon(MingCuteIcons.mgc_arrow_right_line, color: AppColors.textTertiary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );

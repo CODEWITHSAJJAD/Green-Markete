@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -140,7 +140,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                       const SnackBar(content: Text('Invitation sent')),
                     );
                   },
-                  icon: const Icon(MingCute.send_line),
+                  icon: const Icon(MingCuteIcons.mgc_send_line),
                   label: const Text('Resend Invitation'),
                 ),
               ],

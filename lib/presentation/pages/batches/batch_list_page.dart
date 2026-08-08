@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -55,12 +55,12 @@ class _BatchListPageState extends State<BatchListPage> {
       appBar: AppBar(
         title: const Text('Batches'),
         leading: IconButton(
-          icon: const Icon(MingCute.menu_line),
+          icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,
         ),
         actions: [
           IconButton(
-            icon: const Icon(MingCute.add_line),
+            icon: const Icon(MingCuteIcons.mgc_add_line),
             onPressed: _openCreate,
           ),
         ],
@@ -80,7 +80,7 @@ class _BatchListPageState extends State<BatchListPage> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(MingCute.wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                  Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
                   const SizedBox(height: 12),
                   Text(error, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 16),
@@ -96,7 +96,7 @@ class _BatchListPageState extends State<BatchListPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: EmptyState(
-                icon: MingCute.shopping_bag_2_line,
+                icon: MingCuteIcons.mgc_shopping_bag_2_line,
                 title: 'No batches yet',
                 subtitle: 'Create your first batch to start tracking produce from purchase to sale.',
                 actionLabel: 'New Batch',
@@ -123,7 +123,7 @@ class _BatchListPageState extends State<BatchListPage> {
                               color: AppColors.primary.withValues(alpha: 0.10),
                               borderRadius: BorderRadius.circular(15),
                             ),
-                            child: const Icon(MingCute.shopping_bag_2_line, color: AppColors.primary),
+                            child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, color: AppColors.primary),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -160,7 +160,7 @@ class _BatchListPageState extends State<BatchListPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
-        icon: const Icon(MingCute.add_line),
+        icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('New Batch'),
       ),
     );
@@ -191,7 +191,7 @@ class _BatchListPageState extends State<BatchListPage> {
               color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(MingCute.shopping_bag_2_line, size: 26, color: AppColors.primary),
+            child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, size: 26, color: AppColors.primary),
           ),
           const SizedBox(width: 16),
           Expanded(

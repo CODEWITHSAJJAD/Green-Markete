@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -76,7 +76,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(MingCute.wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+            Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(provider.error!.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
             const SizedBox(height: 16),
@@ -92,7 +92,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
       customersSection = Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: EmptyState(
-          icon: MingCute.user_3_line,
+          icon: MingCuteIcons.mgc_user_3_line,
           title: 'No customers found',
           subtitle: _searchCtrl.text.trim().isEmpty
               ? 'Add your first customer to start tracking credit and payments.'
@@ -171,7 +171,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                 ),
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Icon(MingCute.delete_3_line, color: theme.colorScheme.error),
+                child: Icon(MingCuteIcons.mgc_delete_3_line, color: theme.colorScheme.error),
               ),
               confirmDismiss: (_) => showConfirmDialog(
                 context,
@@ -197,12 +197,12 @@ class _CustomerListPageState extends State<CustomerListPage> {
       appBar: AppBar(
         title: const Text('Customers'),
         leading: IconButton(
-          icon: const Icon(MingCute.menu_line),
+          icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,
         ),
         actions: [
           IconButton(
-            icon: const Icon(MingCute.add_line),
+            icon: const Icon(MingCuteIcons.mgc_add_line),
             onPressed: _openCreateCustomer,
           ),
         ],
@@ -237,7 +237,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                         color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
-                      child: const Icon(MingCute.user_3_line, size: 26, color: AppColors.primary),
+                      child: const Icon(MingCuteIcons.mgc_user_3_line, size: 26, color: AppColors.primary),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -264,7 +264,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                   },
                   decoration: const InputDecoration(
                     hintText: 'Search by name, phone, or shop',
-                    prefixIcon: Icon(MingCute.search_2_line),
+                    prefixIcon: Icon(MingCuteIcons.mgc_search_2_line),
                   ),
                 ),
               ],
@@ -278,7 +278,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreateCustomer,
-        icon: const Icon(MingCute.user_4_line),
+        icon: const Icon(MingCuteIcons.mgc_user_4_line),
         label: const Text('New Customer'),
       ),
     );

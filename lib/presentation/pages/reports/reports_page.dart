@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -80,10 +80,10 @@ class _ReportsPageState extends State<ReportsPage> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.15,
             children: [
-              _navCard(context, theme, 'P&L Summary', MingCute.chart_bar_line, const PLReportPage()),
-              _navCard(context, theme, 'Customer Credit', MingCute.wallet_3_line, const CreditReportPage()),
-              _navCard(context, theme, 'Overdue Customers', MingCute.alert_line, const OverdueCustomersPage()),
-              _navCard(context, theme, 'Market Performance', MingCute.store_2_line, const MarketPerformancePage()),
+              _navCard(context, theme, 'P&L Summary', MingCuteIcons.mgc_chart_bar_line, const PLReportPage()),
+              _navCard(context, theme, 'Customer Credit', MingCuteIcons.mgc_wallet_3_line, const CreditReportPage()),
+              _navCard(context, theme, 'Overdue Customers', MingCuteIcons.mgc_alert_line, const OverdueCustomersPage()),
+              _navCard(context, theme, 'Market Performance', MingCuteIcons.mgc_store_2_line, const MarketPerformancePage()),
             ],
           ),
           const SizedBox(height: 24),
@@ -212,7 +212,7 @@ class _ReportsPageState extends State<ReportsPage> {
                 children: [
                   CircleAvatar(
                     backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.12),
-                    child: Icon(MingCute.alert_line, color: theme.colorScheme.secondary),
+                    child: Icon(MingCuteIcons.mgc_alert_line, color: theme.colorScheme.secondary),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

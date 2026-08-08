@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -42,7 +42,7 @@ class _CreditReportPageState extends State<CreditReportPage> {
         title: const Text('Customer Credit'),
         actions: [
           IconButton(
-            icon: const Icon(MingCute.download_2_line),
+            icon: const Icon(MingCuteIcons.mgc_download_2_line),
             tooltip: 'Export CSV',
             onPressed: () => _exportCsv(businessId),
           ),
