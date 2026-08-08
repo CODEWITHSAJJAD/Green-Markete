@@ -33,7 +33,6 @@ class _PartnerSelectorState extends State<PartnerSelector> {
           'days_involved': 1,
         }));
     if (_partners.isEmpty) _partners.add(_empty());
-    _emit();
   }
 
   Map<String, dynamic> _empty() => {
