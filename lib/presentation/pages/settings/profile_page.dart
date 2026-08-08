@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/error_snackbar.dart';
 
@@ -82,12 +83,20 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(labelText: 'Email'),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null;
+                  return Validators.email(v);
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(labelText: 'Phone'),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null;
+                  return Validators.phone(v);
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(

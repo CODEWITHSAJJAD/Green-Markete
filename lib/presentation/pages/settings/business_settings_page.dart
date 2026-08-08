@@ -118,6 +118,10 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                   labelText: 'Credit alert threshold',
                   helperText: 'Notify when a customer balance reaches this amount.',
                 ),
+                onChanged: (v) {
+                  final parsed = double.tryParse(v.trim());
+                  if (parsed == null || parsed < 0) return;
+                },
               ),
               const SizedBox(height: 24),
               ElevatedButton(
