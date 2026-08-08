@@ -11,13 +11,18 @@ Future<void> showSaleEntrySheet(
   BuildContext context, {
   required BatchModel batch,
   double? suggestedPrice,
+  double soldQuantity = 0,
 }) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-      child: _SaleEntrySheet(batch: batch, suggestedPrice: suggestedPrice),
+      child: _SaleEntrySheet(
+        batch: batch,
+        suggestedPrice: suggestedPrice,
+        soldQuantity: soldQuantity,
+      ),
     ),
   );
 }
@@ -25,8 +30,13 @@ Future<void> showSaleEntrySheet(
 class _SaleEntrySheet extends StatefulWidget {
   final BatchModel batch;
   final double? suggestedPrice;
+  final double soldQuantity;
 
-  const _SaleEntrySheet({required this.batch, this.suggestedPrice});
+  const _SaleEntrySheet({
+    required this.batch,
+    this.suggestedPrice,
+    this.soldQuantity = 0,
+  });
 
   @override
   State<_SaleEntrySheet> createState() => _SaleEntrySheetState();
@@ -67,8 +77,15 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
   Future<void> _save() async {
     final qty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
     final price = double.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final remaining = widget.batch.totalQuantity - widget.soldQuantity;
     if (qty <= 0 || price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter quantity and price')));
+      return;
+    }
+    if (qty > remaining + 0.0001) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining for this batch')),
+      );
       return;
     }
     final cash = _cashCtrl.text.trim().isEmpty ? 0.0 : double.tryParse(_cashCtrl.text.trim()) ?? 0;
@@ -109,6 +126,9 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final customers = context.watch<CustomerProvider>().customers;
+    final remaining = widget.batch.totalQuantity - widget.soldQuantity;
+    final qty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
+    final overLimit = qty > remaining + 0.0001;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -139,8 +159,10 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Quantity (${widget.batch.unit})',
-                hintText: 'Total: ${widget.batch.totalQuantity.toStringAsFixed(0)} ${widget.batch.unit}',
+                helperText: 'Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining (of ${widget.batch.totalQuantity.toStringAsFixed(0)})',
+                errorText: overLimit ? 'Exceeds remaining quantity' : null,
               ),
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -183,7 +205,7 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _saving ? null : _save,
+              onPressed: (_saving || overLimit) ? null : _save,
               child: _saving
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Save Sale'),

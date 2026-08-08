@@ -243,10 +243,14 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     if (tabIndex == 3) {
       final batch = context.read<BatchDetailProvider>().batch;
       if (batch == null) return const SizedBox.shrink();
+      final soldQuantity = context.read<SaleProvider>().sales.fold<double>(
+            0,
+            (acc, s) => acc + s.quantitySold,
+          );
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () async {
-          await showSaleEntrySheet(context, batch: batch);
+          await showSaleEntrySheet(context, batch: batch, soldQuantity: soldQuantity);
           if (!context.mounted) return;
           context.read<SaleProvider>().loadByBatch(batchId);
           context.read<BatchPLProvider>().load(batchId);
