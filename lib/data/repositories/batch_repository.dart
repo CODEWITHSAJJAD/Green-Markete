@@ -11,7 +11,7 @@ class BatchRepository {
     BatchCreateRequest request, {
     int maxAttempts = 4,
   }) async {
-    final payload = {
+    final basePayload = {
       'business_id': request.businessId,
       'product_id': request.productId,
       'source_market_id': request.sourceMarketId,
@@ -26,6 +26,11 @@ class BatchRepository {
     };
     Object? lastError;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      final payload = {
+        ...basePayload,
+        if (request.batchCode != null && request.batchCode!.isNotEmpty)
+          'batch_code': request.batchCode,
+      };
       try {
         return await _client
             .from('product_batches')

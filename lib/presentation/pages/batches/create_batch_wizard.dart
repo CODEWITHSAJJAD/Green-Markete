@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
@@ -102,6 +104,18 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     }
   }
 
+  /// Generate a unique batch code on the frontend. The DB trigger that
+  /// auto-generates `GM-YYYY-NNNN` has a race condition between its
+  /// SELECT MAX and INSERT, so we send our own unique value. If the trigger
+  /// is conditional (`IF NEW.batch_code IS NULL`), it skips generation and
+  /// uses ours.
+  String _generateBatchCode() {
+    final now = DateTime.now();
+    final year = now.year;
+    final suffix = Random().nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase();
+    return 'GM-$year-$suffix';
+  }
+
   Future<void> _submit() async {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId == null || businessId.isEmpty) return;
@@ -114,7 +128,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       productId: _productId!,
       sourceMarketId: _sourceMarketId,
       destinationMarketId: _destinationMarketId,
-      purchaseDate: _purchaseDate.toIso8601String().split('T').first,
+      batchCode: _generateBatchCode(),      purchaseDate: _purchaseDate.toIso8601String().split('T').first,
       totalQuantity: totalQty,
       quantityUnit: _unit,
       purchasePricePerUnit: pricePerUnit,
@@ -527,12 +541,13 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: e['expense_side'] as String,
                       decoration: const InputDecoration(labelText: 'Side'),
                       items: const [
-                        DropdownMenuItem(value: 'purchaser', child: Text('Purchaser')),
-                        DropdownMenuItem(value: 'transport', child: Text('Transport')),
-                        DropdownMenuItem(value: 'seller', child: Text('Seller')),
+                        DropdownMenuItem(value: 'purchaser', child: Text('Purchaser', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'transport', child: Text('Transport', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'seller', child: Text('Seller', overflow: TextOverflow.ellipsis, maxLines: 1)),
                       ],
                       onChanged: (v) => setState(() => e['expense_side'] = v ?? 'purchaser'),
                     ),
@@ -540,17 +555,18 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: e['expense_type'] as String,
                       decoration: const InputDecoration(labelText: 'Type'),
                       items: const [
-                        DropdownMenuItem(value: 'daily_charge', child: Text('Daily Charge')),
-                        DropdownMenuItem(value: 'labor', child: Text('Labor')),
-                        DropdownMenuItem(value: 'accountant', child: Text('Accountant')),
-                        DropdownMenuItem(value: 'packing', child: Text('Packing')),
-                        DropdownMenuItem(value: 'stall_fee', child: Text('Stall Fee')),
-                        DropdownMenuItem(value: 'transport', child: Text('Transport')),
-                        DropdownMenuItem(value: 'local_transport', child: Text('Local Transport')),
-                        DropdownMenuItem(value: 'misc', child: Text('Misc')),
+                        DropdownMenuItem(value: 'daily_charge', child: Text('Daily Charge', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'labor', child: Text('Labor', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'accountant', child: Text('Accountant', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'packing', child: Text('Packing', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'stall_fee', child: Text('Stall Fee', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'transport', child: Text('Transport', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'local_transport', child: Text('Local Transport', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'misc', child: Text('Misc', overflow: TextOverflow.ellipsis, maxLines: 1)),
                       ],
                       onChanged: (v) => setState(() => e['expense_type'] = v ?? 'misc'),
                     ),
@@ -579,11 +595,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: e['payment_mode'] as String,
                       decoration: const InputDecoration(labelText: 'Payment'),
                       items: const [
-                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                        DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                        DropdownMenuItem(value: 'cash', child: Text('Cash', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer', overflow: TextOverflow.ellipsis, maxLines: 1)),
                       ],
                       onChanged: (v) => setState(() => e['payment_mode'] = v ?? 'cash'),
                     ),

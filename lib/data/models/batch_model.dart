@@ -85,6 +85,7 @@ class BatchCreateRequest {
   final double purchasePricePerUnit;
   final String? transportPaidBy;
   final String? notes;
+  final String? batchCode;
   final List<BatchPartnerCreate>? partners;
   final List<PackingRecordCreate>? packingRecords;
   final List<ExpenseCreate>? expenses;
@@ -100,6 +101,7 @@ class BatchCreateRequest {
     required this.purchasePricePerUnit,
     this.transportPaidBy,
     this.notes,
+    this.batchCode,
     this.partners,
     this.packingRecords,
     this.expenses,
@@ -116,6 +118,7 @@ class BatchCreateRequest {
     'purchase_price_per_unit': purchasePricePerUnit,
     'transport_paid_by': transportPaidBy,
     'notes': notes,
+    if (batchCode != null && batchCode!.isNotEmpty) 'batch_code': batchCode,
     'partners': partners?.map((e) => e.toJson()).toList(),
     'packing_records': packingRecords?.map((e) => e.toJson()).toList(),
     'expenses': expenses?.map((e) => e.toJson()).toList(),
