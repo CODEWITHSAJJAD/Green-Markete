@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/green_card.dart';
+import '../../widgets/section_header.dart';
 import 'quick_sale_page.dart';
 
 class SalesListPage extends StatefulWidget {
@@ -61,94 +66,137 @@ class _SalesListPageState extends State<SalesListPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withValues(alpha: 0.10),
-                  theme.colorScheme.secondary.withValues(alpha: 0.08),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Revenue capture workflow', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  'Quick sale entry is tied to active selling batches so revenue, credit, and cash mode stay aligned with backend P&L.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: _openCreate,
-                  icon: const Icon(Icons.point_of_sale_rounded),
-                  label: const Text('Record New Sale'),
-                ),
-              ],
-            ),
-          ),
+          _hero(theme),
           const SizedBox(height: 20),
-          Text('Ready-to-sell batches', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 12),
+          SectionHeader(title: 'Ready-to-sell batches'),
+          const SizedBox(height: 4),
           if (isLoading)
             const Padding(
               padding: EdgeInsets.all(24),
               child: Center(child: CircularProgressIndicator()),
             )
           else if (error != null)
-            Padding(
+            GreenCard(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Text(error),
+                  Icon(MingCute.wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
                   const SizedBox(height: 12),
-                  OutlinedButton(onPressed: _load, child: const Text('Retry')),
+                  Text(error, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: _load,
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                    child: const Text('Retry'),
+                  ),
                 ],
               ),
             )
           else if (sellingBatches.isEmpty)
-            const Text('No batches are currently in selling status.')
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: EmptyState(
+                icon: MingCute.bill_line,
+                title: 'No batches on sale yet',
+                subtitle: 'Move a batch to \'selling\' status to start recording revenue against it.',
+                actionLabel: 'Record Sale',
+                onAction: _openCreate,
+              ),
+            )
           else
             Column(
-              children: sellingBatches
-                  .map(
-                    (batch) => Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(18),
+              children: sellingBatches.map((batch) {
+                return GreenCard(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  onTap: _openCreate,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+                        color: AppColors.secondary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(batch.productName ?? batch.batchCode, style: theme.textTheme.titleMedium),
-                                const SizedBox(height: 4),
-                                Text(batch.batchCode, style: theme.textTheme.bodySmall),
-                              ],
-                            ),
-                          ),
-                          OutlinedButton(
-                            onPressed: _openCreate,
-                            child: const Text('Sell'),
-                          ),
-                        ],
-                      ),
+                      child: const Icon(MingCute.shopping_bag_2_line, size: 22, color: AppColors.secondary),
                     ),
-                  )
-                  .toList(),
+                    title: Text(batch.productName ?? batch.batchCode),
+                    subtitle: Text(batch.batchCode),
+                    trailing: FilledButton(
+                      onPressed: _openCreate,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Sell'),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _hero(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.secondary.withValues(alpha: 0.10),
+            AppColors.amberSurface.withValues(alpha: 0.6),
+            theme.colorScheme.surface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(MingCute.bill_line, size: 26, color: AppColors.secondary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Revenue capture', style: theme.textTheme.titleLarge),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sales are tied to active selling batches so revenue and credit stay aligned with P&L.',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          FilledButton.icon(
+            onPressed: _openCreate,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              minimumSize: const Size(0, 50),
+            ),
+            icon: const Icon(MingCute.add_line, size: 18),
+            label: const Text('Record New Sale'),
+          ),
         ],
       ),
     );

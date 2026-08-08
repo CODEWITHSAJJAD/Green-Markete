@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/green_card.dart';
 import '../../widgets/status_pill.dart';
 import 'batch_detail_page.dart';
 import 'create_batch_wizard.dart';
@@ -64,32 +68,7 @@ class _BatchListPageState extends State<BatchListPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withValues(alpha: 0.10),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Batch lifecycle control', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  'Follow produce from purchase to selling, with transport, packing, and P&L in one timeline.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
+          _hero(theme),
           const SizedBox(height: 20),
           if (isLoading)
             const Padding(
@@ -97,95 +76,138 @@ class _BatchListPageState extends State<BatchListPage> {
               child: Center(child: CircularProgressIndicator()),
             )
           else if (error != null)
-            Padding(
+            GreenCard(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Text(error),
+                  Icon(MingCute.wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
                   const SizedBox(height: 12),
-                  OutlinedButton(onPressed: _load, child: const Text('Retry')),
+                  Text(error, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: _load,
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                    child: const Text('Retry'),
+                  ),
                 ],
               ),
             )
           else if (batches.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                children: [
-                  Icon(Icons.inventory_2_outlined, size: 52, color: theme.colorScheme.outline),
-                  const SizedBox(height: 12),
-                  Text('No batches yet', style: theme.textTheme.titleLarge),
-                ],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: EmptyState(
+                icon: MingCute.shopping_bag_2_line,
+                title: 'No batches yet',
+                subtitle: 'Create your first batch to start tracking produce from purchase to sale.',
+                actionLabel: 'New Batch',
+                onAction: _openCreate,
               ),
             )
           else
             Column(
-              children: batches
-                  .map(
-                    (batch) => GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => BatchDetailPage(batchId: batch.id)),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 14),
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
+              children: batches.map((batch) {
+                return GreenCard(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => BatchDetailPage(batchId: batch.id)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Icon(MingCute.shopping_bag_2_line, color: AppColors.primary),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Icon(Icons.inventory_2_rounded, color: theme.colorScheme.primary),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(batch.productName ?? batch.batchCode, style: theme.textTheme.titleMedium),
-                                      const SizedBox(height: 4),
-                                      Text(batch.batchCode, style: theme.textTheme.bodySmall),
-                                    ],
-                                  ),
-                                ),
-                                StatusPill(status: batch.status),
+                                Text(batch.productName ?? batch.batchCode, style: theme.textTheme.titleMedium),
+                                const SizedBox(height: 2),
+                                Text(batch.batchCode, style: theme.textTheme.bodySmall),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _meta(theme, 'Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _meta(theme, 'Purchase cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          ),
+                          StatusPill(status: batch.status),
+                        ],
                       ),
-                    ),
-                  )
-                  .toList(),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _meta(theme, 'Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _meta(theme, 'Purchase cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
-        icon: const Icon(Icons.add_box_rounded),
+        icon: const Icon(MingCute.add_line),
         label: const Text('New Batch'),
+      ),
+    );
+  }
+
+  Widget _hero(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.10),
+            AppColors.primarySurface.withValues(alpha: 0.6),
+            theme.colorScheme.surface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(MingCute.shopping_bag_2_line, size: 26, color: AppColors.primary),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Batch lifecycle', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 4),
+                Text(
+                  'Follow produce from purchase to selling, with transport, packing, and P&L in one timeline.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -194,14 +216,14 @@ class _BatchListPageState extends State<BatchListPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(value, style: theme.textTheme.titleSmall),
         ],
       ),

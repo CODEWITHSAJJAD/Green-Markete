@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/green_card.dart';
+import '../widgets/section_header.dart';
 import 'markets/market_list_page.dart';
 import 'partners/partner_list_page.dart';
 import 'products/product_list_page.dart';
@@ -39,51 +42,47 @@ class MoreMenuPage extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xxl),
         children: [
-          Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          GreenCard(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsPage()),
+            ),
             child: ListTile(
+              contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
-                radius: 24,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(MingCute.user_3_fill, color: theme.colorScheme.primary),
+                radius: 26,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                child: const Icon(MingCute.user_3_fill, color: AppColors.primary),
               ),
-              title: Text(user?.fullName ?? 'User', style: const TextStyle(fontWeight: FontWeight.w700)),
+              title: Text(user?.fullName ?? 'User', style: theme.textTheme.titleMedium),
               subtitle: Text(user?.phone ?? user?.email ?? ''),
-              trailing: const Icon(MingCute.arrow_right_line),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              ),
+              trailing: Icon(MingCute.arrow_right_line, color: AppColors.textTertiary),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6)),
-            ),
+          const SizedBox(height: AppSpacing.xxl),
+          const SectionHeader(title: 'Workspace'),
+          const SizedBox(height: AppSpacing.sm),
+          GreenCard(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
             child: Column(
               children: [
                 for (final (i, item) in items.indexed) ...[
                   if (i > 0)
-                    Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant),
+                    Divider(height: 1, indent: 52, color: AppColors.divider.withValues(alpha: 0.7)),
                   ListTile(
+                    contentPadding: EdgeInsets.zero,
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                      child: Icon(item.icon, size: 20, color: theme.colorScheme.primary),
+                      child: Icon(item.icon, size: 20, color: AppColors.primary),
                     ),
-                    title: Text(item.label, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    trailing: Icon(
-                      MingCute.arrow_right_line,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
+                    title: Text(item.label, style: theme.textTheme.titleSmall),
+                    trailing: Icon(MingCute.arrow_right_line, size: 18, color: AppColors.textTertiary),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => item.page),
                     ),

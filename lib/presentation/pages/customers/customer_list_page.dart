@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/green_card.dart';
+import '../../widgets/section_header.dart';
 import 'create_customer_page.dart';
 import 'customer_ledger_page.dart';
 
@@ -48,6 +53,10 @@ class _CustomerListPageState extends State<CustomerListPage> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export available in a later build')));
   }
 
+  void _load(String businessId, String query) {
+    context.read<CustomerProvider>().load(businessId, search: query.trim());
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -63,48 +72,50 @@ class _CustomerListPageState extends State<CustomerListPage> {
         child: Center(child: CircularProgressIndicator()),
       );
     } else if (provider.error != null) {
-      customersSection = Padding(
+      customersSection = GreenCard(
         padding: const EdgeInsets.all(24),
-        child: Text(provider.error!.toString()),
+        child: Column(
+          children: [
+            Icon(MingCute.wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+            const SizedBox(height: 12),
+            Text(provider.error!.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () => _load(businessId, _searchCtrl.text),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       );
     } else if (provider.customers.isEmpty) {
       customersSection = Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Column(
-          children: [
-            Icon(MingCute.user_3_line, size: 52, color: theme.colorScheme.outline),
-            const SizedBox(height: 12),
-            Text('No customers found', style: theme.textTheme.titleLarge),
-          ],
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: EmptyState(
+          icon: MingCute.user_3_line,
+          title: 'No customers found',
+          subtitle: _searchCtrl.text.trim().isEmpty
+              ? 'Add your first customer to start tracking credit and payments.'
+              : 'No results match your search.',
+          actionLabel: _searchCtrl.text.trim().isEmpty ? 'New Customer' : null,
+          onAction: _searchCtrl.text.trim().isEmpty ? _openCreateCustomer : null,
         ),
       );
     } else {
       customersSection = Column(
         children: provider.customers.map(
           (customer) {
-            final tile = Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
+            final tile = GreenCard(
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                     child: Text(
                       customer.fullName.substring(0, 1).toUpperCase(),
-                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary),
+                      style: theme.textTheme.titleMedium?.copyWith(color: AppColors.primary),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -153,10 +164,10 @@ class _CustomerListPageState extends State<CustomerListPage> {
               key: ValueKey(customer.id),
               direction: DismissDirection.endToStart,
               background: Container(
-                margin: const EdgeInsets.only(bottom: 14),
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.error.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -200,35 +211,56 @@ class _CustomerListPageState extends State<CustomerListPage> {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
               gradient: LinearGradient(
                 colors: [
-                  theme.colorScheme.primary.withValues(alpha: 0.10),
-                  theme.colorScheme.secondary.withValues(alpha: 0.07),
+                  AppColors.primary.withValues(alpha: 0.10),
+                  AppColors.amberSurface.withValues(alpha: 0.6),
                   theme.colorScheme.surface,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Credit & customer relationships', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  'Track outstanding balances, open ledgers, and payment history without leaving the app.',
-                  style: theme.textTheme.bodyMedium,
+                Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      child: const Icon(MingCute.user_3_line, size: 26, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Credit & customers', style: theme.textTheme.titleLarge),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Track outstanding balances, open ledgers, and payment history without leaving the app.',
+                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: _searchCtrl,
                   onChanged: (query) {
                     setState(() {});
-                    context.read<CustomerProvider>().load(businessId, search: query.trim());
+                    _load(businessId, query);
                   },
                   decoration: const InputDecoration(
                     hintText: 'Search by name, phone, or shop',
@@ -238,7 +270,9 @@ class _CustomerListPageState extends State<CustomerListPage> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
+          SectionHeader(title: 'Customers'),
+          const SizedBox(height: AppSpacing.sm),
           customersSection,
         ],
       ),
