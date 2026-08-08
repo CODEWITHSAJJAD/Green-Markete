@@ -59,80 +59,88 @@ class _BatchListPageState extends State<BatchListPage> {
           onPressed: widget.onMenu,
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        children: [
-          _hero(theme),
-          const SizedBox(height: 20),
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (error != null)
-            GreenCard(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
-                  const SizedBox(height: 12),
-                  Text(error, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    onPressed: _load,
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          else if (batches.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: EmptyState(
-                icon: MingCuteIcons.mgc_shopping_bag_2_line,
-                title: 'No batches yet',
-                subtitle: 'Create your first batch to start tracking produce from purchase to sale.',
-                actionLabel: 'New Batch',
-                onAction: _openCreate,
-              ),
-            )
-          else
-            Column(
-              children: batches.map((batch) {
-                return GreenCard(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => BatchDetailPage(batchId: batch.id)),
-                  ),
+      body: RefreshIndicator(
+        onRefresh: () async => _load(),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (n) {
+            if (n.metrics.pixels > n.metrics.maxScrollExtent - 200) {
+              context.read<BatchListProvider>().loadMore();
+            }
+            return false;
+          },
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            children: [
+              _hero(theme),
+              const SizedBox(height: 20),
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (error != null)
+                GreenCard(
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, color: AppColors.primary),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(batch.productName ?? batch.batchCode, style: theme.textTheme.titleMedium),
-                                const SizedBox(height: 2),
-                                Text(batch.batchCode, style: theme.textTheme.bodySmall),
-                              ],
-                            ),
-                          ),
-                          StatusPill(status: batch.status),
-                        ],
+                      Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                      const SizedBox(height: 12),
+                      Text(error, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _load,
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                        child: const Text('Retry'),
                       ),
+                    ],
+                  ),
+                )
+              else if (batches.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: EmptyState(
+                    icon: MingCuteIcons.mgc_shopping_bag_2_line,
+                    title: 'No batches yet',
+                    subtitle: 'Create your first batch to start tracking produce from purchase to sale.',
+                    actionLabel: 'New Batch',
+                    onAction: _openCreate,
+                  ),
+                )
+              else ...[
+                ...batches.map((batch) {
+                  return GreenCard(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => BatchDetailPage(batchId: batch.id)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, color: AppColors.primary),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(batch.productName ?? batch.batchCode, style: theme.textTheme.titleMedium),
+                                  const SizedBox(height: 2),
+                                  Text(batch.batchCode, style: theme.textTheme.bodySmall),
+                                ],
+                              ),
+                            ),
+                            StatusPill(status: batch.status),
+                          ],
+                        ),
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -148,9 +156,26 @@ class _BatchListPageState extends State<BatchListPage> {
                     ],
                   ),
                 );
-              }).toList(),
-            ),
-        ],
+                }),
+                if (batchesProvider.isLoadingMore)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (!batchesProvider.hasMore)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text(
+                        '— end of list —',
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,

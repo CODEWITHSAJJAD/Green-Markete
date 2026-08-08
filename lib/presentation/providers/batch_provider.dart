@@ -16,14 +16,28 @@ class BatchListProvider extends ChangeNotifier {
   List<BatchModel> _batches = const [];
   List<BatchModel> get batches => _batches;
 
+  String? _activeBusinessId;
+  String? _activeStatus;
+  String? _activeProductId;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
 
   String? _error;
   String? get error => _error;
 
   Future<void> load(String businessId, {String? status, String? productId}) async {
     _isLoading = true;
+    _hasMore = true;
+    _activeBusinessId = businessId;
+    _activeStatus = status;
+    _activeProductId = productId;
     _error = null;
     notifyListeners();
     try {
@@ -33,10 +47,35 @@ class BatchListProvider extends ChangeNotifier {
         productId: productId,
       );
       _batches = items;
+      _hasMore = items.length >= 50;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore || _batches.isEmpty) return;
+    final businessId = _activeBusinessId;
+    if (businessId == null) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      final lastCreatedAt = _batches.last.createdAt;
+      final more = await _repo.list(
+        businessId: businessId,
+        status: _activeStatus,
+        productId: _activeProductId,
+        cursor: lastCreatedAt,
+      );
+      _batches = [..._batches, ...more];
+      _hasMore = more.length >= 50;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
