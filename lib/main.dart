@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/theme.dart';
 import 'core/supabase/supabase_service.dart';
@@ -57,9 +60,45 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => TransactionProvider(TransactionRepository())),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
-      child: const GreenMarketApp(),
+      child: const _AuthStateBootstrap(child: GreenMarketApp()),
     ),
   );
+}
+
+/// Subscribes to Supabase's auth state-change stream and forwards
+/// signedOut events to [AuthProvider.logout] so the UI doesn't have to
+/// poll for an expired session.
+class _AuthStateBootstrap extends StatefulWidget {
+  const _AuthStateBootstrap({required this.child});
+  final Widget child;
+
+  @override
+  State<_AuthStateBootstrap> createState() => _AuthStateBootstrapState();
+}
+
+class _AuthStateBootstrapState extends State<_AuthStateBootstrap> {
+  StreamSubscription<AuthState>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = SupabaseService.instance.client.auth.onAuthStateChange.listen((state) {
+      final event = state.event;
+      if (event != AuthChangeEvent.signedOut) return;
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      if (auth.isAuthenticated) auth.logout();
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class GreenMarketApp extends StatelessWidget {
