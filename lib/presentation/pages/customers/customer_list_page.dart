@@ -24,6 +24,7 @@ class CustomerListPage extends StatefulWidget {
 
 class _CustomerListPageState extends State<CustomerListPage> {
   final _searchCtrl = TextEditingController();
+  bool _showArchived = false;
 
   @override
   void initState() {
@@ -49,12 +50,12 @@ class _CustomerListPageState extends State<CustomerListPage> {
     context.read<CustomerProvider>().load(businessId, search: _searchCtrl.text.trim());
   }
 
-  Future<void> _deleteCustomer(String customerId) async {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export available in a later build')));
-  }
-
   void _load(String businessId, String query) {
-    context.read<CustomerProvider>().load(businessId, search: query.trim());
+    context.read<CustomerProvider>().load(
+      businessId,
+      search: query.trim(),
+      includeArchived: _showArchived,
+    );
   }
 
   @override
@@ -161,7 +162,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
               );
             }
             return Dismissible(
-              key: ValueKey(customer.id),
+              key: ValueKey('customer-${customer.id}'),
               direction: DismissDirection.endToStart,
               background: Container(
                 margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -171,16 +172,44 @@ class _CustomerListPageState extends State<CustomerListPage> {
                 ),
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Icon(MingCuteIcons.mgc_delete_3_line, color: theme.colorScheme.error),
+                child: Icon(MingCuteIcons.mgc_archive_line, color: theme.colorScheme.error),
               ),
-              confirmDismiss: (_) => showConfirmDialog(
-                context,
-                title: 'Delete customer?',
-                message: 'This will hide the customer from all views. Data is retained for audit.',
-                confirmLabel: 'Delete',
-                isDestructive: true,
-              ),
-              onDismissed: (_) => _deleteCustomer(customer.id),
+              confirmDismiss: (_) async {
+                final provider = context.read<CustomerProvider>();
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await showConfirmDialog(
+                  context,
+                  title: 'Archive ${customer.fullName}?',
+                  message: 'Archived customers are hidden from the list and excluded from reports. You can restore them later.',
+                  confirmLabel: 'Archive',
+                  isDestructive: true,
+                );
+                if (ok != true) return false;
+                final archived = await provider.archive(customer.id);
+                if (!context.mounted) return archived;
+                if (archived) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('${customer.fullName} archived'),
+                      action: SnackBarAction(
+                        label: 'Undo',
+                        onPressed: () async {
+                          final restored = await provider.unarchive(customer.id);
+                          if (!context.mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(content: Text(restored ? 'Restored' : 'Failed to restore')),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                } else {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(provider.error ?? 'Failed to archive')),
+                  );
+                }
+                return archived;
+              },
               child: GestureDetector(
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => CustomerLedgerPage(customer: customer)),
@@ -200,6 +229,21 @@ class _CustomerListPageState extends State<CustomerListPage> {
           icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,
         ),
+        actions: [
+          IconButton(
+            tooltip: _showArchived ? 'Hide archived' : 'Show archived',
+            icon: Icon(_showArchived ? MingCuteIcons.mgc_eye_close_line : MingCuteIcons.mgc_eye_line),
+            onPressed: () {
+              setState(() => _showArchived = !_showArchived);
+              final businessId = context.read<AuthProvider>().businessId ?? '';
+              context.read<CustomerProvider>().load(
+                businessId,
+                search: _searchCtrl.text.trim(),
+                includeArchived: _showArchived,
+              );
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),

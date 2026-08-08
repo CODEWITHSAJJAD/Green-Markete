@@ -8,6 +8,7 @@ class CustomerModel {
   final double totalPurchased;
   final double totalPaid;
   final double outstandingBalance;
+  final bool isArchived;
 
   CustomerModel({
     required this.id,
@@ -19,6 +20,7 @@ class CustomerModel {
     this.totalPurchased = 0,
     this.totalPaid = 0,
     this.outstandingBalance = 0,
+    this.isArchived = false,
   });
 
   factory CustomerModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class CustomerModel {
       totalPurchased: (json['total_purchased'] as num?)?.toDouble() ?? 0,
       totalPaid: (json['total_paid'] as num?)?.toDouble() ?? 0,
       outstandingBalance: (json['outstanding_balance'] as num?)?.toDouble() ?? 0,
+      isArchived: json['is_archived'] as bool? ?? false,
     );
   }
 

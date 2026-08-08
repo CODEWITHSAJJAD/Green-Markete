@@ -7,16 +7,43 @@ import '../models/payment_model.dart';
 class CustomerRepository {
   SupabaseClient get _client => SupabaseService.instance.client;
 
-  Future<List<CustomerModel>> list(String businessId, {String? search}) async {
+  Future<List<CustomerModel>> list(
+    String businessId, {
+    String? search,
+    bool includeArchived = false,
+  }) async {
     var query = _client
         .from('customers')
         .select()
         .eq('business_id', businessId);
+    if (!includeArchived) {
+      query = query.or('is_archived.is.null,is_archived.eq.false');
+    }
     if (search != null && search.isNotEmpty) {
       query = query.ilike('full_name', '%$search%');
     }
     final rows = await query.order('full_name');
     return rows.map(CustomerModel.fromJson).toList();
+  }
+
+  Future<CustomerModel> archive(String id) async {
+    final row = await _client
+        .from('customers')
+        .update({'is_archived': true})
+        .eq('id', id)
+        .select()
+        .single();
+    return CustomerModel.fromJson(row);
+  }
+
+  Future<CustomerModel> unarchive(String id) async {
+    final row = await _client
+        .from('customers')
+        .update({'is_archived': false})
+        .eq('id', id)
+        .select()
+        .single();
+    return CustomerModel.fromJson(row);
   }
 
   Future<CustomerModel> create(Map<String, dynamic> data) async {

@@ -21,17 +21,50 @@ class CustomerProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  Future<void> load(String businessId, {String? search}) async {
+  Future<void> load(
+    String businessId, {
+    String? search,
+    bool includeArchived = false,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      _customers = await _repo.list(businessId, search: search);
+      _customers = await _repo.list(
+        businessId,
+        search: search,
+        includeArchived: includeArchived,
+      );
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> archive(String customerId) async {
+    try {
+      await _repo.archive(customerId);
+      _customers = _customers.where((c) => c.id != customerId).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> unarchive(String customerId) async {
+    try {
+      await _repo.unarchive(customerId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
     }
   }
 
