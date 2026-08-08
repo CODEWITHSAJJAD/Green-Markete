@@ -387,10 +387,14 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
   Widget _productDropdown(ThemeData theme, List<ProductModel> products) {
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       initialValue: _productId,
       decoration: const InputDecoration(labelText: 'Select product'),
       items: products
-          .map((p) => DropdownMenuItem(value: p.id, child: Text(p.name)))
+          .map((p) => DropdownMenuItem(
+                value: p.id,
+                child: Text(p.name, overflow: TextOverflow.ellipsis, maxLines: 1),
+              ))
           .toList(),
       onChanged: (v) {
         if (v != null) {
@@ -407,10 +411,18 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
   Widget _marketDropdown(ThemeData theme, List<MarketModel> markets, {required bool isSource}) {
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       initialValue: isSource ? _sourceMarketId : _destinationMarketId,
       decoration: InputDecoration(labelText: isSource ? 'Source market' : 'Destination market'),
       items: markets
-          .map((m) => DropdownMenuItem(value: m.id, child: Text('${m.name} • ${m.city}')))
+          .map((m) => DropdownMenuItem(
+                value: m.id,
+                child: Text(
+                  '${m.name} • ${m.city}',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ))
           .toList(),
       onChanged: (v) {
         setState(() {
