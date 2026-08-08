@@ -7,7 +7,11 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/green_card.dart';
 import '../../widgets/section_header.dart';
 import 'access_management_page.dart';
+import 'about_page.dart';
 import 'business_settings_page.dart';
+import 'business_switcher_page.dart';
+import 'help_center_page.dart';
+import 'notification_settings_page.dart';
 import 'profile_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -59,13 +63,14 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 4),
           _settingTile(theme, MingCuteIcons.mgc_user_1_line, 'Edit Profile', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePage()))),
           _settingTile(theme, MingCuteIcons.mgc_building_2_line, 'Business Info', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSettingsPage()))),
+          _settingTile(theme, MingCuteIcons.mgc_store_2_line, 'Switch / Add Business', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSwitcherPage()))),
           _settingTile(theme, MingCuteIcons.mgc_shield_line, 'Access Management', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccessManagementPage()))),
-          _settingTile(theme, MingCuteIcons.mgc_notification_line, 'Notifications'),
+          _settingTile(theme, MingCuteIcons.mgc_notification_line, 'Notifications', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationSettingsPage()))),
           const SizedBox(height: 24),
           const SectionHeader(title: 'Support'),
           const SizedBox(height: 4),
-          _settingTile(theme, MingCuteIcons.mgc_question_line, 'Help Center'),
-          _settingTile(theme, MingCuteIcons.mgc_information_line, 'About'),
+          _settingTile(theme, MingCuteIcons.mgc_question_line, 'Help Center', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HelpCenterPage()))),
+          _settingTile(theme, MingCuteIcons.mgc_information_line, 'About', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AboutPage()))),
           const SizedBox(height: 32),
           SizedBox(
             height: 48,

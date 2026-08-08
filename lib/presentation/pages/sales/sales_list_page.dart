@@ -187,16 +187,6 @@ class _SalesListPageState extends State<SalesListPage> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: _openCreate,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.secondary,
-              minimumSize: const Size(0, 50),
-            ),
-            icon: const Icon(MingCuteIcons.mgc_add_line, size: 18),
-            label: const Text('Record New Sale'),
-          ),
         ],
       ),
     );

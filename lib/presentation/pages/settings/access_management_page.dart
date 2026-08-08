@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../data/models/partner_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
@@ -60,10 +62,19 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
           child: ListTile(
             title: Text(partner.fullName),
             subtitle: Text(partner.role),
-            trailing: DropdownButton<String>(
-              value: access,
-              items: _roleItems(access),
-              onChanged: (value) => _update(partner, businessId, value),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: DropdownButton<String>(
+                value: access,
+                underline: const SizedBox.shrink(),
+                icon: const Icon(MingCuteIcons.mgc_arrow_down_line, size: 18),
+                items: _roleItems(access),
+                onChanged: (value) => _update(partner, businessId, value),
+              ),
             ),
           ),
         );
@@ -80,16 +91,56 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
       for (final option in options)
         DropdownMenuItem(
           value: option,
-          child: Text(option[0].toUpperCase() + option.substring(1)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_roleIcon(option), size: 16, color: _roleColor(option)),
+              const SizedBox(width: 8),
+              Text(_roleLabel(option)),
+            ],
+          ),
         ),
     ];
+  }
+
+  IconData _roleIcon(String role) {
+    switch (role) {
+      case 'owner':
+        return MingCuteIcons.mgc_medal_line;
+      case 'editor':
+        return MingCuteIcons.mgc_edit_2_line;
+      default:
+        return MingCuteIcons.mgc_eye_line;
+    }
+  }
+
+  Color _roleColor(String role) {
+    switch (role) {
+      case 'owner':
+        return const Color(0xFF8B5CF6);
+      case 'editor':
+        return AppColors.primary;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'owner':
+        return 'Owner';
+      case 'editor':
+        return 'Editor';
+      default:
+        return 'Viewer';
+    }
   }
 
   Future<void> _update(PartnerModel partner, String businessId, String? value) async {
     if (value == null) return;
     await context.read<PartnerProvider>().updateAccess(partner.id, value, businessId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${partner.fullName} updated to $value')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${partner.fullName} updated to ${_roleLabel(value)}')));
     }
   }
 }

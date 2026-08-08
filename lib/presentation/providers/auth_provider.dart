@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../data/models/business_model.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -26,6 +27,38 @@ class AuthProvider extends ChangeNotifier {
 
   String? get userId => _repo.currentUserId;
   String? get businessId => _user?.businessId;
+
+  List<BusinessModel> _businesses = [];
+  List<BusinessModel> get businesses => _businesses;
+
+  Future<void> loadBusinesses() async {
+    final uid = _repo.currentUserId;
+    if (uid == null) return;
+    try {
+      _businesses = await _repo.listMyBusinesses(uid);
+      notifyListeners();
+    } catch (_) {
+      _businesses = [];
+      notifyListeners();
+    }
+  }
+
+  Future<void> switchBusiness(String businessId) async {
+    final current = _user;
+    if (current == null) return;
+    _user = UserModel(
+      id: current.id,
+      fullName: current.fullName,
+      phone: current.phone,
+      email: current.email,
+      city: current.city,
+      role: current.role,
+      businessId: businessId,
+      isActive: current.isActive,
+    );
+    _needsOnboarding = false;
+    notifyListeners();
+  }
 
   Future<void> restoreSession() async {
     _isLoading = true;

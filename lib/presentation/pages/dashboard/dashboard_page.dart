@@ -50,14 +50,16 @@ class _DashboardPageState extends State<DashboardPage> {
     final businessId = context.watch<AuthProvider>().businessId ?? '';
 
     return Scaffold(
-      body: provider.isLoading
-          ? _buildShimmer(theme)
-          : provider.error != null
-              ? _buildError(theme, provider.error!, businessId)
-              : RefreshIndicator(
-                  onRefresh: () => context.read<DashboardProvider>().load(businessId),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      body: SafeArea(
+        bottom: false,
+        child: provider.isLoading
+            ? _buildShimmer(theme)
+            : provider.error != null
+                ? _buildError(theme, provider.error!, businessId)
+                : RefreshIndicator(
+                    onRefresh: () => context.read<DashboardProvider>().load(businessId),
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                     children: [
                       _buildHeader(theme),
                       const SizedBox(height: 20),
@@ -215,6 +217,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ],
                   ),
                 ),
+      ),
     );
   }
 
@@ -323,7 +326,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     Widget tile(IconData icon, String label, VoidCallback onTap, Color color) {
       return GreenCard(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         onTap: onTap,
         child: Column(
           children: [
@@ -337,7 +340,13 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 8),
-            Text(label, style: theme.textTheme.labelMedium?.copyWith(color: color, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(color: color, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       );

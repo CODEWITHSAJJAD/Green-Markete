@@ -22,10 +22,13 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     super.initState();
     _nameCtrl = TextEditingController();
     _thresholdCtrl = TextEditingController();
-    final businessId = context.read<AuthProvider>().businessId;
-    if (businessId != null && businessId.isNotEmpty) {
-      context.read<BusinessProvider>().load(businessId);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final businessId = context.read<AuthProvider>().businessId;
+      if (businessId != null && businessId.isNotEmpty) {
+        context.read<BusinessProvider>().load(businessId);
+      }
+    });
   }
 
   @override

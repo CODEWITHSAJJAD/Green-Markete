@@ -285,6 +285,31 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(AppColors.surface),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(8),
+          shadowColor: WidgetStatePropertyAll(AppColors.shadow.withValues(alpha: 0.12)),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              side: BorderSide(color: AppColors.divider.withValues(alpha: 0.5)),
+            ),
+          ),
+          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 6)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: BorderSide(color: AppColors.divider.withValues(alpha: 0.5)),
+        ),
+        textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+      ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.chipBg,
         selectedColor: AppColors.primary.withValues(alpha: 0.12),

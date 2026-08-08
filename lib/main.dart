@@ -85,6 +85,6 @@ class AuthWrapper extends StatelessWidget {
     if (auth.isLoading) return const SplashPage();
     if (!auth.isAuthenticated) return const AuthNavigator();
     if (auth.needsOnboarding) return const OnboardingPage();
-    return const MainShell();
+    return MainShell(key: ValueKey('shell-${auth.businessId}'));
   }
 }

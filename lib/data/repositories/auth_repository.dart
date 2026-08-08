@@ -95,6 +95,24 @@ class AuthRepository {
     return row?['business_id'] as String?;
   }
 
+  Future<List<BusinessModel>> listMyBusinesses(String userId) async {
+    final rows = await _client
+        .from('business_partners')
+        .select('business_id')
+        .eq('user_id', userId)
+        .order('created_at', ascending: true);
+    final ids = rows.map((r) => r['business_id'] as String?).whereType<String>().toList();
+    if (ids.isEmpty) return const [];
+    final businessRows = await _client
+        .from('businesses')
+        .select()
+        .inFilter('id', ids);
+    final byId = <String, BusinessModel>{
+      for (final r in businessRows) r['id'] as String: BusinessModel.fromJson(r),
+    };
+    return [for (final id in ids) if (byId[id] != null) byId[id]!];
+  }
+
   Future<BusinessModel?> getMyBusiness(String businessId) async {
     final row = await _client
         .from('businesses')
