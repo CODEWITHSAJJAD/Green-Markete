@@ -3,6 +3,7 @@ class BusinessModel {
   final String name;
   final String ownerId;
   final String businessType;
+  final double? creditAlertThreshold;
   final String? createdAt;
 
   BusinessModel({
@@ -10,6 +11,7 @@ class BusinessModel {
     required this.name,
     required this.ownerId,
     this.businessType = 'multi_partner',
+    this.creditAlertThreshold,
     this.createdAt,
   });
 
@@ -19,6 +21,7 @@ class BusinessModel {
       name: json['name'] as String,
       ownerId: json['owner_id'] as String,
       businessType: json['business_type'] as String? ?? 'multi_partner',
+      creditAlertThreshold: (json['credit_alert_threshold'] as num?)?.toDouble(),
       createdAt: json['created_at'] as String?,
     );
   }

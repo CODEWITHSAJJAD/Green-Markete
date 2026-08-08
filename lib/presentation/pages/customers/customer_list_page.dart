@@ -200,12 +200,6 @@ class _CustomerListPageState extends State<CustomerListPage> {
           icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(MingCuteIcons.mgc_add_line),
-            onPressed: _openCreateCustomer,
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -277,7 +271,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'new-customer',
+        heroTag: null,
         onPressed: _openCreateCustomer,
         icon: const Icon(MingCuteIcons.mgc_user_4_line),
         label: const Text('New Customer'),

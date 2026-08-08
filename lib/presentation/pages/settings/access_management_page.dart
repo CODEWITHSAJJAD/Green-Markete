@@ -62,16 +62,27 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
             subtitle: Text(partner.role),
             trailing: DropdownButton<String>(
               value: access,
-              items: const [
-                DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
-                DropdownMenuItem(value: 'editor', child: Text('Editor')),
-              ],
+              items: _roleItems(access),
               onChanged: (value) => _update(partner, businessId, value),
             ),
           ),
         );
       },
     );
+  }
+
+  List<DropdownMenuItem<String>> _roleItems(String current) {
+    const selectable = ['viewer', 'editor'];
+    final options = selectable.contains(current)
+        ? selectable
+        : [...selectable, current];
+    return [
+      for (final option in options)
+        DropdownMenuItem(
+          value: option,
+          child: Text(option[0].toUpperCase() + option.substring(1)),
+        ),
+    ];
   }
 
   Future<void> _update(PartnerModel partner, String businessId, String? value) async {

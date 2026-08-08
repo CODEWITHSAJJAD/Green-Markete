@@ -139,7 +139,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     final tabIndex = _tabCtrl.index;
     if (tabIndex == 1) {
       return FloatingActionButton.extended(
-        heroTag: 'add-packing',
+        heroTag: null,
         onPressed: () => _showAddPackingDialog(context),
         icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('Packing'),
@@ -147,7 +147,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     }
     if (tabIndex == 2) {
       return FloatingActionButton.extended(
-        heroTag: 'add-expense',
+        heroTag: null,
         onPressed: () async {
           await showExpenseEntrySheet(context, batchId: batchId);
           if (!context.mounted) return;
@@ -163,7 +163,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       final batch = context.read<BatchDetailProvider>().batch;
       if (batch == null) return const SizedBox.shrink();
       return FloatingActionButton.extended(
-        heroTag: 'add-sale',
+        heroTag: null,
         onPressed: () async {
           await showSaleEntrySheet(context, batch: batch);
           if (!context.mounted) return;

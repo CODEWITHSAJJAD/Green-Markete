@@ -56,12 +56,6 @@ class _SalesListPageState extends State<SalesListPage> {
           icon: const Icon(MingCuteIcons.mgc_menu_line),
           onPressed: widget.onMenu,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(MingCuteIcons.mgc_add_line),
-            onPressed: _openCreate,
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -137,6 +131,12 @@ class _SalesListPageState extends State<SalesListPage> {
               }).toList(),
             ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
+        onPressed: _openCreate,
+        icon: const Icon(MingCuteIcons.mgc_add_line),
+        label: const Text('Record Sale'),
       ),
     );
   }

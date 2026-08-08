@@ -6,6 +6,16 @@ import '../models/business_model.dart';
 class BusinessRepository {
   SupabaseClient get _client => SupabaseService.instance.client;
 
+  Future<BusinessModel?> fetch(String businessId) async {
+    final row = await _client
+        .from('businesses')
+        .select()
+        .eq('id', businessId)
+        .maybeSingle();
+    if (row == null) return null;
+    return BusinessModel.fromJson(row);
+  }
+
   Future<BusinessModel> create({
     required String name,
     String? city,
