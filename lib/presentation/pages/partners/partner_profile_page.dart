@@ -1,94 +1,298 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/transaction_provider.dart';
-import '../../../core/utils/currency_formatter.dart';
+import 'package:provider/provider.dart';
 
-class PartnerProfilePage extends ConsumerWidget {
+import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/partner_model.dart';
+import '../../../data/repositories/partner_repository.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/partner_provider.dart';
+import '../../providers/transaction_provider.dart';
+import '../transactions/partner_balance_page.dart';
+
+class PartnerProfilePage extends StatefulWidget {
   final String partnerId;
-  const PartnerProfilePage({super.key, required this.partnerId});
+  final PartnerModel? initialPartner;
+
+  const PartnerProfilePage({super.key, required this.partnerId, this.initialPartner});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ledgerAsync = ref.watch(partnerLedgerProvider(partnerId));
+  State<PartnerProfilePage> createState() => _PartnerProfilePageState();
+}
+
+class _PartnerProfilePageState extends State<PartnerProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final businessId = context.read<AuthProvider>().businessId ?? '';
+      if (businessId.isNotEmpty) context.read<PartnerProvider>().load(businessId);
+      context.read<TransactionProvider>().loadLedger(widget.partnerId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final businessId = context.watch<AuthProvider>().businessId ?? '';
+    final currentRole = context.watch<AuthProvider>().user?.role ?? '';
+    final partnerProvider = context.watch<PartnerProvider>();
+    final transactionProvider = context.watch<TransactionProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Partner Profile')),
-      body: ledgerAsync.when(
-        data: (ledger) {
-          final entries = ledger['entries'] as List<dynamic>? ?? [];
-          final balance = ledger['balance'] as Map<String, dynamic>? ?? {};
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+      body: partnerProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : partnerProvider.error != null
+              ? Center(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircleAvatar(
-                        radius: 32,
-                        backgroundColor: Colors.green.shade100,
-                        child: const Icon(Icons.person, size: 32, color: Colors.green),
-                      ),
+                      Text(partnerProvider.error.toString()),
                       const SizedBox(height: 12),
-                      const Text('Partner Name', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      const Text('Partner Role', style: TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 8),
-                      Chip(
-                        label: const Text('Viewer'),
-                        backgroundColor: Colors.grey.shade100,
+                      FilledButton(
+                        onPressed: () => context.read<PartnerProvider>().load(businessId),
+                        child: const Text('Retry'),
                       ),
                     ],
                   ),
+                )
+              : _buildContent(
+                  context,
+                  theme,
+                  businessId,
+                  currentRole,
+                  partnerProvider,
+                  transactionProvider,
                 ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ThemeData theme,
+    String businessId,
+    String currentRole,
+    PartnerProvider partnerProvider,
+    TransactionProvider transactionProvider,
+  ) {
+    final partner = widget.initialPartner ??
+        partnerProvider.partners.cast<PartnerModel?>().firstWhere(
+              (item) => item?.id == widget.partnerId,
+              orElse: () => null,
+            );
+    if (partner == null) {
+      return const Center(child: Text('Partner not found'));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    child: Text(partner.fullName.substring(0, 1).toUpperCase()),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(partner.fullName, style: theme.textTheme.headlineSmall),
+                        const SizedBox(height: 4),
+                        Text(
+                          [partner.role, partner.city, partner.phone]
+                              .where((item) => item != null && item.isNotEmpty)
+                              .join('  •  '),
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Financial Summary', style: TextStyle(fontWeight: FontWeight.w600)),
-                      const Divider(),
-                      ListTile(
-                        title: const Text('Total Sent'),
-                        trailing: Text(CurrencyFormatter.format((balance['total_sent'] as num?)?.toDouble() ?? 0)),
-                      ),
-                      ListTile(
-                        title: const Text('Total Received'),
-                        trailing: Text(CurrencyFormatter.format((balance['total_received'] as num?)?.toDouble() ?? 0)),
-                      ),
-                      ListTile(
-                        title: const Text('Net Balance'),
-                        trailing: Text(
-                          CurrencyFormatter.format((balance['net_balance'] as num?)?.toDouble() ?? 0),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: ((balance['net_balance'] as num?)?.toDouble() ?? 0) >= 0 ? Colors.green : Colors.red,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _chip(theme, 'Access: ${partner.accessLevel ?? 'viewer'}'),
+                  _chip(theme, partner.isClaimed ? 'Claimed profile' : 'Invitation pending'),
+                ],
               ),
-              if (entries.isNotEmpty) ...[
+              if (!partner.isClaimed) ...[
                 const SizedBox(height: 16),
-                const Text('Transaction History', style: TextStyle(fontWeight: FontWeight.w600)),
-                ...entries.map((e) => ListTile(
-                  dense: true,
-                  title: Text(e['description'] as String? ?? ''),
-                  subtitle: Text(e['date'] as String? ?? ''),
-                  trailing: Text(CurrencyFormatter.format((e['amount'] as num?)?.toDouble() ?? 0)),
-                )),
+                FilledButton.tonalIcon(
+                  onPressed: () async {
+                    await PartnerRepository().invite(partner.id);
+                    if (!context.mounted) return;
+                    context.read<PartnerProvider>().load(businessId);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Invitation sent')),
+                    );
+                  },
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Resend Invitation'),
+                ),
               ],
             ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (currentRole == 'owner')
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Access Management', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Viewer'),
+                      selected: (partner.accessLevel ?? 'viewer') == 'viewer',
+                      onSelected: (_) => _updateAccess(context, partner, businessId, 'viewer'),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Editor'),
+                      selected: (partner.accessLevel ?? 'viewer') == 'editor',
+                      onSelected: (_) => _updateAccess(context, partner, businessId, 'editor'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+        if (transactionProvider.isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (transactionProvider.error != null)
+          Column(
+            children: [
+              Text(transactionProvider.error.toString()),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => context.read<TransactionProvider>().loadLedger(widget.partnerId),
+                child: const Text('Retry'),
+              ),
+            ],
+          )
+        else
+          _buildLedger(context, theme, transactionProvider, partner),
+      ],
+    );
+  }
+
+  Widget _buildLedger(
+    BuildContext context,
+    ThemeData theme,
+    TransactionProvider transactionProvider,
+    PartnerModel partner,
+  ) {
+    final ledger = transactionProvider.ledger;
+    final data = ledger?['data'] as Map<String, dynamic>? ?? {};
+    final balance = data['balance'] as Map<String, dynamic>? ?? {};
+    final entries = data['entries'] as List<dynamic>? ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Ledger Snapshot', style: theme.textTheme.titleLarge),
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PartnerBalancePage(partnerId: widget.partnerId, partner: partner),
+                ),
+              ),
+              child: const Text('Full Ledger'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _stat(theme, 'Sent', (balance['total_sent'] as num?)?.toDouble() ?? 0)),
+            const SizedBox(width: 12),
+            Expanded(child: _stat(theme, 'Received', (balance['total_received'] as num?)?.toDouble() ?? 0)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _stat(theme, 'Net Balance', (balance['net_balance'] as num?)?.toDouble() ?? 0, fullWidth: true),
+        const SizedBox(height: 12),
+        ...entries.take(5).map(
+              (entry) => ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+                title: Text(entry['description']?.toString() ?? '-'),
+                subtitle: Text(entry['date']?.toString() ?? '-'),
+                trailing: Text(CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)),
+              ),
+            ),
+      ],
+    );
+  }
+
+  Future<void> _updateAccess(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    String accessLevel,
+  ) async {
+    await context.read<PartnerProvider>().updateAccess(partner.id, accessLevel, businessId);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Access updated to $accessLevel')),
+      );
+    }
+  }
+
+  Widget _chip(ThemeData theme, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(text),
+    );
+  }
+
+  Widget _stat(ThemeData theme, String title, double value, {bool fullWidth = false}) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 8),
+          Text(CurrencyFormatter.format(value), style: theme.textTheme.titleMedium),
+        ],
       ),
     );
   }

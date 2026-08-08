@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/partner_provider.dart';
+import '../../providers/market_provider.dart';
 
-class CreatePartnerPage extends StatefulWidget {
-  const CreatePartnerPage({super.key});
+class CreateMarketPage extends StatefulWidget {
+  const CreateMarketPage({super.key});
 
   @override
-  State<CreatePartnerPage> createState() => _CreatePartnerPageState();
+  State<CreateMarketPage> createState() => _CreateMarketPageState();
 }
 
-class _CreatePartnerPageState extends State<CreatePartnerPage> {
+class _CreateMarketPageState extends State<CreateMarketPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
-  String _role = 'partner';
+  final _addressCtrl = TextEditingController();
+  final _stallCtrl = TextEditingController();
+  String _marketType = 'wholesale';
   bool _saving = false;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _phoneCtrl.dispose();
     _cityCtrl.dispose();
+    _addressCtrl.dispose();
+    _stallCtrl.dispose();
     super.dispose();
   }
 
@@ -32,23 +34,24 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
     if (businessId == null || businessId.isEmpty) return;
 
     setState(() => _saving = true);
-    final partner = await context.read<PartnerProvider>().create({
-      'full_name': _nameCtrl.text.trim(),
-      'phone': _phoneCtrl.text.trim(),
-      'city': _cityCtrl.text.trim(),
-      'role': _role,
+    final market = await context.read<MarketProvider>().create({
       'business_id': businessId,
+      'name': _nameCtrl.text.trim(),
+      'city': _cityCtrl.text.trim(),
+      'address': _addressCtrl.text.trim(),
+      'stall_number': _stallCtrl.text.trim(),
+      'market_type': _marketType,
     });
     if (!mounted) return;
     setState(() => _saving = false);
-    if (partner != null) {
+    if (market != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Partner created successfully')),
+        const SnackBar(content: Text('Market created successfully')),
       );
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.read<PartnerProvider>().error ?? 'Failed to create partner')),
+        SnackBar(content: Text(context.read<MarketProvider>().error ?? 'Failed to create market')),
       );
     }
   }
@@ -56,7 +59,7 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Partner')),
+      appBar: AppBar(title: const Text('Create Market')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -65,32 +68,35 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
             children: [
               TextFormField(
                 controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Full name'),
+                decoration: const InputDecoration(labelText: 'Market name'),
                 validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Phone'),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _cityCtrl,
                 decoration: const InputDecoration(labelText: 'City'),
+                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _addressCtrl,
+                decoration: const InputDecoration(labelText: 'Address'),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _stallCtrl,
+                decoration: const InputDecoration(labelText: 'Stall number'),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _role,
-                decoration: const InputDecoration(labelText: 'Business role'),
+                initialValue: _marketType,
+                decoration: const InputDecoration(labelText: 'Market type'),
                 items: const [
-                  DropdownMenuItem(value: 'purchaser', child: Text('Purchaser')),
-                  DropdownMenuItem(value: 'seller', child: Text('Seller')),
+                  DropdownMenuItem(value: 'wholesale', child: Text('Wholesale')),
+                  DropdownMenuItem(value: 'retail', child: Text('Retail')),
                   DropdownMenuItem(value: 'both', child: Text('Both')),
-                  DropdownMenuItem(value: 'accountant', child: Text('Accountant')),
-                  DropdownMenuItem(value: 'partner', child: Text('Partner')),
                 ],
-                onChanged: (value) => setState(() => _role = value ?? 'partner'),
+                onChanged: (value) => setState(() => _marketType = value ?? 'wholesale'),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -101,7 +107,7 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Save Partner'),
+                    : const Text('Save Market'),
               ),
             ],
           ),

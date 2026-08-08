@@ -1,102 +1,163 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../providers/auth_provider.dart';
-import '../../../data/models/transaction_model.dart';
-import '../../../data/repositories/transaction_repository.dart';
-import '../../../core/utils/date_formatter.dart';
+import 'package:provider/provider.dart';
 
-class PartnerSettlementPage extends ConsumerStatefulWidget {
+import '../../../data/models/transaction_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/partner_provider.dart';
+import '../../providers/transaction_provider.dart';
+
+class PartnerSettlementPage extends StatefulWidget {
   const PartnerSettlementPage({super.key});
 
   @override
-  ConsumerState<PartnerSettlementPage> createState() => _PartnerSettlementPageState();
+  State<PartnerSettlementPage> createState() => _PartnerSettlementPageState();
 }
 
-class _PartnerSettlementPageState extends ConsumerState<PartnerSettlementPage> {
-  final _amountController = TextEditingController();
-  final _referenceController = TextEditingController();
-  final _notesController = TextEditingController();
+class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _amountCtrl = TextEditingController();
+  final _referenceCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  String? _fromPartnerId;
+  String? _toPartnerId;
   String _paymentMode = 'cash';
-  DateTime _date = DateTime.now();
+  String _transactionType = 'settlement';
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final businessId = context.read<AuthProvider>().businessId ?? '';
+      if (businessId.isNotEmpty) context.read<PartnerProvider>().load(businessId);
+    });
+  }
 
   @override
   void dispose() {
-    _amountController.dispose();
-    _referenceController.dispose();
-    _notesController.dispose();
+    _amountCtrl.dispose();
+    _referenceCtrl.dispose();
+    _notesCtrl.dispose();
     super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final authState = ref.read(authProvider);
-    final businessId = authState.user?.id ?? '';
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) return;
-
-    final request = TransactionCreateRequest(
-      businessId: businessId,
-      fromPartnerId: '',
-      toPartnerId: '',
-      amount: amount,
-      transactionType: 'settlement',
-      paymentMode: _paymentMode,
-      reference: _referenceController.text.isNotEmpty ? _referenceController.text : null,
-      transactionDate: DateFormatter.toISO(_date),
-      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-    );
-
-    final repo = ref.read(transactionRepositoryProvider);
-    await repo.create(request);
-    if (mounted) context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final businessId = context.watch<AuthProvider>().businessId ?? '';
+    final partnerProvider = context.watch<PartnerProvider>();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Partner Settlement')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(labelText: 'Amount (PKR) *'),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _paymentMode,
-              decoration: const InputDecoration(labelText: 'Payment Mode'),
-              items: const [
-                DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-              ],
-              onChanged: (v) => setState(() => _paymentMode = v!),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _referenceController,
-              decoration: const InputDecoration(labelText: 'Reference'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _notesController,
-              decoration: const InputDecoration(labelText: 'Notes'),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _submit,
-                child: const Text('Record Settlement'),
-              ),
-            ),
-          ],
-        ),
-      ),
+      appBar: AppBar(title: const Text('Record Settlement')),
+      body: partnerProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : partnerProvider.error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(partnerProvider.error.toString()),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: () => context.read<PartnerProvider>().load(businessId),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: _fromPartnerId,
+                        decoration: const InputDecoration(labelText: 'From Partner'),
+                        items: partnerProvider.partners.map((p) => DropdownMenuItem(value: p.id, child: Text(p.fullName))).toList(),
+                        onChanged: (value) => setState(() => _fromPartnerId = value),
+                        validator: (value) => value == null ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _toPartnerId,
+                        decoration: const InputDecoration(labelText: 'To Partner'),
+                        items: partnerProvider.partners.map((p) => DropdownMenuItem(value: p.id, child: Text(p.fullName))).toList(),
+                        onChanged: (value) => setState(() => _toPartnerId = value),
+                        validator: (value) => value == null ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _amountCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(labelText: 'Amount'),
+                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _transactionType,
+                        decoration: const InputDecoration(labelText: 'Transaction Type'),
+                        items: const [
+                          DropdownMenuItem(value: 'settlement', child: Text('Settlement')),
+                          DropdownMenuItem(value: 'advance', child: Text('Advance')),
+                          DropdownMenuItem(value: 'expense_reimbursement', child: Text('Expense Reimbursement')),
+                        ],
+                        onChanged: (value) => setState(() => _transactionType = value ?? 'settlement'),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _paymentMode,
+                        decoration: const InputDecoration(labelText: 'Payment Mode'),
+                        items: const [
+                          DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                          DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                        ],
+                        onChanged: (value) => setState(() => _paymentMode = value ?? 'cash'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(controller: _referenceCtrl, decoration: const InputDecoration(labelText: 'Reference')),
+                      const SizedBox(height: 12),
+                      TextFormField(controller: _notesCtrl, minLines: 3, maxLines: 5, decoration: const InputDecoration(labelText: 'Notes')),
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        onPressed: _isSaving
+                            ? null
+                            : () async {
+                                if (!_formKey.currentState!.validate()) return;
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
+                                setState(() => _isSaving = true);
+                                final transaction = await context.read<TransactionProvider>().create(
+                                      TransactionCreateRequest(
+                                        businessId: businessId,
+                                        fromPartnerId: _fromPartnerId!,
+                                        toPartnerId: _toPartnerId!,
+                                        amount: double.parse(_amountCtrl.text.trim()),
+                                        transactionType: _transactionType,
+                                        paymentMode: _paymentMode,
+                                        reference: _referenceCtrl.text.trim().isEmpty ? null : _referenceCtrl.text.trim(),
+                                        transactionDate: DateTime.now().toIso8601String().split('T').first,
+                                        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+                                      ),
+                                    );
+                                if (!mounted) return;
+                                final errorText = context.read<TransactionProvider>().error ?? 'Unknown error';
+                                setState(() => _isSaving = false);
+                                if (transaction != null) {
+                                  messenger.showSnackBar(
+                                    const SnackBar(content: Text('Settlement recorded')),
+                                  );
+                                  navigator.pop();
+                                } else {
+                                  messenger.showSnackBar(
+                                    SnackBar(content: Text('Failed: $errorText')),
+                                  );
+                                }
+                              },
+                        child: _isSaving ? const CircularProgressIndicator() : const Text('Save Settlement'),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 }
