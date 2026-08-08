@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/theme.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../../data/models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../widgets/green_card.dart';
 
 class RecordPaymentPage extends StatefulWidget {
   final CustomerModel customer;
@@ -31,6 +35,21 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
   }
 
   Future<void> _submit() async {
+    final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
+    if (amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Amount must be positive')));
+      return;
+    }
+    if (amount > widget.customer.outstandingBalance + 0.01) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Amount exceeds outstanding balance of ${CurrencyFormatter.format(widget.customer.outstandingBalance)}',
+          ),
+        ),
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
     final businessId = auth.businessId;
@@ -75,6 +94,11 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
+    final outstanding = widget.customer.outstandingBalance;
+    final overLimit = amount > outstanding + 0.01;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Record Payment')),
       body: SingleChildScrollView(
@@ -83,11 +107,65 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
           key: _formKey,
           child: Column(
             children: [
+              GreenCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: (outstanding > 0 ? AppColors.error : AppColors.success).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        outstanding > 0 ? MingCuteIcons.mgc_wallet_3_line : MingCuteIcons.mgc_check_circle_fill,
+                        color: outstanding > 0 ? AppColors.error : AppColors.success,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            outstanding > 0 ? 'Outstanding balance' : 'No balance owed',
+                            style: theme.textTheme.labelMedium,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            CurrencyFormatter.format(outstanding),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: outstanding > 0 ? AppColors.error : AppColors.success,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _amountCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Amount'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                decoration: InputDecoration(
+                  labelText: 'Amount',
+                  helperText: outstanding > 0
+                      ? 'Must not exceed ${CurrencyFormatter.format(outstanding)}'
+                      : 'No balance owed',
+                  errorText: overLimit ? 'Exceeds outstanding balance' : null,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return 'Required';
+                  final v = double.tryParse(value.trim());
+                  if (v == null || v <= 0) return 'Enter a positive number';
+                  if (v > outstanding + 0.01) return 'Exceeds outstanding balance';
+                  return null;
+                },
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -112,7 +190,7 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _saving ? null : _submit,
+                onPressed: (_saving || overLimit) ? null : _submit,
                 child: _saving
                     ? const SizedBox(
                         width: 18,
