@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../widgets/google_nav_bar.dart';
+import '../widgets/offline_banner.dart';
 import '../widgets/sidebar_drawer.dart';
 import 'batches/batch_list_page.dart';
 import 'customers/customer_list_page.dart';
@@ -68,11 +69,18 @@ class _MainShellState extends State<MainShell> {
         onOpenPage: _openPage,
         onLogout: _logout,
       ),
-      body: IndexedStack(
-        index: _index,
+      body: Column(
         children: [
-          for (var i = 0; i < _pages.length; i++)
-            Navigator(key: _keys[i], onGenerateRoute: (_) => _routeFor(i)),
+          const OfflineBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: _index,
+              children: [
+                for (var i = 0; i < _pages.length; i++)
+                  Navigator(key: _keys[i], onGenerateRoute: (_) => _routeFor(i)),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: GoogleNavBar(
