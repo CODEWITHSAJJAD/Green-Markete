@@ -48,12 +48,15 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   @override
   void initState() {
     super.initState();
-    context.read<BatchWizardProvider>().setStep(0);
-    final businessId = context.read<AuthProvider>().businessId;
-    if (businessId != null && businessId.isNotEmpty) {
-      context.read<ProductProvider>().load(businessId);
-      context.read<MarketProvider>().load(businessId);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<BatchWizardProvider>().setStep(0);
+      final businessId = context.read<AuthProvider>().businessId;
+      if (businessId != null && businessId.isNotEmpty) {
+        context.read<ProductProvider>().load(businessId);
+        context.read<MarketProvider>().load(businessId);
+      }
+    });
   }
 
   @override

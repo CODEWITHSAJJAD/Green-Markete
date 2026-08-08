@@ -9,20 +9,22 @@ class PartnerRepository {
   Future<List<PartnerModel>> list(String businessId) async {
     final rows = await _client
         .from('business_partners')
-        .select('*, user_profiles(full_name, phone, city)')
+        .select()
         .eq('business_id', businessId)
         .order('created_at', ascending: true);
-    return rows.map(_mergeProfile).map(PartnerModel.fromJson).toList();
+    final profiles = await _fetchProfiles(rows);
+    return rows.map((r) => _mergeProfile(r, profiles)).map(PartnerModel.fromJson).toList();
   }
 
   Future<List<PartnerModel>> search(String query, String businessId) async {
     final rows = await _client
         .from('business_partners')
-        .select('*, user_profiles(full_name, phone, city)')
+        .select()
         .eq('business_id', businessId)
         .or('full_name.ilike.%$query%,phone.ilike.%$query%')
         .order('full_name');
-    return rows.map(_mergeProfile).map(PartnerModel.fromJson).toList();
+    final profiles = await _fetchProfiles(rows);
+    return rows.map((r) => _mergeProfile(r, profiles)).map(PartnerModel.fromJson).toList();
   }
 
   Future<PartnerModel> create(Map<String, dynamic> data) async {
@@ -69,13 +71,32 @@ class PartnerRepository {
     await _client.from('business_partners').delete().eq('id', id);
   }
 
-  Map<String, dynamic> _mergeProfile(Map<String, dynamic> row) {
-    final profile = row.remove('user_profiles');
-    if (profile is Map<String, dynamic>) {
+  Future<Map<String, Map<String, dynamic>>> _fetchProfiles(
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final ids = rows
+        .map((r) => r['user_id'] as String?)
+        .whereType<String>()
+        .toSet()
+        .toList();
+    if (ids.isEmpty) return const {};
+    final profiles = await _client
+        .from('user_profiles')
+        .select('user_id, full_name, phone, city')
+        .inFilter('user_id', ids);
+    return {for (final p in profiles) p['user_id'] as String: p};
+  }
+
+  Map<String, dynamic> _mergeProfile(
+    Map<String, dynamic> row,
+    Map<String, Map<String, dynamic>> profiles,
+  ) {
+    final userId = row['user_id'] as String?;
+    final profile = userId == null ? null : profiles[userId];
+    if (profile != null) {
       row['full_name'] ??= profile['full_name'];
       row['phone'] ??= profile['phone'];
       row['city'] ??= profile['city'];
-      row['user_id'] ??= row['user_id'];
     }
     return row;
   }
