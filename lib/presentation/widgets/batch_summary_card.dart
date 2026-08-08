@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
+
+import '../../core/config/theme.dart';
 import '../../core/utils/currency_formatter.dart';
+import 'green_card.dart';
+import 'status_pill.dart';
 
 class BatchSummaryCard extends StatelessWidget {
-  final String productName;
-  final String? batchCode;
-  final String sourceCity;
-  final String destinationCity;
-  final String status;
-  final String quantity;
-  final double totalCost;
-  final double totalRevenue;
-  final double netProfitLoss;
-
   const BatchSummaryCard({
     super.key,
     required this.productName,
@@ -25,16 +20,22 @@ class BatchSummaryCard extends StatelessWidget {
     required this.netProfitLoss,
   });
 
+  final String productName;
+  final String? batchCode;
+  final String sourceCity;
+  final String destinationCity;
+  final String status;
+  final String quantity;
+  final double totalCost;
+  final double totalRevenue;
+  final double netProfitLoss;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-      ),
+
+    return GreenCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -45,25 +46,38 @@ class BatchSummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(productName, style: theme.textTheme.titleLarge),
-                    if (batchCode != null) Text(batchCode!, style: theme.textTheme.bodySmall),
+                    if (batchCode != null) ...[
+                      const SizedBox(height: 2),
+                      Text(batchCode!, style: theme.textTheme.bodySmall),
+                    ],
                   ],
                 ),
               ),
-              _statusPill(theme, status),
+              StatusPill(status: status),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
-              const Icon(Icons.arrow_forward, size: 16),
-              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(MingCute.truck_line, size: 16, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text('$sourceCity → $destinationCity', style: theme.textTheme.bodyMedium),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Quantity: $quantity', style: theme.textTheme.bodySmall),
+          Padding(
+            padding: const EdgeInsets.only(left: 30),
+            child: Text('Quantity: $quantity', style: theme.textTheme.bodySmall),
+          ),
           const Divider(height: 24),
           Row(
             children: [
@@ -72,12 +86,18 @@ class BatchSummaryCard extends StatelessWidget {
               Expanded(child: _metric(theme, 'Revenue', CurrencyFormatter.format(totalRevenue))),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Row(
             children: [
+              Icon(
+                netProfitLoss >= 0 ? MingCute.trending_up_line : MingCute.trending_down_line,
+                size: 16,
+                color: netProfitLoss >= 0 ? theme.colorScheme.primary : theme.colorScheme.error,
+              ),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Net ${netProfitLoss >= 0 ? 'Profit' : 'Loss'}: ${CurrencyFormatter.format(netProfitLoss)}',
+                  'Net ${netProfitLoss >= 0 ? 'Profit' : 'Loss'} · ${CurrencyFormatter.format(netProfitLoss)}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: netProfitLoss >= 0 ? theme.colorScheme.primary : theme.colorScheme.error,
                     fontWeight: FontWeight.w700,
@@ -88,27 +108,6 @@ class BatchSummaryCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _statusPill(ThemeData theme, String status) {
-    Color color;
-    switch (status) {
-      case 'purchased': color = Colors.grey; break;
-      case 'packed': color = Colors.blue; break;
-      case 'in_transit': color = Colors.amber.shade700; break;
-      case 'delivered': color = Colors.green; break;
-      case 'selling': color = Colors.teal; break;
-      case 'closed': color = Colors.grey.shade800; break;
-      default: color = Colors.grey;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(status, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
     );
   }
 

@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 
-class StatusPill extends StatelessWidget {
-  final String status;
+import '../../core/config/theme.dart';
 
-  const StatusPill({super.key, required this.status});
+/// A compact status indicator with a colored dot and label.
+class StatusPill extends StatelessWidget {
+  const StatusPill({super.key, required this.status, this.showDot = true});
+
+  final String status;
+  final bool showDot;
 
   Color get _color {
     switch (status.toLowerCase()) {
       case 'purchased':
-        return Colors.grey;
+        return AppColors.textSecondary;
       case 'packed':
-        return Colors.blue;
+        return const Color(0xFF2563EB);
       case 'in_transit':
-        return Colors.amber.shade700;
+        return AppColors.pending;
       case 'delivered':
-        return Colors.green;
+        return AppColors.success;
       case 'selling':
-        return Colors.teal;
+        return AppColors.primary;
       case 'closed':
-        return Colors.grey.shade800;
+        return AppColors.textTertiary;
       default:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 
@@ -28,6 +32,8 @@ class StatusPill extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'in_transit':
         return 'In Transit';
+      case 'purchased':
+        return 'Purchased';
       default:
         return status[0].toUpperCase() + status.substring(1);
     }
@@ -35,19 +41,34 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = _color;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        _label,
-        style: TextStyle(
-          color: _color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showDot) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            _label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
