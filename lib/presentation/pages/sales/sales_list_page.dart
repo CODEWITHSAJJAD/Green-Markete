@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import 'quick_sale_page.dart';
 
 class SalesListPage extends StatefulWidget {
-  const SalesListPage({super.key});
+  const SalesListPage({super.key, this.onMenu});
+
+  final VoidCallback? onMenu;
 
   @override
   State<SalesListPage> createState() => _SalesListPageState();
@@ -44,9 +47,13 @@ class _SalesListPageState extends State<SalesListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sales'),
+        leading: IconButton(
+          icon: const Icon(MingCute.menu_line),
+          onPressed: widget.onMenu,
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(MingCute.add_line),
             onPressed: _openCreate,
           ),
         ],

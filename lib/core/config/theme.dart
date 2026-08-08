@@ -244,6 +244,12 @@ class AppTheme {
         unselectedLabelStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500),
         enableFeedback: true,
       ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: AppColors.surface,
+        elevation: 8,
+        shape: const RoundedRectangleBorder(),
+        scrimColor: Colors.black.withValues(alpha: 0.35),
+      ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,

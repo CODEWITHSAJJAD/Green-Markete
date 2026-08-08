@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -17,7 +18,9 @@ import '../reports/reports_page.dart';
 import '../sales/quick_sale_page.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({super.key, this.onMenu});
+
+  final VoidCallback? onMenu;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -51,7 +54,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.cloud_off_rounded, size: 64, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                        Icon(MingCute.wifi_off_line, size: 64, color: theme.colorScheme.error.withValues(alpha: 0.5)),
                         const SizedBox(height: 16),
                         Text('Could not load dashboard', style: theme.textTheme.titleLarge),
                         const SizedBox(height: 8),
@@ -59,7 +62,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         const SizedBox(height: 20),
                         FilledButton.icon(
                           onPressed: () => context.read<DashboardProvider>().load(businessId),
-                          icon: const Icon(Icons.refresh, size: 18),
+                          icon: const Icon(MingCute.refresh_3_line, size: 18),
                           label: const Text('Try Again'),
                         ),
                       ],
@@ -71,9 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
                     children: [
-                      Text('Dashboard', style: theme.textTheme.headlineMedium),
-                      const SizedBox(height: 6),
-                      Text('Today\'s overview', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                      _buildHeader(theme),
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -81,7 +82,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Today\'s Revenue',
                               value: CurrencyFormatter.format(provider.todaySales),
-                              icon: Icons.trending_up_rounded,
+                              icon: MingCute.trending_up_line,
                               color: theme.colorScheme.primary,
                             ),
                           ),
@@ -90,7 +91,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Active Batches',
                               value: '${provider.activeBatchesCount}',
-                              icon: Icons.inventory_2_rounded,
+                              icon: MingCute.shopping_bag_2_line,
                               color: theme.colorScheme.secondary,
                             ),
                           ),
@@ -103,7 +104,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Outstanding Credit',
                               value: CurrencyFormatter.format(provider.outstandingCredit),
-                              icon: Icons.account_balance_wallet_rounded,
+                              icon: MingCute.wallet_3_line,
                               color: const Color(0xFFF59E0B),
                             ),
                           ),
@@ -112,7 +113,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Customers',
                               value: '${provider.customersCount}',
-                              icon: Icons.people_rounded,
+                              icon: MingCute.user_3_line,
                               color: const Color(0xFF8B5CF6),
                             ),
                           ),
@@ -125,7 +126,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Total Batches',
                               value: '${provider.batchesCount}',
-                              icon: Icons.layers_rounded,
+                              icon: MingCute.archive_line,
                               color: const Color(0xFF0EA5E9),
                             ),
                           ),
@@ -134,7 +135,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: DashboardCard(
                               title: 'Products',
                               value: '${provider.productsCount}',
-                              icon: Icons.category_rounded,
+                              icon: MingCute.package_line,
                               color: const Color(0xFF10B981),
                             ),
                           ),
@@ -210,7 +211,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             onPressed: () => Navigator.of(context).push(
                               MaterialPageRoute(builder: (_) => const BatchListPage()),
                             ),
-                            icon: const Icon(Icons.arrow_forward, size: 16),
+                            icon: const Icon(MingCute.arrow_right_line, size: 16),
                             label: const Text('View all'),
                           ),
                         ],
@@ -249,13 +250,32 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Row(
       children: [
-        Expanded(child: tile(Icons.add_box_rounded, 'New Batch', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateBatchWizard())), theme.colorScheme.primary)),
+        Expanded(child: tile(MingCute.add_line, 'New Batch', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateBatchWizard())), theme.colorScheme.primary)),
         const SizedBox(width: 8),
-        Expanded(child: tile(Icons.point_of_sale_rounded, 'New Sale', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuickSalePage())), theme.colorScheme.secondary)),
+        Expanded(child: tile(MingCute.bill_line, 'New Sale', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuickSalePage())), theme.colorScheme.secondary)),
         const SizedBox(width: 8),
-        Expanded(child: tile(Icons.payments_outlined, 'Record Payment', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomerListPage())), Colors.deepPurple)),
+        Expanded(child: tile(MingCute.exchange_dollar_line, 'Record Payment', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomerListPage())), Colors.deepPurple)),
         const SizedBox(width: 8),
-        Expanded(child: tile(Icons.bar_chart_rounded, 'Reports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportsPage())), const Color(0xFF0EA5E9))),
+        Expanded(child: tile(MingCute.chart_bar_line, 'Reports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportsPage())), const Color(0xFF0EA5E9))),
+      ],
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      children: [
+        _MenuButton(onPressed: widget.onMenu),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Dashboard', style: theme.textTheme.headlineMedium),
+              const SizedBox(height: 2),
+              Text('Today\'s overview', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -264,6 +284,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       children: [
+        _MenuButton(onPressed: widget.onMenu),
+        const SizedBox(height: 24),
         Text('Dashboard', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 24),
         Shimmer.fromColors(
@@ -286,6 +308,33 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MenuButton extends StatelessWidget {
+  const _MenuButton({this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onPressed,
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(MingCute.menu_line, size: 22),
+        ),
+      ),
     );
   }
 }

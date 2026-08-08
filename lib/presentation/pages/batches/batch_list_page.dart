@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../providers/auth_provider.dart';
@@ -8,7 +9,9 @@ import 'batch_detail_page.dart';
 import 'create_batch_wizard.dart';
 
 class BatchListPage extends StatefulWidget {
-  const BatchListPage({super.key});
+  const BatchListPage({super.key, this.onMenu});
+
+  final VoidCallback? onMenu;
 
   @override
   State<BatchListPage> createState() => _BatchListPageState();
@@ -47,9 +50,13 @@ class _BatchListPageState extends State<BatchListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Batches'),
+        leading: IconButton(
+          icon: const Icon(MingCute.menu_line),
+          onPressed: widget.onMenu,
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(MingCute.add_line),
             onPressed: _openCreate,
           ),
         ],

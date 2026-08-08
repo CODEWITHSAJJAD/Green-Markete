@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/auth_provider.dart';
+import '../widgets/google_nav_bar.dart';
+import '../widgets/sidebar_drawer.dart';
 import 'batches/batch_list_page.dart';
 import 'customers/customer_list_page.dart';
 import 'dashboard/dashboard_page.dart';
@@ -16,22 +21,55 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   final List<GlobalKey<NavigatorState>> _keys = List.generate(
     5,
     (_) => GlobalKey<NavigatorState>(),
   );
 
-  List<Widget> get _pages => const [
-        DashboardPage(),
-        BatchListPage(),
-        SalesListPage(),
-        CustomerListPage(),
-        MoreMenuPage(),
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+
+  void _closeDrawer() => _scaffoldKey.currentState?.closeDrawer();
+
+  void _selectTab(int index) {
+    _closeDrawer();
+    setState(() => _index = index);
+  }
+
+  void _openPage(Widget page) {
+    _closeDrawer();
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  }
+
+  void _logout() {
+    _closeDrawer();
+    context.read<AuthProvider>().logout();
+  }
+
+  List<Widget> get _pages => [
+        DashboardPage(onMenu: _openDrawer),
+        BatchListPage(onMenu: _openDrawer),
+        SalesListPage(onMenu: _openDrawer),
+        CustomerListPage(onMenu: _openDrawer),
+        MoreMenuPage(onMenu: _openDrawer),
       ];
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final user = auth.user;
+
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: SidebarDrawer(
+        currentTab: _index,
+        userName: user?.fullName,
+        userSubtitle: user?.phone ?? user?.email,
+        onSelectTab: _selectTab,
+        onOpenPage: _openPage,
+        onLogout: _logout,
+      ),
       body: IndexedStack(
         index: _index,
         children: [
@@ -39,54 +77,36 @@ class _MainShellState extends State<MainShell> {
             Navigator(key: _keys[i], onGenerateRoute: (_) => _routeFor(i)),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: BottomNavigationBar(
-              currentIndex: _index,
-              onTap: (index) => setState(() => _index = index),
-              type: BottomNavigationBarType.fixed,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.dashboard_rounded),
-                  activeIcon: Icon(Icons.dashboard_rounded),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.inventory_2_outlined),
-                  activeIcon: Icon(Icons.inventory_2),
-                  label: 'Batches',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.point_of_sale_outlined),
-                  activeIcon: Icon(Icons.point_of_sale),
-                  label: 'Sales',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.people_outline),
-                  activeIcon: Icon(Icons.people),
-                  label: 'Customers',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.more_horiz_outlined),
-                  activeIcon: Icon(Icons.more_horiz),
-                  label: 'More',
-                ),
-              ],
-            ),
+      bottomNavigationBar: GoogleNavBar(
+        currentIndex: _index,
+        onTap: (index) => setState(() => _index = index),
+        items: const [
+          GoogleNavItem(
+            icon: MingCute.home_5_line,
+            activeIcon: MingCute.home_5_fill,
+            label: 'Home',
           ),
-        ),
+          GoogleNavItem(
+            icon: MingCute.shopping_bag_2_line,
+            activeIcon: MingCute.shopping_bag_2_fill,
+            label: 'Batches',
+          ),
+          GoogleNavItem(
+            icon: MingCute.bill_line,
+            activeIcon: MingCute.bill_fill,
+            label: 'Sales',
+          ),
+          GoogleNavItem(
+            icon: MingCute.user_3_line,
+            activeIcon: MingCute.user_3_fill,
+            label: 'Customers',
+          ),
+          GoogleNavItem(
+            icon: MingCute.more_2_line,
+            activeIcon: MingCute.more_2_fill,
+            label: 'More',
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../providers/auth_provider.dart';
@@ -8,7 +9,9 @@ import 'create_customer_page.dart';
 import 'customer_ledger_page.dart';
 
 class CustomerListPage extends StatefulWidget {
-  const CustomerListPage({super.key});
+  const CustomerListPage({super.key, this.onMenu});
+
+  final VoidCallback? onMenu;
 
   @override
   State<CustomerListPage> createState() => _CustomerListPageState();
@@ -69,7 +72,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Column(
           children: [
-            Icon(Icons.people_outline_rounded, size: 52, color: theme.colorScheme.outline),
+            Icon(MingCute.user_3_line, size: 52, color: theme.colorScheme.outline),
             const SizedBox(height: 12),
             Text('No customers found', style: theme.textTheme.titleLarge),
           ],
@@ -157,7 +160,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                 ),
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                child: Icon(MingCute.delete_3_line, color: theme.colorScheme.error),
               ),
               confirmDismiss: (_) => showConfirmDialog(
                 context,
@@ -182,9 +185,13 @@ class _CustomerListPageState extends State<CustomerListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Customers'),
+        leading: IconButton(
+          icon: const Icon(MingCute.menu_line),
+          onPressed: widget.onMenu,
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(MingCute.add_line),
             onPressed: _openCreateCustomer,
           ),
         ],
@@ -225,7 +232,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                   },
                   decoration: const InputDecoration(
                     hintText: 'Search by name, phone, or shop',
-                    prefixIcon: Icon(Icons.search_rounded),
+                    prefixIcon: Icon(MingCute.search_2_line),
                   ),
                 ),
               ],
@@ -237,7 +244,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreateCustomer,
-        icon: const Icon(Icons.person_add_alt_1_rounded),
+        icon: const Icon(MingCute.user_4_line),
         label: const Text('New Customer'),
       ),
     );
