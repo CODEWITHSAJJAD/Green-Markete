@@ -49,10 +49,12 @@ class BusinessRepository {
     String businessId, {
     String? name,
     double? creditAlertThreshold,
+    String? currencyCode,
   }) async {
     await _client.from('businesses').update({
       'name': ?name,
       'credit_alert_threshold': ?creditAlertThreshold,
+      'currency_code': ?currencyCode,
     }).eq('id', businessId);
   }
 }

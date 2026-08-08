@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../widgets/error_snackbar.dart';
@@ -15,13 +16,26 @@ class BusinessSettingsPage extends StatefulWidget {
 class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _thresholdCtrl;
+  late String _currencyCode;
   bool _saving = false;
+
+  static const List<String> _currencyOptions = [
+    'PKR',
+    'USD',
+    'EUR',
+    'GBP',
+    'INR',
+    'AED',
+    'SAR',
+    'CNY',
+  ];
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController();
     _thresholdCtrl = TextEditingController();
+    _currencyCode = 'PKR';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final businessId = context.read<AuthProvider>().businessId;
@@ -48,6 +62,9 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     if (_thresholdCtrl.text != threshold) {
       _thresholdCtrl.text = threshold;
     }
+    if (_currencyCode != business.currencyCode) {
+      _currencyCode = business.currencyCode;
+    }
   }
 
   Future<void> _save() async {
@@ -65,6 +82,7 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     final ok = await context.read<BusinessProvider>().updateSettings(
       name: _nameCtrl.text.trim(),
       creditAlertThreshold: threshold,
+      currencyCode: _currencyCode,
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -73,7 +91,8 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     } else {
       showErrorSnackbar(
         context,
-        context.read<BusinessProvider>().error ?? 'Failed to update settings',
+        context.read<BusinessProvider>().error ??
+            'Failed to update settings. The backend may need a currency_code column.',
       );
     }
   }
@@ -83,9 +102,10 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     final provider = context.watch<BusinessProvider>();
     _syncControllers(provider);
     final business = provider.business;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Business Settings')),
+      appBar: AppBar(title: Text(l10n.menuBusinessInfo)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -121,6 +141,20 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                 onChanged: (v) {
                   final parsed = double.tryParse(v.trim());
                   if (parsed == null || parsed < 0) return;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _currencyOptions.contains(_currencyCode)
+                    ? _currencyCode
+                    : _currencyOptions.first,
+                decoration: InputDecoration(labelText: l10n.settingsCurrency),
+                items: [
+                  for (final c in _currencyOptions)
+                    DropdownMenuItem(value: c, child: Text(c)),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _currencyCode = v);
                 },
               ),
               const SizedBox(height: 24),

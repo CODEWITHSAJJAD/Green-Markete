@@ -4,6 +4,7 @@ class BusinessModel {
   final String ownerId;
   final String businessType;
   final double? creditAlertThreshold;
+  final String currencyCode;
   final String? createdAt;
 
   BusinessModel({
@@ -12,6 +13,7 @@ class BusinessModel {
     required this.ownerId,
     this.businessType = 'multi_partner',
     this.creditAlertThreshold,
+    this.currencyCode = 'PKR',
     this.createdAt,
   });
 
@@ -22,6 +24,7 @@ class BusinessModel {
       ownerId: json['owner_id'] as String,
       businessType: json['business_type'] as String? ?? 'multi_partner',
       creditAlertThreshold: (json['credit_alert_threshold'] as num?)?.toDouble(),
+      currencyCode: json['currency_code'] as String? ?? 'PKR',
       createdAt: json['created_at'] as String?,
     );
   }
@@ -31,5 +34,6 @@ class BusinessModel {
     'name': name,
     'owner_id': ownerId,
     'business_type': businessType,
+    'currency_code': currencyCode,
   };
 }

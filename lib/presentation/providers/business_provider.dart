@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/utils/currency_formatter.dart';
 import '../../data/models/business_model.dart';
 import '../../data/repositories/business_repository.dart';
 
@@ -23,6 +24,9 @@ class BusinessProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _business = await _repo.fetch(businessId);
+      if (_business != null) {
+        CurrencyFormatter.currentCode = _business!.currencyCode;
+      }
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
@@ -34,6 +38,7 @@ class BusinessProvider extends ChangeNotifier {
   Future<bool> updateSettings({
     String? name,
     double? creditAlertThreshold,
+    String? currencyCode,
   }) async {
     final businessId = _business?.id;
     if (businessId == null) return false;
@@ -45,6 +50,7 @@ class BusinessProvider extends ChangeNotifier {
         businessId,
         name: name,
         creditAlertThreshold: creditAlertThreshold,
+        currencyCode: currencyCode,
       );
       _business = BusinessModel(
         id: businessId,
@@ -53,8 +59,10 @@ class BusinessProvider extends ChangeNotifier {
         businessType: _business!.businessType,
         creditAlertThreshold:
             creditAlertThreshold ?? _business!.creditAlertThreshold,
+        currencyCode: currencyCode ?? _business!.currencyCode,
         createdAt: _business!.createdAt,
       );
+      CurrencyFormatter.currentCode = _business!.currencyCode;
       _isLoading = false;
       notifyListeners();
       return true;
