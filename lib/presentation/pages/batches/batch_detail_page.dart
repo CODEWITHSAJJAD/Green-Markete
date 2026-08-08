@@ -174,7 +174,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         ),
       ),
       body: _buildBody(context, theme, batchProvider),
-      floatingActionButton: canEdit ? _buildFab(context) : null,
+      floatingActionButton: (canEdit && batch?.status != 'closed') ? _buildFab(context) : null,
     );
   }
 
@@ -285,6 +285,27 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (batch.status == 'closed')
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(MingCuteIcons.mgc_lock_line, size: 16, color: theme.colorScheme.onSurface),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Closed — read only. Edits, packing, expenses and sales are locked.',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Row(
                 children: [
                   Expanded(
@@ -314,14 +335,15 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                 ],
               ),
               const SizedBox(height: 18),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonalIcon(
-                  onPressed: () => _advanceStatus(context, batch.status),
-                  icon: const Icon(MingCuteIcons.mgc_route_line),
-                  label: const Text('Advance Status'),
+              if (batch.status != 'closed')
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => _advanceStatus(context, batch.status),
+                    icon: const Icon(MingCuteIcons.mgc_route_line),
+                    label: const Text('Advance Status'),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
