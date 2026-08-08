@@ -13,6 +13,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/batch_wizard_provider.dart';
 import '../../providers/market_provider.dart';
+import '../../providers/partner_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/partner_selector.dart';
 import '../../widgets/packing_entry_form.dart';
@@ -41,6 +42,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
   // Step 2
   List<Map<String, dynamic>> _partners = [];
+  String? _sellerId;
 
   // Step 3
   List<Map<String, dynamic>> _packing = [];
@@ -58,6 +60,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       if (businessId != null && businessId.isNotEmpty) {
         context.read<ProductProvider>().load(businessId);
         context.read<MarketProvider>().load(businessId);
+        context.read<PartnerProvider>().load(businessId);
       }
     });
   }
@@ -94,7 +97,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             _quantityCtrl.text.trim().isNotEmpty &&
             _priceCtrl.text.trim().isNotEmpty;
       case 1:
-        return _partners.isNotEmpty && _partners.first['partner_id'] != null;
+        return _partners.isNotEmpty &&
+            _partners.first['partner_id'] != null &&
+            _sellerId != null;
       case 2:
         return true;
       case 3:
@@ -133,15 +138,23 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       quantityUnit: _unit,
       purchasePricePerUnit: pricePerUnit,
       transportPaidBy: _transportPaidBy,
-      partners: _partners
-          .where((p) => p['partner_id'] != null)
-          .map((p) => BatchPartnerCreate(
-                partnerId: p['partner_id'] as String,
-                role: p['role'] as String,
-                dailyChargeRate: (p['daily_charge_rate'] as num?)?.toDouble() ?? 0,
-                daysInvolved: (p['days_involved'] as int?) ?? 1,
-              ))
-          .toList(),
+      partners: [
+        ..._partners
+            .where((p) => p['partner_id'] != null)
+            .map((p) => BatchPartnerCreate(
+                  partnerId: p['partner_id'] as String,
+                  role: p['role'] as String,
+                  dailyChargeRate: (p['daily_charge_rate'] as num?)?.toDouble() ?? 0,
+                  daysInvolved: (p['days_involved'] as int?) ?? 1,
+                )),
+        if (_sellerId != null)
+          BatchPartnerCreate(
+            partnerId: _sellerId!,
+            role: 'seller',
+            dailyChargeRate: 0,
+            daysInvolved: 1,
+          ),
+      ],
       packingRecords: _packing
           .where((p) => (p['unit_count'] as int) > 0)
           .map((p) => PackingRecordCreate(
@@ -451,6 +464,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   }
 
   Widget _step2() {
+    final partners = context.watch<PartnerProvider>().partners;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -465,6 +479,26 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             businessId: context.read<AuthProvider>().businessId ?? '',
             onChanged: (partners) => setState(() => _partners = partners),
           ),
+          const SizedBox(height: 24),
+          Text('Selling Partner', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          partners.isEmpty
+              ? const Text(
+                  'No partners yet. Add at least one purchasing partner above first.',
+                  style: TextStyle(color: Colors.grey),
+                )
+              : DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: _sellerId,
+                  decoration: const InputDecoration(labelText: 'Select the selling partner'),
+                  items: partners
+                      .map((p) => DropdownMenuItem(
+                            value: p.id,
+                            child: Text(p.fullName, overflow: TextOverflow.ellipsis, maxLines: 1),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _sellerId = v),
+                ),
         ],
       ),
     );
