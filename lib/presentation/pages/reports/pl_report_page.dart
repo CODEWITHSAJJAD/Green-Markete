@@ -1,12 +1,15 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/report_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/report_provider.dart';
+import '../../widgets/green_card.dart';
 
 class PLReportPage extends StatefulWidget {
   const PLReportPage({super.key});
@@ -45,7 +48,7 @@ class _PLReportPageState extends State<PLReportPage> {
         title: const Text('P&L Summary'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today),
+            icon: const Icon(MingCute.calendar_3_line),
             tooltip: 'Date range',
             onPressed: () async {
               final picked = await showDateRangePicker(
@@ -66,7 +69,7 @@ class _PLReportPageState extends State<PLReportPage> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.file_download_outlined),
+            icon: const Icon(MingCute.download_2_line),
             tooltip: 'Export CSV',
             onPressed: () => _exportCsv(businessId),
           ),
@@ -143,7 +146,7 @@ class _PLReportPageState extends State<PLReportPage> {
               barGroups: [
                 _group(0, pl.totalRevenue, theme.colorScheme.primary),
                 _group(1, pl.totalCost, theme.colorScheme.secondary),
-                _group(2, pl.totalProfitLoss, pl.totalProfitLoss >= 0 ? Colors.green : Colors.red),
+                _group(2, pl.totalProfitLoss, pl.totalProfitLoss >= 0 ? AppColors.profit : AppColors.error),
               ],
             ),
           ),
@@ -168,13 +171,9 @@ class _PLReportPageState extends State<PLReportPage> {
   }
 
   Widget _tile(ThemeData theme, String title, double value, {bool highlight = false}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return GreenCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -182,7 +181,7 @@ class _PLReportPageState extends State<PLReportPage> {
           Text(
             CurrencyFormatter.format(value),
             style: theme.textTheme.titleMedium?.copyWith(
-              color: highlight ? (value >= 0 ? Colors.green : Colors.red) : null,
+              color: highlight ? (value >= 0 ? AppColors.profit : AppColors.error) : null,
             ),
           ),
         ],
@@ -191,13 +190,9 @@ class _PLReportPageState extends State<PLReportPage> {
   }
 
   Widget _textTile(ThemeData theme, String title, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return GreenCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [Text(title), Text(value, style: theme.textTheme.titleMedium)],

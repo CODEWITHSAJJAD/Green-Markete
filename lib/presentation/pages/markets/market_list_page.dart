@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/green_card.dart';
 import 'create_market_page.dart';
 
 class MarketListPage extends StatefulWidget {
@@ -43,7 +48,7 @@ class _MarketListPageState extends State<MarketListPage> {
         title: const Text('Markets'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_business_rounded),
+            icon: const Icon(MingCute.store_line),
             onPressed: _openCreate,
           ),
         ],
@@ -99,27 +104,22 @@ class _MarketListPageState extends State<MarketListPage> {
             )
           else if (markets.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                children: [
-                  Icon(Icons.storefront_outlined, size: 52, color: theme.colorScheme.outline),
-                  const SizedBox(height: 12),
-                  Text('No markets found', style: theme.textTheme.titleLarge),
-                ],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: EmptyState(
+                icon: MingCute.store_2_line,
+                title: 'No markets found',
+                subtitle: 'Add source and destination markets to organise batch routes.',
+                actionLabel: 'New Market',
+                onAction: _openCreate,
               ),
             )
           else
             Column(
               children: markets
                   .map(
-                    (market) => Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-                      ),
+                    (market) => GreenCard(
+                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       child: Row(
                         children: [
                           Container(
@@ -129,7 +129,7 @@ class _MarketListPageState extends State<MarketListPage> {
                               color: theme.colorScheme.secondary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Icon(Icons.store_mall_directory_rounded, color: theme.colorScheme.secondary),
+                            child: Icon(MingCute.store_2_line, color: theme.colorScheme.secondary),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -157,7 +157,7 @@ class _MarketListPageState extends State<MarketListPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
-        icon: const Icon(Icons.add_location_alt_rounded),
+        icon: const Icon(MingCute.map_pin_line),
         label: const Text('New Market'),
       ),
     );

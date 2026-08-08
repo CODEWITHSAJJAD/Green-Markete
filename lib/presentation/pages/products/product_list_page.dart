@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../widgets/green_card.dart';
 
 class ProductListPage extends StatefulWidget {
   const ProductListPage({super.key});
@@ -42,7 +46,7 @@ class _ProductListPageState extends State<ProductListPage> {
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Column(
           children: [
-            Icon(Icons.inventory_2_outlined, size: 52, color: theme.colorScheme.outline),
+            Icon(MingCute.package_line, size: 52, color: theme.colorScheme.outline),
             const SizedBox(height: 12),
             Text('No products yet', style: theme.textTheme.titleLarge),
           ],
@@ -52,14 +56,9 @@ class _ProductListPageState extends State<ProductListPage> {
       productsSection = Column(
         children: provider.products
             .map(
-              (product) => Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-                ),
+              (product) => GreenCard(
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
                     Container(
@@ -69,7 +68,7 @@ class _ProductListPageState extends State<ProductListPage> {
                         color: theme.colorScheme.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(Icons.eco_outlined, color: theme.colorScheme.primary),
+                      child: Icon(MingCute.leaf_2_line, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -103,7 +102,7 @@ class _ProductListPageState extends State<ProductListPage> {
         title: const Text('Products'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(MingCute.add_line),
             onPressed: () => _showCreateDialog(context, businessId),
           ),
         ],

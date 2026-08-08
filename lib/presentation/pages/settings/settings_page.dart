@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/green_card.dart';
+import '../../widgets/section_header.dart';
 import 'access_management_page.dart';
 import 'business_settings_page.dart';
 import 'profile_page.dart';
@@ -50,23 +55,23 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Text('Account', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
-          const SizedBox(height: 8),
-          _settingTile(theme, Icons.person_outline, 'Edit Profile', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePage()))),
-          _settingTile(theme, Icons.business_outlined, 'Business Info', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSettingsPage()))),
-          _settingTile(theme, Icons.admin_panel_settings_outlined, 'Access Management', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccessManagementPage()))),
-          _settingTile(theme, Icons.notifications_outlined, 'Notifications'),
+          const SectionHeader(title: 'Account'),
+          const SizedBox(height: 4),
+          _settingTile(theme, MingCute.user_1_line, 'Edit Profile', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePage()))),
+          _settingTile(theme, MingCute.building_2_line, 'Business Info', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSettingsPage()))),
+          _settingTile(theme, MingCute.shield_line, 'Access Management', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccessManagementPage()))),
+          _settingTile(theme, MingCute.notification_line, 'Notifications'),
           const SizedBox(height: 24),
-          Text('Support', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
-          const SizedBox(height: 8),
-          _settingTile(theme, Icons.help_outline, 'Help Center'),
-          _settingTile(theme, Icons.info_outline, 'About'),
+          const SectionHeader(title: 'Support'),
+          const SizedBox(height: 4),
+          _settingTile(theme, MingCute.question_line, 'Help Center'),
+          _settingTile(theme, MingCute.information_line, 'About'),
           const SizedBox(height: 32),
           SizedBox(
             height: 48,
             child: OutlinedButton.icon(
               onPressed: () => context.read<AuthProvider>().logout(),
-              icon: const Icon(Icons.logout_rounded, size: 18),
+              icon: const Icon(MingCute.exit_door_line, size: 18),
               label: const Text('Sign Out'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.error,
@@ -81,15 +86,24 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _settingTile(ThemeData theme, IconData icon, String title, {VoidCallback? onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
+    return GreenCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+      padding: EdgeInsets.zero,
+      onTap: onTap,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-        leading: Icon(icon, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Icon(icon, size: 20, color: AppColors.primary),
+        ),
         title: Text(title, style: theme.textTheme.bodyLarge),
-        trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+        trailing: Icon(MingCute.arrow_right_line, color: AppColors.textTertiary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onTap: onTap ?? () {},
       ),
     );
   }

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/partner_model.dart';
 import '../../../data/repositories/partner_repository.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../widgets/green_card.dart';
 import '../transactions/partner_balance_page.dart';
 
 class PartnerProfilePage extends StatefulWidget {
@@ -88,13 +91,8 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Container(
+        GreenCard(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -142,7 +140,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                       const SnackBar(content: Text('Invitation sent')),
                     );
                   },
-                  icon: const Icon(Icons.send_rounded),
+                  icon: const Icon(MingCute.send_line),
                   label: const Text('Resend Invitation'),
                 ),
               ],
@@ -151,13 +149,8 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
         ),
         const SizedBox(height: 16),
         if (currentRole == 'owner')
-          Container(
+          GreenCard(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -241,11 +234,15 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
         _stat(theme, 'Net Balance', (balance['net_balance'] as num?)?.toDouble() ?? 0, fullWidth: true),
         const SizedBox(height: 12),
         ...entries.take(5).map(
-              (entry) => ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-                title: Text(entry['description']?.toString() ?? '-'),
-                subtitle: Text(entry['date']?.toString() ?? '-'),
-                trailing: Text(CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)),
+              (entry) => GreenCard(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+                  title: Text(entry['description']?.toString() ?? '-'),
+                  subtitle: Text(entry['date']?.toString() ?? '-'),
+                  trailing: Text(CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)),
+                ),
               ),
             ),
       ],
@@ -278,14 +275,8 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
   }
 
   Widget _stat(ThemeData theme, String title, double value, {bool fullWidth = false}) {
-    return Container(
-      width: fullWidth ? double.infinity : null,
+    return GreenCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

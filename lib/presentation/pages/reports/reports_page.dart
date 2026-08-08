@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/report_provider.dart';
+import '../../widgets/green_card.dart';
+import '../../widgets/section_header.dart';
 import 'credit_report_page.dart';
 import 'market_performance_page.dart';
 import 'overdue_customers_page.dart';
@@ -75,17 +80,17 @@ class _ReportsPageState extends State<ReportsPage> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.15,
             children: [
-              _navCard(context, theme, 'P&L Summary', Icons.bar_chart_rounded, const PLReportPage()),
-              _navCard(context, theme, 'Customer Credit', Icons.account_balance_wallet_rounded, const CreditReportPage()),
-              _navCard(context, theme, 'Overdue Customers', Icons.warning_amber_rounded, const OverdueCustomersPage()),
-              _navCard(context, theme, 'Market Performance', Icons.storefront_rounded, const MarketPerformancePage()),
+              _navCard(context, theme, 'P&L Summary', MingCute.chart_bar_line, const PLReportPage()),
+              _navCard(context, theme, 'Customer Credit', MingCute.wallet_3_line, const CreditReportPage()),
+              _navCard(context, theme, 'Overdue Customers', MingCute.alert_line, const OverdueCustomersPage()),
+              _navCard(context, theme, 'Market Performance', MingCute.store_2_line, const MarketPerformancePage()),
             ],
           ),
           const SizedBox(height: 24),
           _buildPLSection(theme, report),
           const SizedBox(height: 24),
-          Text('Credit alerts', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 12),
+          const SectionHeader(title: 'Credit alerts'),
+          const SizedBox(height: AppSpacing.sm),
           _buildOverdueSection(theme, report),
         ],
       ),
@@ -130,7 +135,7 @@ class _ReportsPageState extends State<ReportsPage> {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _metric(theme, 'Profit / Loss', CurrencyFormatter.formatCompact(pl.totalProfitLoss), pl.totalProfitLoss >= 0 ? Colors.green : Colors.red)),
+            Expanded(child: _metric(theme, 'Profit / Loss', CurrencyFormatter.formatCompact(pl.totalProfitLoss), pl.totalProfitLoss >= 0 ? AppColors.profit : AppColors.error)),
             const SizedBox(width: 12),
             Expanded(child: _metric(theme, 'Batches', '${pl.totalBatches}', theme.colorScheme.tertiary)),
           ],
@@ -142,14 +147,9 @@ class _ReportsPageState extends State<ReportsPage> {
         ),
         const SizedBox(height: 12),
         ...pl.batchSummaries.take(5).map(
-          (batch) => Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
+          (batch) => GreenCard(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Row(
               children: [
                 Expanded(
@@ -168,7 +168,7 @@ class _ReportsPageState extends State<ReportsPage> {
                 Text(
                   CurrencyFormatter.format(batch.netProfitLoss),
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: batch.netProfitLoss >= 0 ? Colors.green : Colors.red,
+                    color: batch.netProfitLoss >= 0 ? AppColors.profit : AppColors.error,
                   ),
                 ),
               ],
@@ -205,19 +205,14 @@ class _ReportsPageState extends State<ReportsPage> {
     return Column(
       children: customers
           .map(
-            (customer) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-              ),
+            (customer) => GreenCard(
+              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
                   CircleAvatar(
                     backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.12),
-                    child: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.secondary),
+                    child: Icon(MingCute.alert_line, color: theme.colorScheme.secondary),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -243,13 +238,8 @@ class _ReportsPageState extends State<ReportsPage> {
   }
 
   Widget _metric(ThemeData theme, String title, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-      ),
+    return GreenCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -262,27 +252,20 @@ class _ReportsPageState extends State<ReportsPage> {
   }
 
   Widget _navCard(BuildContext context, ThemeData theme, String title, IconData icon, Widget page) {
-    return InkWell(
+    return GreenCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page)),
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            CircleAvatar(
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-              child: Icon(icon, color: theme.colorScheme.primary),
-            ),
-            Text(title, style: theme.textTheme.titleMedium),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          CircleAvatar(
+            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+            child: Icon(icon, color: AppColors.primary),
+          ),
+          const SizedBox(height: 12),
+          Text(title, style: theme.textTheme.titleMedium),
+        ],
       ),
     );
   }

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../../data/models/report_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/report_provider.dart';
+import '../../widgets/green_card.dart';
 import '../customers/customer_ledger_page.dart';
 
 class OverdueCustomersPage extends StatefulWidget {
@@ -87,12 +90,14 @@ class _OverdueCustomersPageState extends State<OverdueCustomersPage> {
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final c = filtered[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
+        return GreenCard(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: EdgeInsets.zero,
           child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
-              child: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.secondary),
+              child: Icon(MingCute.alert_line, color: theme.colorScheme.secondary),
             ),
             title: Text(c.fullName),
             subtitle: Text(c.city ?? '-'),

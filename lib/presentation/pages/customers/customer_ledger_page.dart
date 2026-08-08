@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/credit_indicator.dart';
+import '../../widgets/green_card.dart';
+import '../../widgets/section_header.dart';
 import 'record_payment_page.dart';
 
 class CustomerLedgerPage extends StatefulWidget {
@@ -56,14 +61,9 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
       ledgerSection = Column(
         children: provider.ledger
             .map(
-              (entry) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-                ),
+              (entry) => GreenCard(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
                     CircleAvatar(
@@ -71,7 +71,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                           ? theme.colorScheme.primary.withValues(alpha: 0.12)
                           : theme.colorScheme.secondary.withValues(alpha: 0.12),
                       child: Icon(
-                        entry.type == 'payment' ? Icons.south_west_rounded : Icons.north_east_rounded,
+                        entry.type == 'payment' ? MingCute.arrow_down_line : MingCute.arrow_up_line,
                         color: entry.type == 'payment' ? theme.colorScheme.primary : theme.colorScheme.secondary,
                       ),
                     ),
@@ -108,7 +108,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
         actions: [
           IconButton(
             onPressed: _openRecordPayment,
-            icon: const Icon(Icons.payments_outlined),
+            icon: const Icon(MingCute.wallet_3_line),
           ),
         ],
       ),
@@ -160,14 +160,14 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Transaction history', style: theme.textTheme.titleLarge),
+          const SectionHeader(title: 'Transaction history'),
           const SizedBox(height: 12),
           ledgerSection,
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openRecordPayment,
-        icon: const Icon(Icons.add),
+        icon: const Icon(MingCute.add_line),
         label: const Text('Record Payment'),
       ),
     );

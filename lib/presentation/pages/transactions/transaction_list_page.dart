@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/green_card.dart';
+import '../../widgets/section_header.dart';
 import 'partner_balance_page.dart';
 import 'partner_settlement_page.dart';
 
@@ -63,15 +69,15 @@ class _TransactionListPageState extends State<TransactionListPage> {
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PartnerSettlementPage()),
                   ),
-                  icon: const Icon(Icons.swap_horiz_rounded),
+                  icon: const Icon(MingCute.exchange_dollar_line),
                   label: const Text('Record Settlement'),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          Text('Partner ledgers', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.xl),
+          const SectionHeader(title: 'Partner ledgers'),
+          const SizedBox(height: AppSpacing.sm),
           if (partnerProvider.isLoading)
             const Padding(
               padding: EdgeInsets.all(24),
@@ -92,40 +98,46 @@ class _TransactionListPageState extends State<TransactionListPage> {
               ),
             )
           else if (partners.isEmpty)
-            const Text('No partners available for settlement tracking yet.')
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: EmptyState(
+                icon: MingCute.exchange_dollar_line,
+                title: 'No partners yet',
+                subtitle: 'Add partners to track balances and settlements.',
+              ),
+            )
           else
             Column(
               children: partners
                   .map(
-                    (partner) => Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(partner.fullName, style: theme.textTheme.titleMedium),
-                                const SizedBox(height: 4),
-                                Text(partner.role, style: theme.textTheme.bodySmall),
-                              ],
+                    (partner) => GreenCard(
+                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          child: Text(
+                            partner.fullName.substring(0, 1).toUpperCase(),
+                            style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                          ),
+                        ),
+                        title: Text(partner.fullName, style: theme.textTheme.titleMedium),
+                        subtitle: Text(partner.role, style: theme.textTheme.bodySmall),
+                        trailing: OutlinedButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => PartnerBalancePage(partnerId: partner.id, partner: partner),
                             ),
                           ),
-                          OutlinedButton(
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => PartnerBalancePage(partnerId: partner.id, partner: partner),
-                              ),
-                            ),
-                            child: const Text('View Ledger'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 44),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
-                        ],
+                          child: const Text('Ledger'),
+                        ),
                       ),
                     ),
                   )

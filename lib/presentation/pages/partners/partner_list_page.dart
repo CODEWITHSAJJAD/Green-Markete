@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/green_card.dart';
 import 'create_partner_page.dart';
 import 'partner_profile_page.dart';
 
@@ -53,7 +58,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
         title: const Text('Partners'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(MingCute.add_line),
             onPressed: _openCreate,
           ),
         ],
@@ -93,7 +98,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
                   },
                   decoration: const InputDecoration(
                     hintText: 'Search by name or phone',
-                    prefixIcon: Icon(Icons.search_rounded),
+                    prefixIcon: Icon(MingCute.search_2_line),
                   ),
                 ),
               ],
@@ -121,35 +126,28 @@ class _PartnerListPageState extends State<PartnerListPage> {
             )
           else if (partners.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                children: [
-                  Icon(Icons.group_outlined, size: 52, color: theme.colorScheme.outline),
-                  const SizedBox(height: 12),
-                  Text('No partners found', style: theme.textTheme.titleLarge),
-                ],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: EmptyState(
+                icon: MingCute.user_3_line,
+                title: 'No partners found',
+                subtitle: 'Add partners to build your purchase and sales network.',
+                actionLabel: 'New Partner',
+                onAction: _openCreate,
               ),
             )
           else
             Column(
               children: partners
                     .map(
-                      (partner) => InkWell(
+                      (partner) => GreenCard(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => PartnerProfilePage(partnerId: partner.id, initialPartner: partner),
                           ),
                         ),
-                        borderRadius: BorderRadius.circular(22),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-                          ),
-                          child: Row(
+                        child: Row(
                             children: [
                               CircleAvatar(
                                 radius: 24,
@@ -193,7 +191,6 @@ class _PartnerListPageState extends State<PartnerListPage> {
                             ],
                           ),
                         ),
-                      ),
                     )
                     .toList(),
             ),
@@ -201,7 +198,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
-        icon: const Icon(Icons.person_add_rounded),
+        icon: const Icon(MingCute.user_4_line),
         label: const Text('New Partner'),
       ),
     );

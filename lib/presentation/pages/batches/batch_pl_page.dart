@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../providers/batch_provider.dart';
 
@@ -39,7 +41,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
                 const SnackBar(content: Text('Export available in a later build')),
               );
             },
-            icon: const Icon(Icons.ios_share_rounded),
+            icon: const Icon(MingCute.share_2_line),
           ),
         ],
       ),
@@ -111,7 +113,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
               Text(
                 CurrencyFormatter.format(pl.netProfitLoss),
                 style: theme.textTheme.titleLarge?.copyWith(
-                  color: pl.netProfitLoss >= 0 ? Colors.green : Colors.red,
+                  color: pl.netProfitLoss >= 0 ? AppColors.profit : AppColors.error,
                   fontWeight: FontWeight.w700,
                 ),
               ),
