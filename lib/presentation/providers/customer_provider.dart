@@ -15,6 +15,12 @@ class CustomerProvider extends ChangeNotifier {
   List<CustomerLedgerEntry> _ledger = const [];
   List<CustomerLedgerEntry> get ledger => _ledger;
 
+  Set<String> _sharedCustomerIds = const {};
+  Set<String> get sharedCustomerIds => _sharedCustomerIds;
+
+  bool _sharedSupportAvailable = false;
+  bool get sharedSupportAvailable => _sharedSupportAvailable;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -77,6 +83,18 @@ class CustomerProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+  }
+
+  Future<void> loadShared(String businessId) async {
+    try {
+      final result = await _repo.listSharedCustomerIds(businessId);
+      _sharedCustomerIds = result.ids.toSet();
+      _sharedSupportAvailable = result.supported;
+    } catch (_) {
+      _sharedCustomerIds = const {};
+      _sharedSupportAvailable = false;
+    }
+    notifyListeners();
   }
 
   Future<void> loadLedger(String customerId) async {

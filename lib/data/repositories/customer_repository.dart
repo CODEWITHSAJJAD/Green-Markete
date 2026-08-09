@@ -43,6 +43,43 @@ class CustomerRepository {
     return rows.map(CustomerModel.fromJson).toList();
   }
 
+  /// Returns the ids of customers shared with/from this business, plus whether
+  /// a customer-sharing table exists at all.
+  ///
+  /// The live schema has no customer-sharing table yet, so this is strictly
+  /// defensive: it probes two plausible `customer_shares` column shapes and
+  /// returns an empty list + `supported: false` on any error. Callers must
+  /// never treat a missing table as a hard failure.
+  Future<({List<String> ids, bool supported})> listSharedCustomerIds(
+    String businessId,
+  ) async {
+    const notSupported = (ids: <String>[], supported: false);
+    try {
+      final rows = await _client
+          .from('customer_shares')
+          .select('customer_id')
+          .eq('business_id', businessId);
+      return (
+        ids: rows.map((r) => r['customer_id'] as String).toList(),
+        supported: true,
+      );
+    } on PostgrestException {
+      // Table or column missing — try the "shared with" shape below.
+    }
+    try {
+      final rows = await _client
+          .from('customer_shares')
+          .select('customer_id')
+          .eq('shared_with_business_id', businessId);
+      return (
+        ids: rows.map((r) => r['customer_id'] as String).toList(),
+        supported: true,
+      );
+    } catch (_) {
+      return notSupported;
+    }
+  }
+
   Future<CustomerModel> archive(String id) async {
     final row = await _client
         .from('customers')

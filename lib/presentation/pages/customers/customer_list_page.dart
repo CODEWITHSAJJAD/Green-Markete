@@ -26,13 +26,16 @@ class CustomerListPage extends StatefulWidget {
 class _CustomerListPageState extends State<CustomerListPage> {
   final _searchCtrl = TextEditingController();
   bool _showArchived = false;
+  bool _sharedOnly = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final businessId = context.read<AuthProvider>().businessId ?? '';
-      context.read<CustomerProvider>().load(businessId);
+      context.read<CustomerProvider>()
+        ..load(businessId)
+        ..loadShared(businessId);
     });
   }
 
@@ -66,6 +69,11 @@ class _CustomerListPageState extends State<CustomerListPage> {
     final businessId = auth.businessId ?? '';
     final isOwner = auth.user?.role == 'owner';
     final provider = context.watch<CustomerProvider>();
+    final visibleCustomers = _sharedOnly
+        ? provider.customers
+            .where((c) => provider.sharedCustomerIds.contains(c.id))
+            .toList()
+        : provider.customers;
 
     Widget customersSection;
     if (provider.isLoading) {
@@ -90,22 +98,24 @@ class _CustomerListPageState extends State<CustomerListPage> {
           ],
         ),
       );
-    } else if (provider.customers.isEmpty) {
+    } else if (visibleCustomers.isEmpty) {
       customersSection = Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: EmptyState(
           icon: MingCuteIcons.mgc_user_3_line,
-          title: 'No customers found',
-          subtitle: _searchCtrl.text.trim().isEmpty
-              ? 'Add your first customer to start tracking credit and payments.'
-              : 'No results match your search.',
-          actionLabel: _searchCtrl.text.trim().isEmpty ? 'New Customer' : null,
-          onAction: _searchCtrl.text.trim().isEmpty ? _openCreateCustomer : null,
+          title: _sharedOnly ? 'No shared customers' : 'No customers found',
+          subtitle: _sharedOnly
+              ? 'Customers shared with this business will appear here.'
+              : _searchCtrl.text.trim().isEmpty
+                  ? 'Add your first customer to start tracking credit and payments.'
+                  : 'No results match your search.',
+          actionLabel: !_sharedOnly && _searchCtrl.text.trim().isEmpty ? 'New Customer' : null,
+          onAction: !_sharedOnly && _searchCtrl.text.trim().isEmpty ? _openCreateCustomer : null,
         ),
       );
     } else {
       customersSection = Column(
-        children: provider.customers.map(
+        children: visibleCustomers.map(
           (customer) {
             final tile = GreenCard(
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -126,6 +136,30 @@ class _CustomerListPageState extends State<CustomerListPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(customer.fullName, style: theme.textTheme.titleMedium),
+                        if (provider.sharedCustomerIds.contains(customer.id)) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(MingCuteIcons.mgc_share_2_line, size: 12, color: AppColors.primary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Shared',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         Text(
                           [customer.shopName, customer.city]
@@ -306,6 +340,19 @@ class _CustomerListPageState extends State<CustomerListPage> {
                     prefixIcon: Icon(MingCuteIcons.mgc_search_2_line),
                   ),
                 ),
+                if (provider.sharedSupportAvailable) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilterChip(
+                      label: const Text('Shared'),
+                      avatar: const Icon(MingCuteIcons.mgc_share_2_line, size: 18),
+                      selected: _sharedOnly,
+                      showCheckmark: false,
+                      onSelected: (selected) => setState(() => _sharedOnly = selected),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
