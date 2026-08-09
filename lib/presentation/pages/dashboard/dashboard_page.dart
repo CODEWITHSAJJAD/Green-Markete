@@ -6,6 +6,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../../core/config/theme.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/utils/breakpoints.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../providers/auth_provider.dart';
@@ -61,65 +62,77 @@ class _DashboardPageState extends State<DashboardPage> {
                     onRefresh: () => context.read<DashboardProvider>().load(businessId),
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                    children: [
-                      _buildHeader(theme),
+                      children: [
+                        _buildHeader(theme),
                       const SizedBox(height: 20),
                       _buildHero(theme, provider),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DashboardCard(
-                              title: 'Outstanding Credit',
-                              value: CurrencyFormatter.format(provider.outstandingCredit),
-                              icon: MingCuteIcons.mgc_wallet_3_line,
-                              color: AppColors.secondary,
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const ReportsPage()),
+                      LayoutBuilder(
+                        builder: (ctx, constraints) {
+                          final factor = formFactorOf(ctx);
+                          final cardWidth = switch (factor) {
+                            FormFactor.compact =>
+                              (constraints.maxWidth - 12) / 2,
+                            FormFactor.medium =>
+                              (constraints.maxWidth - 24) / 3,
+                            FormFactor.expanded =>
+                              (constraints.maxWidth - 36) / 4,
+                          };
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              SizedBox(
+                                width: cardWidth,
+                                child: DashboardCard(
+                                  title: 'Outstanding Credit',
+                                  value: CurrencyFormatter.format(provider.outstandingCredit),
+                                  icon: MingCuteIcons.mgc_wallet_3_line,
+                                  color: AppColors.secondary,
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const ReportsPage()),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DashboardCard(
-                              title: 'Customers',
-                              value: '${provider.customersCount}',
-                              icon: MingCuteIcons.mgc_user_3_line,
-                              color: const Color(0xFF8B5CF6),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const CustomerListPage()),
+                              SizedBox(
+                                width: cardWidth,
+                                child: DashboardCard(
+                                  title: 'Customers',
+                                  value: '${provider.customersCount}',
+                                  icon: MingCuteIcons.mgc_user_3_line,
+                                  color: const Color(0xFF8B5CF6),
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const CustomerListPage()),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DashboardCard(
-                              title: 'Total Batches',
-                              value: '${provider.batchesCount}',
-                              icon: MingCuteIcons.mgc_archive_line,
-                              color: const Color(0xFF0EA5E9),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const BatchListPage()),
+                              SizedBox(
+                                width: cardWidth,
+                                child: DashboardCard(
+                                  title: 'Total Batches',
+                                  value: '${provider.batchesCount}',
+                                  icon: MingCuteIcons.mgc_archive_line,
+                                  color: const Color(0xFF0EA5E9),
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const BatchListPage()),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DashboardCard(
-                              title: 'Products',
-                              value: '${provider.productsCount}',
-                              icon: MingCuteIcons.mgc_package_line,
-                              color: const Color(0xFF10B981),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const BatchListPage()),
+                              SizedBox(
+                                width: cardWidth,
+                                child: DashboardCard(
+                                  title: 'Products',
+                                  value: '${provider.productsCount}',
+                                  icon: MingCuteIcons.mgc_package_line,
+                                  color: const Color(0xFF10B981),
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const BatchListPage()),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 20),
                       _quickActionsRow(context),
