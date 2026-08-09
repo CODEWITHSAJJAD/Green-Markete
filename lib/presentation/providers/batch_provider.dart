@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/models/batch_model.dart';
 import '../../data/models/batch_vehicle_model.dart';
 import '../../data/models/expense_model.dart';
+import '../../data/models/packing_return_model.dart';
 import '../../data/models/packing_record_model.dart';
 import '../../data/models/report_model.dart';
 import '../../data/models/sale_model.dart';
@@ -115,6 +116,9 @@ class BatchDetailProvider extends ChangeNotifier {
   List<BatchVehicleModel> _vehicleLoads = const [];
   List<BatchVehicleModel> get vehicleLoads => _vehicleLoads;
 
+  List<PackingReturnModel> _returns = const [];
+  List<PackingReturnModel> get returns => _returns;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -132,6 +136,7 @@ class BatchDetailProvider extends ChangeNotifier {
     }
     await _loadPacking(id);
     await _loadVehicles(id);
+    await _loadReturns(id);
   }
 
   Future<void> _loadPacking(String id) async {
@@ -169,6 +174,31 @@ class BatchDetailProvider extends ChangeNotifier {
     if (id == null) return;
     await _repo.deleteVehicleLoad(loadId);
     await _loadVehicles(id);
+  }
+
+  Future<void> _loadReturns(String id) async {
+    try {
+      _returns = await _repo.listReturns(id);
+    } catch (e) {
+      _returns = const [];
+      _error ??= e.toString().replaceAll('Exception: ', '');
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> addReturn(PackingReturnCreate item) async {
+    final id = _batch?.id;
+    if (id == null) return;
+    await _repo.addReturn(id, item);
+    await _loadReturns(id);
+  }
+
+  Future<void> deleteReturn(String returnId) async {
+    final id = _batch?.id;
+    if (id == null) return;
+    await _repo.deleteReturn(returnId);
+    await _loadReturns(id);
   }
 
   Future<bool> updateStatus(String status, {String? id}) async {

@@ -10,6 +10,7 @@ import '../../../data/models/batch_model.dart';
 import '../../../data/models/batch_vehicle_model.dart';
 import '../../../data/models/expense_model.dart';
 import '../../../data/models/packing_record_model.dart';
+import '../../../data/models/packing_return_model.dart';
 import '../../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
@@ -51,7 +52,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 6, vsync: this);
+    _tabCtrl = TabController(length: 7, vsync: this);
     _tabCtrl.addListener(() => setState(() {}));
     final detail = context.read<BatchDetailProvider>();
     final pl = context.read<BatchPLProvider>();
@@ -170,6 +171,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Packing'),
+            Tab(text: 'Returns'),
             Tab(text: 'Expenses'),
             Tab(text: 'Transport'),
             Tab(text: 'Sales'),
@@ -213,6 +215,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       children: [
         _overviewTab(context, theme, batch),
         _packingTab(context, batch),
+        _returnsTab(context, batch),
         _expensesTab(context, batch),
         _transportTab(context, batch),
         _salesTab(context, batch),
@@ -234,6 +237,14 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     if (tabIndex == 2) {
       return FloatingActionButton.extended(
         heroTag: null,
+        onPressed: () => _showAddReturnDialog(context),
+        icon: const Icon(MingCuteIcons.mgc_arrow_to_left_line),
+        label: const Text('Return'),
+      );
+    }
+    if (tabIndex == 3) {
+      return FloatingActionButton.extended(
+        heroTag: null,
         onPressed: () async {
           await showExpenseEntrySheet(context, batchId: batchId);
           if (!context.mounted) return;
@@ -245,7 +256,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         label: const Text('Expense'),
       );
     }
-    if (tabIndex == 3) {
+    if (tabIndex == 4) {
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () => _showAddTransportDialog(context),
@@ -253,7 +264,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         label: const Text('Load'),
       );
     }
-    if (tabIndex == 4) {
+    if (tabIndex == 5) {
       final batch = context.read<BatchDetailProvider>().batch;
       if (batch == null) return const SizedBox.shrink();
       final soldQuantity = context.read<SaleProvider>().sales.fold<double>(
@@ -457,6 +468,218 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         CurrencyFormatter.format(record.totalPackingCost),
         style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
       ),
+    );
+  }
+
+  Widget _returnsTab(BuildContext context, BatchModel batch) {
+    final theme = Theme.of(context);
+    final detailProvider = context.watch<BatchDetailProvider>();
+    if (detailProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final returns = detailProvider.returns;
+    if (returns.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'No returns yet. Tap + to record goods returned by a buyer.',
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    final totalQty = returns.fold<double>(0, (acc, r) => acc + r.quantity);
+    final totalCost = returns.fold<double>(0, (acc, r) => acc + r.totalReturnCost);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: _metric(theme, 'Returned', '${totalQty.toStringAsFixed(0)} ${batch.unit}')),
+              Expanded(child: _metric(theme, 'Return Value', CurrencyFormatter.format(totalCost))),
+            ],
+          ),
+        ),
+        ...returns.map((r) => _returnTile(context, r)),
+      ],
+    );
+  }
+
+  Widget _returnTile(BuildContext context, PackingReturnModel item) {
+    final theme = Theme.of(context);
+    final tile = ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.error.withValues(alpha: 0.12),
+        child: Icon(MingCuteIcons.mgc_arrow_to_left_line, color: theme.colorScheme.error, size: 18),
+      ),
+      title: Text(
+        '${item.quantity.toStringAsFixed(0)} ${item.unitType ?? 'units'} returned',
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
+      subtitle: Text(
+        [
+          item.packingLabel,
+          item.returnDate,
+          item.notes,
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
+      ),
+      trailing: item.totalReturnCost > 0
+          ? Text(
+              CurrencyFormatter.format(item.totalReturnCost),
+              style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
+            )
+          : null,
+    );
+    final canDelete = (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
+    if (!canDelete) return tile;
+    return Dismissible(
+      key: ValueKey('return-${item.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: theme.colorScheme.error.withValues(alpha: 0.15),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
+      ),
+      confirmDismiss: (_) async {
+        final batchDetailProvider = context.read<BatchDetailProvider>();
+        final ok = await showConfirmDialog(
+          context,
+          title: 'Remove this return?',
+          message: 'The return of ${item.quantity.toStringAsFixed(0)} units will be removed from this batch.',
+          confirmLabel: 'Remove',
+          isDestructive: true,
+        );
+        if (ok != true) return false;
+        try {
+          await batchDetailProvider.deleteReturn(item.id);
+          if (!context.mounted) return false;
+          context.read<BatchPLProvider>().load(batchId);
+          return true;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+          }
+          return false;
+        }
+      },
+      child: tile,
+    );
+  }
+
+  Future<void> _showAddReturnDialog(BuildContext context) async {
+    final detailProvider = context.read<BatchDetailProvider>();
+    final packing = detailProvider.packingRecords;
+    final theme = Theme.of(context);
+    if (packing.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add a packing record first')),
+      );
+      return;
+    }
+    String? packingIndex;
+    final quantityCtrl = TextEditingController();
+    final countCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Record Return'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: packingIndex,
+                  decoration: const InputDecoration(labelText: 'Packing record'),
+                  items: [
+                    for (var i = 0; i < packing.length; i++)
+                      DropdownMenuItem(
+                        value: '$i',
+                        child: Text(
+                          '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} × ${packing[i].unitCount}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) => packingIndex = v,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: quantityCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Quantity returned'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: countCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Count (optional)'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Return value is estimated from the linked packing record’s cost per unit.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                final idx = int.tryParse(packingIndex ?? '') ?? -1;
+                if (idx < 0 || idx >= packing.length) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select a packing record')));
+                  return;
+                }
+                final quantity = double.tryParse(quantityCtrl.text.trim()) ?? 0;
+                if (quantity <= 0) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Quantity must be > 0')));
+                  return;
+                }
+                try {
+                  await detailProvider.addReturn(
+                    PackingReturnCreate(
+                      packingRecordId: packing[idx].id,
+                      quantity: quantity,
+                      count: int.tryParse(countCtrl.text.trim()),
+                      returnDate: DateTime.now().toIso8601String().split('T').first,
+                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                    ),
+                  );
+                  if (!ctx.mounted) return;
+                  context.read<BatchPLProvider>().load(batchId);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 

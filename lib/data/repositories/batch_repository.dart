@@ -4,6 +4,7 @@ import '../../core/supabase/supabase_service.dart';
 import '../models/batch_model.dart';
 import '../models/batch_vehicle_model.dart';
 import '../models/packing_record_model.dart';
+import '../models/packing_return_model.dart';
 import '../models/report_model.dart';
 
 class BatchRepository {
@@ -232,6 +233,31 @@ class BatchRepository {
 
   Future<void> deleteVehicleLoad(String loadId) async {
     await _client.from('batch_vehicles').delete().eq('id', loadId);
+  }
+
+  Future<List<PackingReturnModel>> listReturns(String batchId) async {
+    final rows = await _client
+        .from('packing_returns')
+        .select('*, packing_records(unit_type_label, cost_per_unit)')
+        .eq('batch_id', batchId)
+        .order('return_date', ascending: false);
+    return rows.map(PackingReturnModel.fromJson).toList();
+  }
+
+  Future<void> addReturn(String batchId, PackingReturnCreate item) async {
+    await _client.from('packing_returns').insert({
+      'batch_id': batchId,
+      'packing_record_id': item.packingRecordId,
+      'quantity': item.quantity,
+      if (item.count != null && item.count! > 0) 'count': item.count,
+      if (item.returnDate != null && item.returnDate!.isNotEmpty)
+        'return_date': item.returnDate,
+      if (item.notes != null && item.notes!.isNotEmpty) 'notes': item.notes,
+    });
+  }
+
+  Future<void> deleteReturn(String returnId) async {
+    await _client.from('packing_returns').delete().eq('id', returnId);
   }
 
   Future<void> addPartner(String id, BatchPartnerCreate partner) async {
