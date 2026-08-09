@@ -1,10 +1,12 @@
 # 🏗️ Technical Architecture Document
 ## Green Market — Standalone Flutter + Supabase
 
-**Version:** 2.0
+**Version:** 2.1 (Operations Features) — Supersedes 2.0
 **Date:** August 2026
 **Stack:** Flutter 3.x · Supabase (PostgreSQL + Auth + Realtime + Storage)
 **Architecture:** Standalone — no custom backend
+
+> **Version 2.1 changes:** documents the **live schema** as probed from the running Supabase instance (columns/tables confirmed present vs planned), the frontend layering actually in use (`data/` models + repositories, `presentation/` providers + pages), the day-end synthesized-rows approach that keeps `get_batch_pl` authoritative, per-batch credit via `customer_payments.batch_id`, and the planned tables required by Phases 7–11 (see `OPERATIONS_FEATURES_PLAN.md`). Tables are tagged **[LIVE]** (confirmed present) or **[PLANNED]** (needed by the feature roadmap).
 
 ---
 
@@ -122,116 +124,83 @@ dependencies:
 
 ### 3.1 Folder Structure
 
+> **V2.1:** this is the layout actually in use (`provider` 6.x `ChangeNotifier`, `Navigator.push` with an `AuthNavigator` host — no go_router). The earlier `models/ repositories/ providers/ screens/` layout in this document is superseded. Tree reflects the code as of August 2026; items tagged **(planned)** belong to Phases 7–11.
+
 ```
 lib/
-├── main.dart                      ← app entry point, Supabase init, Provider setup
-├── app.dart                       ← MaterialApp, theme, AuthWrapper
+├── main.dart                      ← entry point: dotenv load, MultiProvider, MaterialApp + AuthNavigator
 │
 ├── core/
-│   ├── constants/
-│   │   ├── app_colors.dart
-│   │   ├── app_text_styles.dart
-│   │   └── app_strings.dart
-│   ├── utils/
-│   │   ├── currency_formatter.dart    ← PKR formatting
-│   │   ├── date_formatter.dart        ← DD/MM/YYYY
-│   │   └── validators.dart
-│   └── widgets/
-│       ├── green_card.dart
-│       ├── amount_text.dart
-│       ├── status_pill.dart
-│       ├── partner_chip.dart
-│       ├── loading_overlay.dart
-│       ├── error_snackbar.dart
-│       └── confirm_dialog.dart
+│   ├── config/
+│   │   ├── app_config.dart            ← app metadata
+│   │   └── theme.dart                 ← ColorScheme, AppRadius.*, text themes
+│   ├── supabase/
+│   │   └── supabase_service.dart      ← shared SupabaseClient (Supabase.instance.client)
+│   ├── error/                         ← app_exception.dart, error_handler.dart
+│   ├── export/                        ← csv_export.dart, csv_writer.dart (CSV reports)
+│   └── utils/
+│       ├── currency_formatter.dart    ← PKR formatting
+│       ├── date_formatter.dart        ← DD/MM/YYYY (intl)
+│       ├── validators.dart  debouncer.dart  breakpoints.dart
 │
-├── models/                        ← Plain Dart data classes (fromJson / toJson)
-│   ├── user_profile.dart
-│   ├── business.dart
-│   ├── business_partner.dart
-│   ├── market.dart
-│   ├── product.dart
-│   ├── product_batch.dart
-│   ├── batch_partner.dart
-│   ├── packing_record.dart
-│   ├── expense.dart
-│   ├── sale.dart
-│   ├── customer.dart
-│   ├── customer_payment.dart
-│   ├── partner_transaction.dart
-│   └── batch_pl_summary.dart
+├── data/
+│   ├── models/                    ← Plain Dart classes (fromJson/toJson, snake_case + camelCase fallbacks)
+│   │   ├── batch_model.dart  batch_partner_model.dart  batch_vehicle_model.dart
+│   │   ├── customer_model.dart  partner_model.dart  payment_model.dart
+│   │   ├── expense_model.dart  sale_model.dart  packing_record_model.dart  packing_return_model.dart
+│   │   ├── transaction_model.dart  product_model.dart  market_model.dart  vehicle_model.dart
+│   │   ├── user_model.dart  business_model.dart  audit_log_model.dart  report_model.dart
+│   │   └── supplier_model.dart  packing_material_model.dart          (planned)
+│   ├── datasources/
+│   │   └── local/                ← app_database.dart (STUB — offline/local DB not implemented)
+│   └── repositories/             ← repository per feature; direct Supabase calls, defensive error handling
+│       ├── auth_repository.dart  business_repository.dart  partner_repository.dart
+│       ├── product_repository.dart  market_repository.dart  batch_repository.dart
+│       ├── expense_repository.dart  sale_repository.dart  customer_repository.dart
+│       ├── vehicle_repository.dart  transaction_repository.dart  dashboard_repository.dart
+│       ├── report_repository.dart  audit_repository.dart  sync_repository.dart (no-op)
+│       └── supplier_repository.dart                          (planned)
 │
-├── repositories/                  ← All Supabase interactions
-│   ├── auth_repository.dart
-│   ├── partner_repository.dart
-│   ├── market_repository.dart
-│   ├── product_repository.dart
-│   ├── batch_repository.dart
-│   ├── expense_repository.dart
-│   ├── sale_repository.dart
-│   ├── customer_repository.dart
-│   └── pl_repository.dart         ← calls RPC functions
-│
-├── providers/                     ← ChangeNotifier state
-│   ├── auth_provider.dart
-│   ├── batch_provider.dart
-│   ├── customer_provider.dart
-│   ├── dashboard_provider.dart
-│   └── partner_provider.dart
-│
-└── screens/
-    ├── auth/
-    │   ├── splash_screen.dart
-    │   ├── login_screen.dart
-    │   └── otp_verify_screen.dart
-    │
-    ├── onboarding/
-    │   └── onboarding_screen.dart
-    │
-    ├── shell/
-    │   └── main_shell.dart            ← BottomNavigationBar host
-    │
-    ├── dashboard/
-    │   └── dashboard_screen.dart
-    │
-    ├── batches/
-    │   ├── batch_list_screen.dart
-    │   ├── batch_detail_screen.dart   ← TabBar: Overview/Expenses/Packing/Sales/P&L
-    │   ├── create_batch_screen.dart   ← PageView wizard (no go_router)
-    │   ├── add_expense_screen.dart
-    │   ├── add_packing_screen.dart
-    │   ├── batch_pl_screen.dart
-    │   └── sale_entry_screen.dart
-    │
-    ├── sales/
-    │   └── sales_list_screen.dart
-    │
-    ├── customers/
-    │   ├── customer_list_screen.dart
-    │   ├── customer_detail_screen.dart
-    │   └── customer_payment_screen.dart
-    │
-    └── more/
-        ├── more_screen.dart           ← menu for partners, markets, reports, settings
-        ├── partners/
-        │   ├── partner_list_screen.dart
-        │   ├── partner_detail_screen.dart
-        │   └── create_partner_screen.dart
-        ├── markets/
-        │   └── market_manage_screen.dart
-        ├── reports/
-        │   └── reports_screen.dart
-        └── settings/
-            └── settings_screen.dart
+└── presentation/
+    ├── providers/                ← Provider 6.x ChangeNotifier + ChangeNotifierProvider (one per feature)
+    │   ├── auth_provider.dart  business_provider.dart  batch_provider.dart
+    │   ├── customer_provider.dart  dashboard_provider.dart  market_provider.dart
+    │   ├── partner_provider.dart  product_provider.dart  report_provider.dart
+    │   ├── transaction_provider.dart  vehicle_provider.dart  batch_wizard_provider.dart
+    │   ├── capability.dart (role→capability map)  connectivity_provider.dart  async_notifier.dart
+    │   └── supplier_provider.dart                        (planned)
+    ├── widgets/                  ← shared: GreenCard, AmountText, StatusPill, PartnerChip,
+    │                               EmptyState, ConfirmDialog, SaleEntrySheet, ExpenseEntrySheet,
+    │                               PackingEntryForm, CreditIndicator, StatusTimeline…
+    └── pages/
+        ├── auth/      auth_navigator.dart (host), splash, login, signup, onboarding
+        ├── main_shell.dart        ← 5-tab bottom nav (IndexedStack), sidebar_drawer on wide
+        ├── dashboard/  dashboard_page.dart
+        ├── batches/   list, detail (8 tabs), create_batch_wizard (6 steps), batch_pl_page
+        ├── sales/     sales_list, quick_sale
+        ├── customers/ list (+ shared filter), create, ledger, record_payment
+        ├── partners/  list, create, profile
+        ├── products/  list
+        ├── markets/   list, create
+        ├── vehicles/  list, create
+        ├── transactions/  list, settlement, balance
+        ├── reports/   reports_page, pl_report, credit_report, overdue_customers,
+        │               market_performance, partner_report
+        ├── settings/  settings, profile, business_settings, business_switcher,
+        │               access_management, audit_log, notification_settings, help_center, about
+        ├── suppliers/ list, payables                 (planned — Phase 9)
+        └── packing/   materials_screen              (planned — Phase 10)
 ```
+
+> **Data flow:** Page → Provider (ChangeNotifier) → Repository → `SupabaseClient` (PostgREST/RPC). Responses are raw rows (no `data` envelope wrapper); models read both `snake_case` and `camelCase` keys defensively, and every possibly-absent column/table is probed + caught (PostgrestException) before use.
 
 ---
 
 ## 4. Navigation Architecture
 
-### 4.1 Principle: Simple Navigator.push — No go_router
+### 4.1 Principle: Navigator.push + AuthNavigator host (no go_router)
 
-All navigation uses Flutter's built-in `Navigator` with `MaterialPageRoute`. No URL-based routing. No named routes (except the initial `/` splash).
+> **V2.1 correction:** the app does **not** use go_router. `main.dart` builds a `MaterialApp` whose `home` is an `AuthNavigator` widget (`presentation/pages/auth/auth_navigator.dart`) that switches on auth state: splash → login/signup → onboarding → `MainShell` (5-tab bottom nav, `IndexedStack`). All feature navigation is plain `Navigator.push(MaterialPageRoute(...))`; there is no `routes.dart`. The samples below are the actual pattern.
 
 ```dart
 // Navigating to a screen
@@ -636,6 +605,7 @@ CREATE TABLE sales (
     )
 );
 ```
+**[LIVE (V2.1):]** the running instance also accepts `payment_mode = 'bank_transfer'`. Day-end manual close stores **ordinary `sales` rows**: one aggregated `payment_mode='cash'` row for cash-in-hand and one `payment_mode='credit'` row per credit customer (notes reference the day). This keeps `get_batch_pl` authoritative with zero backend change.
 
 ### 5.12 `customer_payments`
 ```sql
@@ -652,6 +622,7 @@ CREATE TABLE customer_payments (
     created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+**[LIVE (V2.1):]** the running instance **has a `batch_id` column** (confirmed by `select=customer_id,batch_id` probe) even though it is absent from the 2.0 DDL. Per-batch credit/collection (Phase 8) sets this column; whole-business credit leaves it NULL. The app probes the column defensively before sending it.
 
 ### 5.13 `partner_transactions`
 ```sql
@@ -688,6 +659,21 @@ CREATE TABLE audit_logs (
 -- Append-only: no UPDATE or DELETE allowed on this table (via RLS)
 ```
 
+### 5.15 Live vs Planned Tables (V2.1)
+
+| Table | Status | Notes |
+|---|---|---|
+| `user_profiles`, `businesses`, `business_partners`, `markets`, `products`, `product_batches`, `batch_partners`, `packing_records`, `expenses`, `customers`, `sales`, `customer_payments`, `partner_transactions`, `audit_logs` | **[LIVE]** | 2.0 baseline, with the live column drift noted above (`sales.bank_transfer`, `customer_payments.batch_id`). `product_batches` live columns also include `supplier_name`, `purchase_payment_mode` (`cash`/`debt`), `purchase_amount_paid` (used for supplier payables — Section 4.5 of the PRD). |
+| `batch_vehicles` + `vehicle_loads` | **[PLANNED]** (Phase 7) | Vehicle registry and per-vehicle load splits. Backend prerequisite for FR-V-01/02. Until added, vehicles/loads are keyed off `product_batches` transport fields and `packing_returns` notes. |
+| `packing_returns` | **[PLANNED]** (Phase 7) | Empty-bag returns to purchaser parts, including `vehicle_id` and `returned_to_partner_id`. |
+| `suppliers` | **[PLANNED]** (Phase 9) | Supplier registry + payments. Until added, supplier payables are computed **client-side** from `product_batches` (`purchase_price − purchase_amount_paid` where `purchase_payment_mode='debt'`) — no stored balance. |
+| `packing_materials` | **[PLANNED]** (Phase 10) | Reusable material inventory (name, cost, expected reuses) + per-batch usage. |
+| `customer_shares` | **[PLANNED]** (Phase 11) | Cross-business customer sharing. The app already probes this table defensively (`listSharedCustomerIds`) and degrades to "no shared customers" when it 404s. |
+| `vehicle_shares` | **[PLANNED]** (Phase 11) | Cross-business vehicle sharing. |
+| `batch_day_summaries`, `batch_day_entries` | **NOT NEEDED** | Probed → 404, and deliberately **avoided**: day-end close synthesizes ordinary `sales`/`expenses` rows so the RPC P&L stays authoritative. |
+
+> **Defensive pattern (all new features):** before writing/reading a planned table, the repository probes its shape (e.g. `select=batch_id` on `customer_payments`, `select=*` on `customer_shares`) and gracefully degrades on 4xx/42703. Never assume a column exists.
+
 ---
 
 ## 6. Supabase RPC Functions (P&L Engine)
@@ -695,6 +681,8 @@ CREATE TABLE audit_logs (
 Complex P&L calculations run as PostgreSQL functions called via `supabase.rpc()` from Flutter. This keeps calculations accurate and server-side.
 
 ### 6.1 `get_batch_pl(batch_id UUID) → JSONB`
+
+> **V2.1 note:** this RPC remains the **single authoritative source of P&L**. Day-end close (Phase 7) writes ordinary `sales`/`expenses` rows precisely so this RPC keeps producing correct results. Per-batch credit (Phase 8) is derived client-side from `sales` (credit sold per batch) minus `customer_payments` (collected per batch) — no new RPC required.
 
 ```sql
 CREATE OR REPLACE FUNCTION get_batch_pl(p_batch_id UUID)

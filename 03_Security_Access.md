@@ -1,8 +1,10 @@
 # 🔒 Security & Access Control Document
 ## Green Market — Supabase RLS & Auth Policy
 
-**Version:** 2.0
+**Version:** 2.1 (Operations Features) — Supersedes 2.0
 **Date:** August 2026
+
+> **Version 2.1 changes:** adds role rules for the operations features (day-end close, supplier payables, per-batch credit, packing returns, shared customers/vehicles), RLS policy templates for the **[PLANNED]** tables (`batch_vehicles`, `vehicle_loads`, `packing_returns`, `suppliers`, `packing_materials`, `customer_shares`, `vehicle_shares`), and a note on the app's defensive probing of unbacked tables. RLS template form for new tables is the same as §3 — read on.
 
 ---
 
@@ -118,6 +120,13 @@ business_partners.access_level:
 | View customer ledger | ✅ | ✅ | ✅ | ✅ |
 | Export PDF | ✅ | ✅ | ✅ | ✅ |
 | View audit logs | ✅ | ❌ | ❌ | ❌ |
+| **Day-end close** (V2.1) | ✅ | ✅ (seller role) | ❌ | ❌ |
+| **Supplier payable** view/pay (V2.1) | ✅ | ✅ own batches | ✅ own batches | ✅ |
+| **Packing return / reusable material** (V2.1) | ✅ | ✅ own batches | ❌ | ❌ |
+| **Per-batch credit collection** (V2.1) | ✅ | ✅ | ❌ | ❌ |
+| **Shared customers/vehicles** (V2.1) | ✅ | ✅ | ✅ | ✅ |
+
+> **V2.1 note:** the matrix above extends the 2.0 baseline. Sharing rows (customers/vehicles) are readable by all members of any business that shares them; write access stays with the owning business.
 
 ---
 
@@ -432,9 +441,59 @@ CREATE POLICY "packing_insert" ON packing_records
   );
 ```
 
----
+### 3.15 Planned Tables (V2.1) — RLS Templates
 
-## 4. Flutter Client Security
+These tables are **[PLANNED]** (Phases 7–11, see `OPERATIONS_FEATURES_PLAN.md`). Apply these policies **when the backend adds each table**. Until then the app must not assume they exist — it probes defensively and degrades (see §4.5).
+
+**`batch_vehicles` / `vehicle_loads`** — business-scoped like batches:
+```sql
+ALTER TABLE batch_vehicles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "batch_vehicles_select" ON batch_vehicles
+  FOR SELECT USING (business_id = my_business_id());
+CREATE POLICY "batch_vehicles_write" ON batch_vehicles
+  FOR INSERT WITH CHECK ((i_am_owner() OR i_am_editor()) AND business_id = my_business_id());
+-- UPDATE / DELETE mirror bp_update (owner/editor, same business)
+-- vehicle_loads: same pattern keyed off batch_id (SELECT via product_batches join, write for owner/editor on non-closed batches)
+```
+
+**`packing_returns`** — read by batch members, write for owner/editor on non-closed batches:
+```sql
+ALTER TABLE packing_returns ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "packing_returns_select" ON packing_returns
+  FOR SELECT USING (batch_id IN (SELECT id FROM product_batches));
+CREATE POLICY "packing_returns_insert" ON packing_returns
+  FOR INSERT WITH CHECK (
+    batch_id IN (SELECT id FROM product_batches WHERE status != 'closed')
+    AND (i_am_owner() OR i_am_editor())
+  );
+```
+
+**`suppliers` / `packing_materials`** — business-scoped registries, owner-managed writes:
+```sql
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "suppliers_select" ON suppliers
+  FOR SELECT USING (business_id = my_business_id());
+CREATE POLICY "suppliers_write" ON suppliers
+  FOR INSERT WITH CHECK (i_am_owner() AND business_id = my_business_id());
+-- UPDATE only owner. packing_materials: identical shape.
+```
+
+**`customer_shares` / `vehicle_shares`** — **cross-business**. A share row grants read access to a second business:
+```sql
+ALTER TABLE customer_shares ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "customer_shares_select" ON customer_shares
+  FOR SELECT USING (
+    business_id = my_business_id()                    -- owning business
+    OR shared_with_business_id = my_business_id()     -- receiving business
+  );
+CREATE POLICY "customer_shares_write" ON customer_shares
+  FOR INSERT WITH CHECK (
+    i_am_owner() AND business_id = my_business_id()
+  );
+-- UPDATE/DELETE: owning business owner only.
+-- vehicle_shares: identical shape.
+```
+> Do not rely on these tables today — `customer_shares` currently returns PostgREST 404 (table absent). The app handles that gracefully (Phase 6 indicator + Phase 11 full support).
 
 ### 4.1 ANON Key Is Safe to Bundle
 
@@ -493,6 +552,28 @@ void logError(String context, dynamic error) {
   // Never log user data, tokens, or financial amounts in production
 }
 ```
+
+### 4.5 Defensive Probing of Unbacked Tables (V2.1)
+
+Features on the roadmap read/write tables that may not exist yet. The app **probes** before depending on them and degrades gracefully:
+
+```dart
+// Example: probe a column before sending it (customer_payments.batch_id)
+final ok = await _client
+    .from('customer_payments')
+    .select('batch_id')
+    .limit(1)
+    .maybeSingle();          // 4xx / 42703 → treat column as absent
+
+// Example: probe a whole table before reading it (customer_shares)
+final rows = await _client
+    .from('customer_shares')
+    .select('id')
+    .limit(1)
+    .catchError((_) => <Map<String, dynamic>>[]);   // 404 → unsupported
+```
+
+Rules: (1) a probe failure is **never** a crash — it flips a capability flag to `false`; (2) 4xx on an unbacked table is expected, not an error to surface; (3) feature UI hides/disables itself when the flag is false (e.g., "Shared" filter only appears when the probe succeeds).
 
 ---
 

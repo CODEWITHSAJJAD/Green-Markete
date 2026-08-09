@@ -1,9 +1,11 @@
 # 📱 Frontend Specification Document
 ## Green Market — Flutter UI/UX Design
 
-**Version:** 2.0
+**Version:** 2.1 (Operations Features) — Supersedes 2.0
 **Date:** August 2026
-**Framework:** Flutter 3.x | Navigation: Navigator.push (no go_router) | State: Provider
+**Framework:** Flutter 3.x | Navigation: Navigator.push + AuthNavigator (no go_router) | State: Provider 6.x (ChangeNotifier)
+
+> **Version 2.1 changes:** corrects navigation (plain `Navigator.push` behind an `AuthNavigator` host — no go_router, see §2), updates the batch detail to the **8-tab layout** in production, and adds screens/flows for: **Day-End manual close**, **Per-batch credit**, **Supplier payables**, **Reusable packing materials + empty-bag returns**, and **Shared customers/vehicles** (backend-gated, graceful degradation). Feature priority/phases: `OPERATIONS_FEATURES_PLAN.md`.
 
 ---
 
@@ -247,10 +249,12 @@ ThemeData(
 
 ## 2. Navigation Map
 
+> **V2.1:** routing is plain `Navigator.push` (no go_router). `main.dart` mounts an `AuthNavigator` host (`pages/auth/auth_navigator.dart`) that switches on auth state — splash → login/signup → onboarding → `MainShell` — and a 5-tab bottom nav (`IndexedStack`) hosts the feature tabs. The map below shows the logical screen graph.
+
 ```
-SplashScreen
+AuthNavigator (host — switches on auth state)
     │
-    ├── [no session] → LoginScreen
+    ├── [no session] → LoginScreen / SignupScreen
     │       └── OTPVerifyScreen
     │               └── [first time] → OnboardingScreen → MainShell
     │               └── [returning]  → MainShell
@@ -258,38 +262,40 @@ SplashScreen
     └── [has session] → MainShell
             │
             ├── Tab 0: DashboardScreen
-            │       └── Navigator.push → BatchDetailScreen
-            │       └── Navigator.push → SaleEntryScreen
-            │       └── Navigator.push → CustomerDetailScreen
+            │       └── → BatchDetailScreen
+            │       └── → SaleEntryScreen
+            │       └── → CustomerDetailScreen
             │
             ├── Tab 1: BatchListScreen
-            │       └── Navigator.push → CreateBatchScreen (PageView wizard)
-            │       └── Navigator.push → BatchDetailScreen
-            │               ├── BatchOverviewTab
-            │               ├── BatchExpensesTab → Navigator.push → AddExpenseScreen
-            │               ├── BatchPackingTab  → Navigator.push → AddPackingScreen
-            │               ├── BatchSalesTab    → Navigator.push → SaleEntryScreen
-            │               └── BatchPLTab
+            │       └── → CreateBatchScreen (6-step wizard)
+            │       └── → BatchDetailScreen
+            │               ├── Overview     │  ├── Transport  (+ Add Load, vehicles)
+            │               ├── Packing      │  ├── Sales      (+ SaleEntrySheet, DayEndSheet)
+            │               ├── Returns      │  ├── Settlements
+            │               ├── Expenses     │  └── P&L        (+ Export PDF)
+            │               └── [batch not closed] → FABs per tab
             │
             ├── Tab 2: SalesListScreen
-            │       └── Navigator.push → SaleEntryScreen
-            │       └── Navigator.push → BatchDetailScreen (via batch link)
+            │       └── → SaleEntryScreen
+            │       └── → BatchDetailScreen (via batch link)
             │
             ├── Tab 3: CustomerListScreen
-            │       └── Navigator.push → CreateCustomerScreen
-            │       └── Navigator.push → CustomerDetailScreen
-            │               └── Navigator.push → CustomerPaymentScreen
+            │       └── → CreateCustomerScreen
+            │       └── → CustomerDetailScreen
+            │               └── → CustomerPaymentScreen
             │
             └── Tab 4: MoreScreen
-                    ├── Navigator.push → PartnerListScreen
-                    │       └── Navigator.push → CreatePartnerScreen
-                    │       └── Navigator.push → PartnerDetailScreen
-                    │
-                    ├── Navigator.push → MarketManageScreen
-                    ├── Navigator.push → ReportsScreen
-                    ├── Navigator.push → SettingsScreen
-                    └── Navigator.push → ProfileScreen
+                    ├── → PartnerListScreen
+                    │       └── → CreatePartnerScreen / PartnerDetailScreen
+                    ├── → MarketManageScreen
+                    ├── → ReportsScreen
+                    ├── → SuppliersScreen        (Phase 9)
+                    ├── → VehiclesScreen         (Phase 7)
+                    ├── → SettingsScreen (incl. business switcher)
+                    └── → ProfileScreen
 ```
+
+**V2.1 additions (bottom-up, phase-gated):** `DayEndSheet` reachable from the Sales tab; **Per-batch credit** reachable from batch detail + customer ledger; **SuppliersScreen/PayablesScreen**; **Packing MaterialsScreen**; **Shared customers** = filter on `CustomerListScreen` (visible only when the `customer_shares` probe succeeds).
 
 ---
 
@@ -505,14 +511,16 @@ SplashScreen
 - Each card taps to `BatchDetailScreen`
 - FAB / AppBar `[+ Add]` → `CreateBatchScreen`
 
-### 6.2 CreateBatchScreen (5-Step PageView Wizard)
+### 6.2 CreateBatchScreen (6-Step PageView Wizard)
 
-**Progress Bar at top** — 5 segments, filled as steps complete.
+> **V2.1:** the production wizard has **6 steps** (Transport & Loads was added). Step 1 also captures the optional **supplier purchase** details (supplier name, `cash`/`debt`, amount paid).
+
+**Progress Bar at top** — 6 segments, filled as steps complete.
 
 **Step 1 — Product & Purchase**
 ```
 ┌─────────────────────────────────┐
-│  ← New Batch  Step 1 of 5      │
+│  ← New Batch  Step 1 of 6      │
 │  ████░░░░░░░░░░░░░░░░░░░░░░░░  │
 │  Product & Purchase Details     │
 ├─────────────────────────────────┤
@@ -549,7 +557,7 @@ SplashScreen
 **Step 2 — Partners**
 ```
 ┌─────────────────────────────────┐
-│  ← New Batch  Step 2 of 5      │
+│  ← New Batch  Step 2 of 6      │
 │  ████████░░░░░░░░░░░░░░░░░░░░  │
 │  Purchase & Sale Partners       │
 ├─────────────────────────────────┤
@@ -583,7 +591,7 @@ SplashScreen
 **Step 3 — Packing**
 ```
 ┌─────────────────────────────────┐
-│  New Batch  Step 3 of 5         │
+│  New Batch  Step 3 of 6         │
 │  ████████████░░░░░░░░░░░░░░░░  │
 │  Packing Details                │
 ├─────────────────────────────────┤
@@ -607,7 +615,7 @@ SplashScreen
 **Step 4 — Purchaser Expenses**
 ```
 ┌─────────────────────────────────┐
-│  New Batch  Step 4 of 5         │
+│  New Batch  Step 4 of 6         │
 │  ████████████████░░░░░░░░░░░░  │
 │  Purchaser Expenses             │
 ├─────────────────────────────────┤
@@ -637,10 +645,35 @@ SplashScreen
 └─────────────────────────────────┘
 ```
 
-**Step 5 — Review & Confirm**
+**Step 5 — Transport & Loads**
 ```
 ┌─────────────────────────────────┐
-│  New Batch  Step 5 of 5         │
+│  New Batch  Step 5 of 6         │
+│  ██████████████████░░░░░░░░░░  │
+│  Transport & Loads              │
+├─────────────────────────────────┤
+│  Transport Amount (PKR)         │
+│  [5,000]                        │
+│  Paid by:  ● Purchaser          │
+│            ○ Seller             │
+│  Mode:  [Truck ▼]               │
+│                                 │
+│  ── Vehicle Loads ─────────     │
+│  Vehicle        Bags   CostType │
+│  [ABC-123 ▼]    [30]   [Fuel ▼] │
+│  [+ Add Vehicle Load]           │
+│                                 │
+│  (Vehicles: shared across       │
+│   businesses, Phase 7)          │
+│                                 │
+│  [← Back]        [Next Step →]  │
+└─────────────────────────────────┘
+```
+
+**Step 6 — Review & Confirm**
+```
+┌─────────────────────────────────┐
+│  New Batch  Step 6 of 6         │
 │  ████████████████████████████  │
 │  Review & Confirm               │
 ├─────────────────────────────────┤
@@ -668,10 +701,12 @@ SplashScreen
 
 ### 6.3 BatchDetailScreen (TabBar)
 
+> **V2.1:** production uses **8 tabs** — Overview | Packing | Returns | Expenses | Transport | Sales | Settlements | P&L.
+
 ```
 ┌─────────────────────────────────┐
 │  ← GM-2026-0042  [selling]      │
-│  Overview | Expenses | Packing | Sales | P&L │
+│  Overview | Packing | Returns | Expenses | Transport | Sales | Settlements | P&L │
 ├─────────────────────────────────┤
 │  [Tab content below]            │
 └─────────────────────────────────┘
@@ -826,6 +861,47 @@ CURRENT P&L        -58,800  🔴
 └─────────────────────────────────┘
 ```
 
+### 7.3 Day-End Manual Close (V2.1 — Phase 7)
+
+Opened from the **Sales tab** FAB menu (second option, seller role or owner). Two modes:
+
+```
+┌─────────────────────────────────┐
+│  ← Day-End Close   GM-2026-0042 │
+│  Date: [08/08/2026]             │
+├─────────────────────────────────┤
+│  MODE A — Live POS (default)    │
+│  Today's POS sales are already  │
+│  recorded. Skip this sheet.     │
+│                                 │
+│  MODE B — Manual Totals         │
+│  Cash received total *          │
+│  [PKR __________]               │
+│                                 │
+│  Credit per customer            │
+│  ┌──────────────────────────┐   │
+│  │ Malik Traders    [25,000]│   │
+│  │ Raza General     [12,500]│   │
+│  │ Walk-in          [  —  ] │   │
+│  └──────────────────────────┘   │
+│  [+ Add credit customer]        │
+│                                 │
+│  ─────────────────────────      │
+│  Total entered   = PKR 37,500   │
+│  Revenue today   = PKR 50,000   │
+│  REMAINING       = PKR 12,500 🔍│
+│                                 │
+│  Day-end expense (stall rent…)  │
+│  [PKR ___]  [type ▼]            │
+│                                 │
+│  [Save Day-End Close]           │
+└─────────────────────────────────┘
+```
+
+- **Remaining amount is auto-calculated** (`revenue − cash − Σ credit`) and must be ≥ 0 to save.
+- On save the app creates ordinary rows: 1 aggregated `sales` (`payment_mode='cash'`) + 1 credit `sales` per customer + 1 `expenses` row if a day-end expense was added → `get_batch_pl` stays authoritative.
+- If POS sales already exist for the date, "Cash received total" is validated against them; a mismatch shows a discrepancy warning and blocks save until resolved.
+
 ---
 
 ## 8. Customer Screens
@@ -852,6 +928,8 @@ CURRENT P&L        -58,800  🔴
 ```
 
 Color legend: 🟢 = 0, 🟡 = 1–49,999, 🔴 = 50,000+
+
+**Shared customers filter (V2.1 — Phase 6/11):** when the logged-in user owns/edits multiple businesses and the backend `customer_shares` table exists, a `[Shared]` chip appears under the search bar. Tapping it shows only customers shared with the current business (tile shows a 🔗 badge). If the `customer_shares` probe fails (table absent), the chip is hidden entirely — the screen degrades to the 2.0 behavior.
 
 ### 8.2 CustomerDetailScreen
 
@@ -912,6 +990,8 @@ Color legend: 🟢 = 0, 🟡 = 1–49,999, 🔴 = 50,000+
 └─────────────────────────────────┘
 ```
 
+> **V2.1 — Per-batch credit:** when recording a payment the sheet offers an optional **"Apply to batch"** dropdown (populated from the customer's outstanding credit sales; sets `customer_payments.batch_id`). The customer ledger shows per-batch chips next to payments that were applied. Batch detail's Sales tab shows a **Credit by batch** summary: per customer, `credit sold − collected` for that batch.
+
 ---
 
 ## 9. More Menu & Sub-screens
@@ -925,6 +1005,9 @@ Color legend: 🟢 = 0, 🟡 = 1–49,999, 🔴 = 50,000+
 │  👤  My Profile                  │
 │  👥  Partners                    │
 │  🏪  Markets & Cities            │
+│  🚚  Vehicles            (Ph 7)  │
+│  🧾  Suppliers          (Ph 9)   │
+│  📦  Packing Materials  (Ph 10)  │
 │  📊  Reports                     │
 │  ⚙️  Settings                    │
 │                                  │
@@ -932,6 +1015,7 @@ Color legend: 🟢 = 0, 🟡 = 1–49,999, 🔴 = 50,000+
 │  [Sign Out]                      │
 └──────────────────────────────────┘
 ```
+> **V2.1:** Vehicles/Suppliers/Packing Materials entries appear only after their respective phases land (they are phase-gated).
 
 ### 9.2 PartnerListScreen
 
@@ -1018,6 +1102,54 @@ Color legend: 🟢 = 0, 🟡 = 1–49,999, 🔴 = 50,000+
 │  [Export Full Report PDF]       │
 └─────────────────────────────────┘
 ```
+
+### 9.6 VehiclesScreen (V2.1 — Phase 7)
+
+```
+┌─────────────────────────────────┐
+│  ← Vehicles            [+ Add]  │
+├─────────────────────────────────┤
+│  ABC-123  Truck  (60 bags)      │
+│  Used in: GM-2026-0042 [Load 30]│
+│  XYZ-987  Van    (20 bags)      │
+│  Used in: GM-2026-0041 [Load 20]│
+└─────────────────────────────────┘
+```
+- Registry entries: plate/name, type, capacity.
+- A vehicle's loads appear on the batch **Transport tab** (`cost_type`: fuel / driver / toll / commission). Loads split across vehicles sum to the batch transport total.
+- Shared vehicles (Phase 11) reuse the shared-table pattern from §8.1.
+
+### 9.7 SuppliersScreen (V2.1 — Phase 9)
+
+```
+┌─────────────────────────────────┐
+│  ← Suppliers            [+ Add] │
+├─────────────────────────────────┤
+│  Umar Vegetable Depot           │
+│  🟠 Payable: PKR 80,000   (2 bt)│
+│  Ahmed Traders                  │
+│  🟢 No outstanding              │
+└─────────────────────────────────┘
+```
+- Registry: name, phone, market/city, notes (backed by planned `suppliers` table).
+- **Payable** = Σ over open `debt` purchases of `purchase_price − purchase_amount_paid`, computed client-side from `product_batches` (no stored balance — see PRD §4.5).
+- Tapping a supplier shows per-batch purchase lines and a **[Record Payment]** action that reduces the batch payable.
+
+### 9.8 Packing MaterialsScreen (V2.1 — Phase 10)
+
+```
+┌─────────────────────────────────┐
+│  ← Packing Materials   [+ Add]  │
+├─────────────────────────────────┤
+│  100kg Bag   PKR 800 · 6 reuses │
+│  5kg Packet  PKR 15  · single   │
+│  ─────────────────────          │
+│  Used this batch:               │
+│  GM-2026-0042 → 100kg Bag × 10  │
+└─────────────────────────────────┘
+```
+- Material cost amortized per use (`cost ÷ expected_reuses`) into the batch P&L (PRD §4.6).
+- Empty-bag returns (batch **Returns** tab) record quantity + purchaser partner + vehicle (Phase 7 vehicles).
 
 ---
 
@@ -1123,13 +1255,26 @@ Future<bool> showConfirmDialog(
 7. If Partial: enter cash received — credit auto-fills
 8. Tap **[Save Sale]** → Snackbar: "Sale saved ✅" → screen pops
 
-### Flow 2 — Create Full Batch (5-step wizard)
+### Flow 2 — Create Full Batch (6-step wizard)
 1. Tap **Batches** tab → tap **[+]**
-2. Step 1: Select product, source/destination market, date, qty, price
-3. Step 2: Add purchasing partner(s) with daily rate + days; select seller; set transport
+2. Step 1: Select product, source/destination market, date, qty, price, optional supplier purchase (supplier, `cash`/`debt`, amount paid)
+3. Step 2: Add purchasing partner(s) with daily rate + days; select seller
 4. Step 3: Add packing entries (unit type, count, cost) — can skip
 5. Step 4: Enter initial purchaser expenses — can skip (add later)
-6. Step 5: Review full cost summary → tap **[Create Batch]** → redirected to `BatchDetailScreen`
+6. Step 5: Transport & Loads — amount, paid by, mode, per-vehicle loads
+7. Step 6: Review full cost summary → tap **[Create Batch]** → redirected to `BatchDetailScreen`
+
+### Flow 2b — Day-End Manual Close (V2.1)
+1. On `BatchDetailScreen` → **Sales** tab → FAB menu → **[Day-End Close]**
+2. Date defaults to today; POS sales for that date shown read-only
+3. Mode B: enter **cash received total** + per-credit-customer amounts; **Remaining** auto-calculates
+4. Optional: add a day-end seller expense (e.g., stall rent)
+5. Tap **[Save Day-End Close]** → app creates aggregated `sales` + credit rows + optional expense → P&L re-runs automatically
+
+### Flow 2c — Collect Per-Batch Credit (V2.1)
+1. On `BatchDetailScreen` → **Sales** tab → scroll to **Credit by batch** section (per customer: `credit sold − collected`)
+2. Tap **[Collect]** on a customer → `Record Payment` sheet pre-fills that batch in "Apply to batch"
+3. Payment saves with `customer_payments.batch_id` set → batch outstanding drops; customer ledger shows the batch chip
 
 ### Flow 3 — Check Profit on a Batch
 1. From batch list or dashboard, tap batch card
