@@ -33,6 +33,7 @@ class CustomerProvider extends ChangeNotifier {
     bool includeArchived = false,
   }) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -117,6 +118,7 @@ class CustomerProvider extends ChangeNotifier {
 
   Future<void> loadLedger(String customerId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

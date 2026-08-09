@@ -130,6 +130,7 @@ class BatchDetailProvider extends ChangeNotifier {
 
   Future<void> load(String id) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -261,6 +262,7 @@ class BatchPLProvider extends ChangeNotifier {
 
   Future<void> load(String batchId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -290,6 +292,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<void> load(String batchId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -364,6 +367,7 @@ class SaleProvider extends ChangeNotifier {
 
   Future<void> loadByBatch(String batchId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -378,6 +382,7 @@ class SaleProvider extends ChangeNotifier {
 
   Future<void> loadByCustomer(String customerId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

@@ -62,6 +62,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> restoreSession() async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -106,6 +107,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> login(String email, String password) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -128,6 +130,7 @@ class AuthProvider extends ChangeNotifier {
     String? city,
   }) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -151,6 +154,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> sendOtp(String phone) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -168,6 +172,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> verifyOtp(String phone, String token) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

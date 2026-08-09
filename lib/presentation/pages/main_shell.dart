@@ -35,6 +35,9 @@ class _MainShellState extends State<MainShell> {
 
   void _selectTab(int index) {
     _closeDrawer();
+    if (index != _index) {
+      _keys[_index].currentState?.popUntil((route) => route.isFirst);
+    }
     setState(() => _index = index);
   }
 
@@ -86,7 +89,7 @@ class _MainShellState extends State<MainShell> {
       ),
       bottomNavigationBar: GoogleNavBar(
         currentIndex: _index,
-        onTap: (index) => setState(() => _index = index),
+        onTap: _selectTab,
         items: [
           GoogleNavItem(
             icon: MingCuteIcons.mgc_home_5_line,

@@ -14,6 +14,7 @@ class AsyncNotifier<T> extends ChangeNotifier {
 
   Future<void> run(Future<T> Function() action) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

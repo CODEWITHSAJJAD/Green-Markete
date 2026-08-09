@@ -20,6 +20,7 @@ class BusinessProvider extends ChangeNotifier {
 
   Future<void> load(String businessId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -43,6 +44,7 @@ class BusinessProvider extends ChangeNotifier {
     final businessId = _business?.id;
     if (businessId == null) return false;
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -80,6 +82,7 @@ class BusinessProvider extends ChangeNotifier {
     String businessType = 'multi_partner',
   }) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

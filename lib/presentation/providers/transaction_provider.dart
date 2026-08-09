@@ -19,6 +19,7 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> loadLedger(String partnerId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

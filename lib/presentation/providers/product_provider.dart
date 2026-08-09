@@ -19,6 +19,7 @@ class ProductProvider extends ChangeNotifier {
 
   Future<void> load(String businessId, {String? category}) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

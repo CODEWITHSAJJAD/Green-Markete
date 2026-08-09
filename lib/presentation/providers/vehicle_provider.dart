@@ -19,6 +19,7 @@ class VehicleProvider extends ChangeNotifier {
 
   Future<void> load(String businessId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

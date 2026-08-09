@@ -19,6 +19,7 @@ class MarketProvider extends ChangeNotifier {
 
   Future<void> load(String businessId, {String? city}) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

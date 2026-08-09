@@ -35,6 +35,7 @@ class ReportProvider extends ChangeNotifier {
     String? dateTo,
   }) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -53,6 +54,7 @@ class ReportProvider extends ChangeNotifier {
 
   Future<void> loadCredit(String businessId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -67,6 +69,7 @@ class ReportProvider extends ChangeNotifier {
 
   Future<void> loadOverdue(String businessId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -81,6 +84,7 @@ class ReportProvider extends ChangeNotifier {
 
   Future<void> loadMarketPerformance(String businessId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -95,6 +99,7 @@ class ReportProvider extends ChangeNotifier {
 
   Future<void> loadPartnerPL(String partnerId, String batchId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {

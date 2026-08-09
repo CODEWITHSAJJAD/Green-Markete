@@ -24,6 +24,7 @@ class PartnerProvider extends ChangeNotifier {
 
   Future<void> load(String businessId) async {
     _isLoading = true;
+    await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
@@ -44,6 +45,7 @@ class PartnerProvider extends ChangeNotifier {
     }
     _debouncer(() async {
       _isLoading = true;
+      await Future<void>.value();
       notifyListeners();
       try {
         _searchResults = await _repo.search(query, businessId);
