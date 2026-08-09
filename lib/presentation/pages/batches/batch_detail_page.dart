@@ -12,9 +12,12 @@ import '../../../data/models/expense_model.dart';
 import '../../../data/models/packing_record_model.dart';
 import '../../../data/models/packing_return_model.dart';
 import '../../../data/models/sale_model.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/capability.dart';
+import '../../providers/partner_provider.dart';
+import '../../providers/transaction_provider.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/expense_entry_sheet.dart';
@@ -52,7 +55,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 7, vsync: this);
+    _tabCtrl = TabController(length: 8, vsync: this);
     _tabCtrl.addListener(() => setState(() {}));
     final detail = context.read<BatchDetailProvider>();
     final pl = context.read<BatchPLProvider>();
@@ -63,6 +66,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     expenses.load(batchId);
     sales.loadByBatch(batchId);
     _subscribeRealtime(detail, pl, expenses, sales);
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId != null && businessId.isNotEmpty) {
+      context.read<PartnerProvider>().load(businessId);
+    }
   }
 
   void _subscribeRealtime(
@@ -175,6 +182,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
             Tab(text: 'Expenses'),
             Tab(text: 'Transport'),
             Tab(text: 'Sales'),
+            Tab(text: 'Settlements'),
             Tab(text: 'P&L'),
           ],
         ),
@@ -219,6 +227,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         _expensesTab(context, batch),
         _transportTab(context, batch),
         _salesTab(context, batch),
+        _settlementsTab(context, batch),
         _plTab(theme),
       ],
     );
@@ -1144,6 +1153,262 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           );
         });
       },
+    );
+  }
+
+  String? _ledgerSellerId;
+
+  Widget _settlementsTab(BuildContext context, BatchModel batch) {
+    final theme = Theme.of(context);
+    final plProvider = context.watch<BatchPLProvider>();
+    final detailProvider = context.watch<BatchDetailProvider>();
+    final partnerProvider = context.watch<PartnerProvider>();
+    final txProvider = context.watch<TransactionProvider>();
+    final pl = plProvider.pl;
+
+    final batchPartners = detailProvider.batchPartners;
+    final sellers = batchPartners
+        .where((p) => p['role'] == 'seller' || p['role'] == 'both')
+        .toList();
+    if (sellers.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'No selling partner on this batch. Add a seller in the wizard to track settlements.',
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    final sellerId = sellers.first['partner_id'] as String;
+    final sellerName = partnerProvider.partners
+        .where((p) => p.id == sellerId)
+        .map((p) => p.fullName)
+        .firstOrNull ??
+        'Seller';
+
+    if (_ledgerSellerId != sellerId) {
+      _ledgerSellerId = sellerId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<TransactionProvider>().loadLedger(sellerId);
+      });
+    }
+
+    final ledgerRows = txProvider.ledger?['transactions'];
+    final ledgerTxs = ledgerRows is List
+        ? ledgerRows
+            .whereType<Map<String, dynamic>>()
+            .map(TransactionModel.fromJson)
+            .toList()
+        : <TransactionModel>[];
+    final settledForBatch = ledgerTxs
+        .where((t) =>
+            (t.notes?.contains(batch.batchCode) ?? false) ||
+            (t.reference?.contains(batch.batchCode) ?? false))
+        .where((t) => t.toPartnerId == sellerId)
+        .fold<double>(0, (sum, t) => sum + t.amount);
+
+    final sellerDaily = pl?.costBreakdown.sellerDailyCharges ?? 0;
+    final sellerExpenses = pl?.costBreakdown.sellerExpenses ?? 0;
+    final transport = pl?.costBreakdown.transportCost ?? 0;
+    final owed = sellerDaily +
+        sellerExpenses +
+        (batch.transportPaidBy == 'seller' ? transport : 0);
+    final remaining = (owed - settledForBatch).clamp(0, double.infinity).toDouble();
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withValues(alpha: 0.10),
+                theme.colorScheme.surface,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Seller: $sellerName', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 12),
+              _costLine(theme, 'Daily charges', sellerDaily),
+              _costLine(theme, 'Seller expenses', sellerExpenses),
+              if (batch.transportPaidBy == 'seller')
+                _costLine(theme, 'Transport (seller-paid)', transport),
+              const Divider(height: 20),
+              _costLine(theme, 'Owed to seller', owed, bold: true),
+              _costLine(theme, 'Settled for this batch', settledForBatch),
+              _costLine(theme, 'Remaining', remaining, bold: true),
+              if (remaining > 0) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => _settleSellerDialog(
+                    context,
+                    batch: batch,
+                    sellerId: sellerId,
+                    sellerName: sellerName,
+                    remaining: remaining,
+                    settledForBatch: settledForBatch,
+                  ),
+                  icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
+                  label: const Text('Settle Seller'),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Settlements are recorded as partner transactions. They are matched to this batch via its code in the notes.',
+          style: theme.textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _settleSellerDialog(
+    BuildContext context, {
+    required BatchModel batch,
+    required String sellerId,
+    required String sellerName,
+    required double remaining,
+    required double settledForBatch,
+  }) async {
+    final theme = Theme.of(context);
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    final batchPartners = context.read<BatchDetailProvider>().batchPartners;
+    final partners = context.read<PartnerProvider>().partners;
+    final purchasers = batchPartners
+        .where((p) => p['role'] == 'purchaser' || p['role'] == 'both')
+        .map((p) => p['partner_id'] as String?)
+        .whereType<String>()
+        .toList();
+    String? fromPartnerId = purchasers.isNotEmpty ? purchasers.first : null;
+    final amountCtrl = TextEditingController(
+      text: remaining > 0 ? remaining.toStringAsFixed(2) : '',
+    );
+    final notesCtrl = TextEditingController(
+      text: 'Settlement for batch ${batch.batchCode}',
+    );
+    String paymentMode = 'cash';
+
+    String partnerName(String id) {
+      return partners
+              .where((p) => p.id == id)
+              .map((p) => p.fullName)
+              .firstOrNull ??
+          id;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSt) {
+        return AlertDialog(
+          title: Text('Settle $sellerName'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: fromPartnerId,
+                  decoration: const InputDecoration(labelText: 'Paid by (partner)'),
+                  items: [
+                    for (final p in purchasers)
+                      DropdownMenuItem(
+                        value: p,
+                        child: Text(partnerName(p), overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                  onChanged: (v) => setSt(() => fromPartnerId = v),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: 'Amount'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: paymentMode,
+                  decoration: const InputDecoration(labelText: 'Payment mode'),
+                  items: const [
+                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                    DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                  ],
+                  onChanged: (v) => setSt(() => paymentMode = v ?? 'cash'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(labelText: 'Notes'),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Owed: ${CurrencyFormatter.format(remaining)} · Settled: ${CurrencyFormatter.format(settledForBatch)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                final amount = double.tryParse(amountCtrl.text.trim());
+                if (amount == null || amount <= 0) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+                  return;
+                }
+                if (fromPartnerId == null || fromPartnerId!.isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select who is paying')));
+                  return;
+                }
+                final txProvider = context.read<TransactionProvider>();
+                try {
+                  final created = await txProvider.create(
+                    TransactionCreateRequest(
+                      businessId: businessId,
+                      fromPartnerId: fromPartnerId!,
+                      toPartnerId: sellerId,
+                      amount: amount,
+                      transactionType: 'settlement',
+                      paymentMode: paymentMode,
+                      transactionDate: DateTime.now().toIso8601String().split('T').first,
+                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                    ),
+                  );
+                  if (created != null) {
+                    txProvider.loadLedger(sellerId);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  } else if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('Failed: ${txProvider.error ?? 'Unknown error'}')),
+                    );
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save Settlement'),
+            ),
+          ],
+        );
+      }),
     );
   }
 

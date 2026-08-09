@@ -119,6 +119,9 @@ class BatchDetailProvider extends ChangeNotifier {
   List<PackingReturnModel> _returns = const [];
   List<PackingReturnModel> get returns => _returns;
 
+  List<Map<String, dynamic>> _batchPartners = const [];
+  List<Map<String, dynamic>> get batchPartners => _batchPartners;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -137,6 +140,7 @@ class BatchDetailProvider extends ChangeNotifier {
     await _loadPacking(id);
     await _loadVehicles(id);
     await _loadReturns(id);
+    await _loadBatchPartners(id);
   }
 
   Future<void> _loadPacking(String id) async {
@@ -199,6 +203,17 @@ class BatchDetailProvider extends ChangeNotifier {
     if (id == null) return;
     await _repo.deleteReturn(returnId);
     await _loadReturns(id);
+  }
+
+  Future<void> _loadBatchPartners(String id) async {
+    try {
+      _batchPartners = await _repo.listBatchPartners(id);
+    } catch (e) {
+      _batchPartners = const [];
+      _error ??= e.toString().replaceAll('Exception: ', '');
+    } finally {
+      notifyListeners();
+    }
   }
 
   Future<bool> updateStatus(String status, {String? id}) async {

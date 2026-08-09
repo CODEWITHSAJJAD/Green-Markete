@@ -260,6 +260,14 @@ class BatchRepository {
     await _client.from('packing_returns').delete().eq('id', returnId);
   }
 
+  Future<List<Map<String, dynamic>>> listBatchPartners(String batchId) async {
+    final rows = await _client
+        .from('batch_partners')
+        .select('partner_id, role')
+        .eq('batch_id', batchId);
+    return rows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   Future<void> addPartner(String id, BatchPartnerCreate partner) async {
     await _client.from('batch_partners').insert({
       'batch_id': id,
