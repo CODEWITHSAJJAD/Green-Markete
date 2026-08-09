@@ -36,15 +36,36 @@
   <style>
     /* Matches the in-app SplashPage gradient so the browser tab is never a
        white flash while the Flutter engine boots. Flutter's first frame
-       covers this loader entirely. */
-    body {
+       covers this loader entirely (and it is removed on first frame below).
+       html/body/flutter-view are all forced to fill the viewport because
+       Flutter web sizes html/body to 0 while it initializes. */
+    html {
+      width: 100%;
+      height: 100%;
       margin: 0;
       padding: 0;
+      background-color: #1B5E20;
+    }
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
       background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #388E3C 100%);
+    }
+    flutter-view,
+    flutter-view > flutter-scene {
+      width: 100%;
+      height: 100%;
+      background-color: transparent !important;
     }
     .gm-splash {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -86,13 +107,25 @@
   </style>
 </head>
 <body>
-  <div class="gm-splash">
+  <div class="gm-splash" id="gm-splash">
     <div class="gm-logo"></div>
     <p class="gm-title">Green Market</p>
     <p class="gm-tagline">Wholesale, made simple</p>
     <div class="gm-spinner"></div>
   </div>
 
+  <script>
+    // Remove the HTML loader once Flutter has drawn its first frame so it can
+    // never sit on top of the app. Also hide it on any early error.
+    function gmHideSplash() {
+      var el = document.getElementById('gm-splash');
+      if (el) el.remove();
+    }
+    window.addEventListener('flutter-first-frame', gmHideSplash, { once: true });
+    window.addEventListener('load', function () {
+      window.setTimeout(gmHideSplash, 15000);
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
