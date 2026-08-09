@@ -104,6 +104,7 @@ class BatchCreateRequest {
   final List<BatchPartnerCreate>? partners;
   final List<PackingRecordCreate>? packingRecords;
   final List<ExpenseCreate>? expenses;
+  final List<VehicleLoadCreate>? vehicleLoads;
 
   BatchCreateRequest({
     required this.businessId,
@@ -123,6 +124,7 @@ class BatchCreateRequest {
     this.partners,
     this.packingRecords,
     this.expenses,
+    this.vehicleLoads,
   });
 
   Map<String, dynamic> toJson() => {
@@ -144,6 +146,7 @@ class BatchCreateRequest {
     'partners': partners?.map((e) => e.toJson()).toList(),
     'packing_records': packingRecords?.map((e) => e.toJson()).toList(),
     'expenses': expenses?.map((e) => e.toJson()).toList(),
+    'vehicle_loads': vehicleLoads?.map((e) => e.toJson()).toList(),
   };
 }
 
@@ -222,5 +225,38 @@ class ExpenseCreate {
     'payment_mode': paymentMode,
     'bank_reference': paymentReference,
     'expense_date': expenseDate,
+  };
+}
+
+class VehicleLoadCreate {
+  final String vehicleId;
+  final int? packingRecordIndex;
+  final String? packingRecordId;
+  final double unitCount;
+  final String costType;
+  final double transportCost;
+  final String? loadDate;
+  final String? notes;
+
+  VehicleLoadCreate({
+    required this.vehicleId,
+    this.packingRecordIndex,
+    this.packingRecordId,
+    this.unitCount = 0,
+    this.costType = 'per_vehicle',
+    this.transportCost = 0,
+    this.loadDate,
+    this.notes,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'vehicle_id': vehicleId,
+    'packing_record_index': packingRecordIndex,
+    'packing_record_id': packingRecordId,
+    'unit_count': unitCount,
+    'cost_type': costType,
+    'transport_cost': transportCost,
+    'load_date': loadDate,
+    'notes': notes,
   };
 }

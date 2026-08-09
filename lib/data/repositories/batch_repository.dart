@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase/supabase_service.dart';
 import '../models/batch_model.dart';
+import '../models/batch_vehicle_model.dart';
 import '../models/packing_record_model.dart';
 import '../models/report_model.dart';
 
@@ -111,13 +112,36 @@ class BatchRepository {
     }
 
     final packing = request.packingRecords ?? const [];
+    final packingIds = <String>[];
     for (final p in packing) {
-      await _client.from('packing_records').insert({
+      final row = await _client
+          .from('packing_records')
+          .insert({
+            'batch_id': batchId,
+            'unit_type_label': p.unitType,
+            'unit_count': p.unitCount,
+            'cost_per_unit': p.costPerUnit,
+            'total_packing_cost': p.costPerUnit * p.unitCount,
+          })
+          .select('id')
+          .single();
+      packingIds.add(row['id'] as String);
+    }
+
+    final loads = request.vehicleLoads ?? const [];
+    for (final load in loads) {
+      await _client.from('batch_vehicles').insert({
         'batch_id': batchId,
-        'unit_type_label': p.unitType,
-        'unit_count': p.unitCount,
-        'cost_per_unit': p.costPerUnit,
-        'total_packing_cost': p.costPerUnit * p.unitCount,
+        'vehicle_id': load.vehicleId,
+        if (load.packingRecordIndex != null &&
+            load.packingRecordIndex! >= 0 &&
+            load.packingRecordIndex! < packingIds.length)
+          'packing_record_id': packingIds[load.packingRecordIndex!],
+        'unit_count': load.unitCount,
+        'cost_type': load.costType,
+        'transport_cost': load.transportCost,
+        if (load.loadDate != null && load.loadDate!.isNotEmpty) 'load_date': load.loadDate,
+        if (load.notes != null && load.notes!.isNotEmpty) 'notes': load.notes,
       });
     }
 
@@ -182,6 +206,32 @@ class BatchRepository {
         .eq('batch_id', batchId)
         .order('created_at', ascending: true);
     return rows.map(PackingRecordModel.fromJson).toList();
+  }
+
+  Future<List<BatchVehicleModel>> listVehicles(String batchId) async {
+    final rows = await _client
+        .from('batch_vehicles')
+        .select('*, vehicles(plate_number, driver_name)')
+        .eq('batch_id', batchId)
+        .order('load_date', ascending: true);
+    return rows.map(BatchVehicleModel.fromJson).toList();
+  }
+
+  Future<void> addVehicleLoad(String batchId, VehicleLoadCreate load) async {
+    await _client.from('batch_vehicles').insert({
+      'batch_id': batchId,
+      'vehicle_id': load.vehicleId,
+      if (load.packingRecordId != null) 'packing_record_id': load.packingRecordId,
+      'unit_count': load.unitCount,
+      'cost_type': load.costType,
+      'transport_cost': load.transportCost,
+      if (load.loadDate != null && load.loadDate!.isNotEmpty) 'load_date': load.loadDate,
+      if (load.notes != null && load.notes!.isNotEmpty) 'notes': load.notes,
+    });
+  }
+
+  Future<void> deleteVehicleLoad(String loadId) async {
+    await _client.from('batch_vehicles').delete().eq('id', loadId);
   }
 
   Future<void> addPartner(String id, BatchPartnerCreate partner) async {

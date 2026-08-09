@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../data/models/batch_model.dart';
+import '../../data/models/batch_vehicle_model.dart';
 import '../../data/models/expense_model.dart';
 import '../../data/models/packing_record_model.dart';
 import '../../data/models/report_model.dart';
@@ -111,6 +112,9 @@ class BatchDetailProvider extends ChangeNotifier {
   List<PackingRecordModel> _packingRecords = const [];
   List<PackingRecordModel> get packingRecords => _packingRecords;
 
+  List<BatchVehicleModel> _vehicleLoads = const [];
+  List<BatchVehicleModel> get vehicleLoads => _vehicleLoads;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -127,6 +131,7 @@ class BatchDetailProvider extends ChangeNotifier {
       _error = e.toString().replaceAll('Exception: ', '');
     }
     await _loadPacking(id);
+    await _loadVehicles(id);
   }
 
   Future<void> _loadPacking(String id) async {
@@ -139,6 +144,31 @@ class BatchDetailProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _loadVehicles(String id) async {
+    try {
+      _vehicleLoads = await _repo.listVehicles(id);
+    } catch (e) {
+      _vehicleLoads = const [];
+      _error ??= e.toString().replaceAll('Exception: ', '');
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> addVehicleLoad(VehicleLoadCreate load) async {
+    final id = _batch?.id;
+    if (id == null) return;
+    await _repo.addVehicleLoad(id, load);
+    await _loadVehicles(id);
+  }
+
+  Future<void> deleteVehicleLoad(String loadId) async {
+    final id = _batch?.id;
+    if (id == null) return;
+    await _repo.deleteVehicleLoad(loadId);
+    await _loadVehicles(id);
   }
 
   Future<bool> updateStatus(String status, {String? id}) async {

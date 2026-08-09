@@ -17,8 +17,10 @@ import '../../providers/market_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../providers/vehicle_provider.dart';
 import '../../widgets/partner_selector.dart';
 import '../../widgets/packing_entry_form.dart';
+import '../../../data/models/vehicle_model.dart';
 
 class CreateBatchWizard extends StatefulWidget {
   const CreateBatchWizard({super.key});
@@ -55,6 +57,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   // Step 4
   final List<Map<String, dynamic>> _expenses = [];
 
+  // Step 5
+  final List<Map<String, dynamic>> _vehicleLoads = [];
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +71,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
         context.read<ProductProvider>().load(businessId);
         context.read<MarketProvider>().load(businessId);
         context.read<PartnerProvider>().load(businessId);
+        context.read<VehicleProvider>().load(businessId);
       }
     });
   }
@@ -82,7 +88,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
   void _next() {
     final wizard = context.read<BatchWizardProvider>();
-    if (wizard.currentStep < 4) {
+    if (wizard.currentStep < 5) {
       wizard.nextStep();
       _pageCtrl.animateToPage(wizard.currentStep, duration: const Duration(milliseconds: 250), curve: Curves.ease);
     }
@@ -110,6 +116,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       case 2:
         return true;
       case 3:
+        return true;
+      case 4:
         return true;
       default:
         return true;
@@ -187,6 +195,17 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 paymentMode: e['payment_mode'] as String?,
                 paymentReference: e['payment_reference'] as String?,
                 expenseDate: e['expense_date'] as String?,
+              ))
+          .toList(),
+      vehicleLoads: _vehicleLoads
+          .where((v) => v['vehicle_id'] != null)
+          .map((v) => VehicleLoadCreate(
+                vehicleId: v['vehicle_id'] as String,
+                packingRecordIndex: v['packing_index'] as int?,
+                unitCount: double.tryParse(v['unit_count'].toString()) ?? 0,
+                costType: v['cost_type'] as String,
+                transportCost: double.tryParse(v['transport_cost'].toString()) ?? 0,
+                loadDate: _purchaseDate.toIso8601String().split('T').first,
               ))
           .toList(),
     );
@@ -267,9 +286,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Step ${step + 1} of 5', style: theme.textTheme.labelMedium),
+                Text('Step ${step + 1} of 6', style: theme.textTheme.labelMedium),
                 const SizedBox(height: 6),
-                LinearProgressIndicator(value: (step + 1) / 5),
+                LinearProgressIndicator(value: (step + 1) / 6),
                 const SizedBox(height: 8),
                 Text(_stepTitle(step), style: theme.textTheme.titleLarge),
               ],
@@ -284,6 +303,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 _step2(),
                 _step3(),
                 _step4(),
+                _stepTransport(theme),
                 _step5(theme),
               ],
             ),
@@ -310,7 +330,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                       onPressed: _submitting || !_validateStep(step)
                           ? null
                           : () {
-                              if (step == 4) {
+                              if (step == 5) {
                                 _submit();
                               } else {
                                 _next();
@@ -318,7 +338,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                             },
                       child: _submitting
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Text(step == 4 ? 'Confirm & Create' : 'Next'),
+                          : Text(step == 5 ? 'Confirm & Create' : 'Next'),
                     ),
                   ),
                 ],
@@ -336,7 +356,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       case 1: return 'Purchasing Partners';
       case 2: return 'Packing';
       case 3: return 'Purchaser Expenses';
-      case 4: return 'Review & Confirm';
+      case 4: return 'Transport & Loads';
+      case 5: return 'Review & Confirm';
       default: return '';
     }
   }
@@ -744,6 +765,160 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     );
   }
 
+  Widget _stepTransport(ThemeData theme) {
+    final vehicles = context.watch<VehicleProvider>().vehicles;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Split the batch across vehicles. Linked loads split shared transport fairly between packing records.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          if (vehicles.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(MingCuteIcons.mgc_information_line, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No vehicles registered yet. Add them from Manage → Vehicles, or skip this step.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            ...List.generate(_vehicleLoads.length, (i) {
+              final load = _vehicleLoads[i];
+              return _transportLoadCard(theme, i, load, vehicles);
+            }),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => setState(() {
+                _vehicleLoads.add({
+                  'vehicle_id': null,
+                  'packing_index': null,
+                  'unit_count': '0',
+                  'cost_type': 'per_vehicle',
+                  'transport_cost': '0',
+                });
+              }),
+              icon: const Icon(MingCuteIcons.mgc_add_line),
+              label: const Text('Add vehicle load'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _transportLoadCard(ThemeData theme, int index, Map<String, dynamic> load, List<VehicleModel> vehicles) {
+    final packing = _packing;
+    return Container(
+      key: ValueKey('load-$index'),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text('Load ${index + 1}', style: theme.textTheme.titleSmall),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(MingCuteIcons.mgc_close_line, size: 18),
+                onPressed: () => setState(() => _vehicleLoads.removeAt(index)),
+              ),
+            ],
+          ),
+          DropdownButtonFormField<String>(
+            initialValue: load['vehicle_id'] as String?,
+            decoration: const InputDecoration(labelText: 'Vehicle'),
+            items: [
+              for (final v in vehicles)
+                DropdownMenuItem(
+                  value: v.id,
+                  child: Text(v.plateNumber, overflow: TextOverflow.ellipsis),
+                ),
+            ],
+            onChanged: (v) => setState(() => load['vehicle_id'] = v),
+          ),
+          if (packing.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              initialValue: load['packing_index'] as int?,
+              decoration: const InputDecoration(labelText: 'Packing record (optional)'),
+              items: [
+                for (var i = 0; i < packing.length; i++)
+                  DropdownMenuItem(
+                    value: i,
+                    child: Text(
+                      '${i + 1}. ${packing[i]['unit_type']} × ${packing[i]['unit_count']}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (v) => setState(() => load['packing_index'] = v),
+            ),
+          ],
+          const SizedBox(height: 12),
+          TextFormField(
+            initialValue: load['unit_count'].toString(),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Units loaded'),
+            onChanged: (v) => setState(() => load['unit_count'] = v),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: load['cost_type'] as String,
+            decoration: const InputDecoration(labelText: 'Cost type'),
+            items: const [
+              DropdownMenuItem(value: 'per_vehicle', child: Text('Flat per vehicle')),
+              DropdownMenuItem(value: 'per_packing', child: Text('Per unit loaded')),
+              DropdownMenuItem(value: 'lump_sum', child: Text('Lump sum')),
+            ],
+            onChanged: (v) => setState(() => load['cost_type'] = v ?? 'per_vehicle'),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            initialValue: load['transport_cost'].toString(),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: load['cost_type'] == 'per_packing' ? 'Transport cost per unit' : 'Transport cost',
+            ),
+            onChanged: (v) => setState(() => load['transport_cost'] = v),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Total: ${CurrencyFormatter.format(_loadTotal(load))}',
+            style: theme.textTheme.labelMedium,
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _loadTotal(Map<String, dynamic> load) {
+    final cost = double.tryParse(load['transport_cost'].toString()) ?? 0;
+    final units = double.tryParse(load['unit_count'].toString()) ?? 0;
+    return load['cost_type'] == 'per_packing' ? units * cost : cost;
+  }
+
   Widget _step5(ThemeData theme) {
     final qty = double.tryParse(_quantityCtrl.text) ?? 0;
     final price = double.tryParse(_priceCtrl.text) ?? 0;
@@ -759,7 +934,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       final days = (p['days_involved'] as int?) ?? 1;
       return acc + rate * days;
     });
-    final total = purchaseCost + packingCost + expenseCost + dailyCharges;
+    final transportLoadCost = _vehicleLoads.fold<double>(0, (acc, v) => acc + _loadTotal(v));
+    final total = purchaseCost + packingCost + expenseCost + dailyCharges + transportLoadCost;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -796,6 +972,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 _summaryRow('Daily charges', CurrencyFormatter.format(dailyCharges)),
                 _summaryRow('Packing', CurrencyFormatter.format(packingCost)),
                 _summaryRow('Expenses', CurrencyFormatter.format(expenseCost)),
+                _summaryRow('Vehicle loads', '${_vehicleLoads.length}'),
+                _summaryRow('Transport loads', CurrencyFormatter.format(transportLoadCost)),
                 const Divider(height: 24),
                 _summaryRow('Total estimated cost', CurrencyFormatter.format(total), isBold: true),
               ],

@@ -7,12 +7,14 @@ import '../../../core/config/theme.dart';
 import '../../../core/supabase/supabase_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
+import '../../../data/models/batch_vehicle_model.dart';
 import '../../../data/models/expense_model.dart';
 import '../../../data/models/packing_record_model.dart';
 import '../../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/capability.dart';
+import '../../providers/vehicle_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/expense_entry_sheet.dart';
 import '../../widgets/sale_entry_sheet.dart';
@@ -49,7 +51,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 5, vsync: this);
+    _tabCtrl = TabController(length: 6, vsync: this);
     _tabCtrl.addListener(() => setState(() {}));
     final detail = context.read<BatchDetailProvider>();
     final pl = context.read<BatchPLProvider>();
@@ -169,6 +171,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
             Tab(text: 'Overview'),
             Tab(text: 'Packing'),
             Tab(text: 'Expenses'),
+            Tab(text: 'Transport'),
             Tab(text: 'Sales'),
             Tab(text: 'P&L'),
           ],
@@ -211,6 +214,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         _overviewTab(context, theme, batch),
         _packingTab(context, batch),
         _expensesTab(context, batch),
+        _transportTab(context, batch),
         _salesTab(context, batch),
         _plTab(theme),
       ],
@@ -242,6 +246,14 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       );
     }
     if (tabIndex == 3) {
+      return FloatingActionButton.extended(
+        heroTag: null,
+        onPressed: () => _showAddTransportDialog(context),
+        icon: const Icon(MingCuteIcons.mgc_truck_line),
+        label: const Text('Load'),
+      );
+    }
+    if (tabIndex == 4) {
       final batch = context.read<BatchDetailProvider>().batch;
       if (batch == null) return const SizedBox.shrink();
       final soldQuantity = context.read<SaleProvider>().sales.fold<double>(
@@ -683,6 +695,232 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         CurrencyFormatter.format(sale.totalAmount),
         style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
       ),
+    );
+  }
+
+  Widget _transportTab(BuildContext context, BatchModel batch) {
+    final theme = Theme.of(context);
+    final detailProvider = context.watch<BatchDetailProvider>();
+    if (detailProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final loads = detailProvider.vehicleLoads;
+    if (loads.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'No vehicle loads yet. Tap + to assign transport to a vehicle.',
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    final totalCost = loads.fold<double>(0, (acc, l) => acc + l.totalCost);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: _metric(theme, 'Vehicles', '${loads.length}')),
+              Expanded(child: _metric(theme, 'Transport Cost', CurrencyFormatter.format(totalCost))),
+            ],
+          ),
+        ),
+        ...loads.map((l) => _transportTile(context, l)),
+      ],
+    );
+  }
+
+  Widget _transportTile(BuildContext context, BatchVehicleModel load) {
+    final theme = Theme.of(context);
+    final tile = ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+        child: Icon(MingCuteIcons.mgc_truck_line, color: theme.colorScheme.primary, size: 18),
+      ),
+      title: Text(
+        load.vehiclePlateNumber ?? 'Vehicle',
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
+      subtitle: Text(
+        [
+          load.driverName,
+          load.costType == 'per_packing' ? '${load.unitCount.toStringAsFixed(0)} units @ ${CurrencyFormatter.format(load.transportCost)}' : load.costType,
+          load.packingLabel,
+          load.loadDate,
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
+      ),
+      trailing: Text(
+        CurrencyFormatter.format(load.totalCost),
+        style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
+      ),
+    );
+    final canDelete = (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
+    if (!canDelete) return tile;
+    return Dismissible(
+      key: ValueKey('vehicle-load-${load.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: theme.colorScheme.error.withValues(alpha: 0.15),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
+      ),
+      confirmDismiss: (_) async {
+        final batchDetailProvider = context.read<BatchDetailProvider>();
+        final batchPLProvider = context.read<BatchPLProvider>();
+        final ok = await showConfirmDialog(
+          context,
+          title: 'Remove this load?',
+          message: 'The transport load for ${load.vehiclePlateNumber ?? 'this vehicle'} will be removed from this batch.',
+          confirmLabel: 'Remove',
+          isDestructive: true,
+        );
+        if (ok != true) return false;
+        try {
+          await batchDetailProvider.deleteVehicleLoad(load.id);
+          if (!context.mounted) return false;
+          batchPLProvider.load(batchId);
+          return true;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+          }
+          return false;
+        }
+      },
+      child: tile,
+    );
+  }
+
+  Future<void> _showAddTransportDialog(BuildContext context) async {
+    final vehiclesProvider = context.read<VehicleProvider>();
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId != null && businessId.isNotEmpty && vehiclesProvider.vehicles.isEmpty) {
+      await vehiclesProvider.load(businessId);
+    }
+    if (!context.mounted) return;
+    final vehicles = vehiclesProvider.vehicles;
+    final packing = context.read<BatchDetailProvider>().packingRecords;
+    final detailProvider = context.read<BatchDetailProvider>();
+    String? vehicleId;
+    int? packingIndex;
+    String costType = 'per_vehicle';
+    final unitCountCtrl = TextEditingController(text: '0');
+    final transportCostCtrl = TextEditingController(text: '0');
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setSt) {
+          return AlertDialog(
+            title: const Text('Add Vehicle Load'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: vehicleId,
+                    decoration: const InputDecoration(labelText: 'Vehicle'),
+                    items: [
+                      for (final v in vehicles)
+                        DropdownMenuItem(
+                          value: v.id,
+                          child: Text(v.plateNumber, overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                    onChanged: (v) => setSt(() => vehicleId = v),
+                  ),
+                  if (packing.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<int>(
+                      initialValue: packingIndex,
+                      decoration: const InputDecoration(labelText: 'Packing record (optional)'),
+                      items: [
+                        for (var i = 0; i < packing.length; i++)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text(
+                              '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} × ${packing[i].unitCount}',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (v) => setSt(() => packingIndex = v),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: costType,
+                    decoration: const InputDecoration(labelText: 'Cost type'),
+                    items: const [
+                      DropdownMenuItem(value: 'per_vehicle', child: Text('Flat per vehicle')),
+                      DropdownMenuItem(value: 'per_packing', child: Text('Per unit loaded')),
+                      DropdownMenuItem(value: 'lump_sum', child: Text('Lump sum')),
+                    ],
+                    onChanged: (v) => setSt(() => costType = v ?? 'per_vehicle'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: unitCountCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Units loaded'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: transportCostCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: costType == 'per_packing' ? 'Transport cost per unit' : 'Transport cost',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: () async {
+                  if (vehicleId == null) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select a vehicle')));
+                    return;
+                  }
+                  try {
+                    await detailProvider.addVehicleLoad(
+                      VehicleLoadCreate(
+                        vehicleId: vehicleId!,
+                        packingRecordId: packingIndex != null ? packing[packingIndex!].id : null,
+                        unitCount: double.tryParse(unitCountCtrl.text.trim()) ?? 0,
+                        costType: costType,
+                        transportCost: double.tryParse(transportCostCtrl.text.trim()) ?? 0,
+                        loadDate: DateTime.now().toIso8601String().split('T').first,
+                      ),
+                    );
+                    if (!ctx.mounted) return;
+                    context.read<BatchPLProvider>().load(batchId);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                    }
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        });
+      },
     );
   }
 
