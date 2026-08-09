@@ -18,21 +18,81 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Green Market — vegetable import/export and wholesale management">
+  <meta name="theme-color" content="#1B5E20">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="green_market">
+  <meta name="apple-mobile-web-app-title" content="Green Market">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>green_market</title>
+  <title>Green Market</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Matches the in-app SplashPage gradient so the browser tab is never a
+       white flash while the Flutter engine boots. Flutter's first frame
+       covers this loader entirely. */
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #388E3C 100%);
+    }
+    .gm-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      font-family: Roboto, "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    .gm-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      background: #ffffff;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    }
+    .gm-title {
+      color: #ffffff;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      margin: 0;
+    }
+    .gm-tagline {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0;
+    }
+    .gm-spinner {
+      width: 26px;
+      height: 26px;
+      border: 3px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: gm-spin 1s linear infinite;
+    }
+    @keyframes gm-spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
+  <div class="gm-splash">
+    <div class="gm-logo"></div>
+    <p class="gm-title">Green Market</p>
+    <p class="gm-tagline">Wholesale, made simple</p>
+    <div class="gm-spinner"></div>
+  </div>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

@@ -75,7 +75,7 @@ class _CreditReportPageState extends State<CreditReportPage> {
         customers.map((c) => c.city).whereType<String>().toSet().toList()
           ..sort();
     final filtered = _cityFilter == null
-        ? customers
+        ? customers.toList()
         : customers.where((c) => c.city == _cityFilter).toList();
     filtered.sort((a, b) {
       if (_sortKey == 'name') return a.fullName.compareTo(b.fullName);
