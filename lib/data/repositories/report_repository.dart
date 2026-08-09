@@ -14,9 +14,11 @@ class ReportRepository {
     final response = await _client.rpc(
       'get_business_pl_summary',
       params: {
-        'p_businessid': businessId,
-        if (dateFrom != null && dateFrom.isNotEmpty) 'p_from_date': dateFrom,
-        if (dateTo != null && dateTo.isNotEmpty) 'p_to_date': dateTo,
+        'p_business_id': businessId,
+        'p_from_date':
+            (dateFrom != null && dateFrom.isNotEmpty) ? dateFrom : '1900-01-01',
+        'p_to_date':
+            (dateTo != null && dateTo.isNotEmpty) ? dateTo : '2100-01-01',
       },
     );
     final data = response is Map<String, dynamic>
