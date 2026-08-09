@@ -69,13 +69,13 @@ class AuthRepository {
   }) async {
     final row = await _client
         .from('user_profiles')
-        .insert({
+        .upsert({
           'user_id': userId,
           if (fullName != null && fullName.isNotEmpty) 'full_name': fullName,
           if (phone != null && phone.isNotEmpty) 'phone': phone,
           if (email != null && email.isNotEmpty) 'email': email,
           if (city != null && city.isNotEmpty) 'city': city,
-        })
+        }, onConflict: 'user_id')
         .select()
         .single();
     return UserModel.fromJson(row);
