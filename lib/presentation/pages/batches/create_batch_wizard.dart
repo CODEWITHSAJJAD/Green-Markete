@@ -13,6 +13,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/batch_wizard_provider.dart';
+import '../../providers/data_refresh.dart';
 import '../../providers/market_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/product_provider.dart';
@@ -243,6 +244,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       if (ok) {
         await _createTransportDebt(businessId);
         if (!mounted) return;
+        DataRefreshNotifier.instance.refresh(businessId);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Batch created')));

@@ -4,6 +4,7 @@ import '../../../core/utils/validators.dart';
 import '../../../data/models/customer_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../providers/data_refresh.dart';
 
 class CreateCustomerPage extends StatefulWidget {
   final CustomerModel? customer;
@@ -65,6 +66,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
           : await provider.create(data);
       if (!mounted) return;
       if (customer != null) {
+        DataRefreshNotifier.instance.refresh(businessId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_isEditing ? 'Customer updated successfully' : 'Customer created successfully'),

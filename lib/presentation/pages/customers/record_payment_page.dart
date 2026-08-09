@@ -7,6 +7,7 @@ import '../../../data/models/customer_model.dart';
 import '../../../data/models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../providers/data_refresh.dart';
 import '../../widgets/green_card.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
@@ -77,6 +78,7 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
       );
       if (!mounted) return;
       if (ok) {
+        DataRefreshNotifier.instance.refresh(businessId);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment recorded successfully')),
         );

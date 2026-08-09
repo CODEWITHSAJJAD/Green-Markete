@@ -6,6 +6,7 @@ import '../../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../providers/data_refresh.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class QuickSalePage extends StatefulWidget {
@@ -88,6 +89,10 @@ class _QuickSalePageState extends State<QuickSalePage> {
     setState(() => _saving = false);
     if (ok) {
       _load();
+      final businessId = auth.businessId;
+      if (businessId != null && businessId.isNotEmpty) {
+        DataRefreshNotifier.instance.refresh(businessId);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sale recorded successfully')),
       );

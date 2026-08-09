@@ -3,6 +3,11 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/batch_provider.dart';
+import '../providers/customer_provider.dart';
+import '../providers/data_refresh.dart';
+import '../providers/dashboard_provider.dart';
+import '../providers/report_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/google_nav_bar.dart';
 import '../widgets/offline_banner.dart';
@@ -29,6 +34,18 @@ class _MainShellState extends State<MainShell> {
     (_) => GlobalKey<NavigatorState>(),
   );
 
+  @override
+  void initState() {
+    super.initState();
+    DataRefreshNotifier.instance.addListener(_onSharedDataChanged);
+  }
+
+  @override
+  void dispose() {
+    DataRefreshNotifier.instance.removeListener(_onSharedDataChanged);
+    super.dispose();
+  }
+
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
   void _closeDrawer() => _scaffoldKey.currentState?.closeDrawer();
@@ -39,11 +56,50 @@ class _MainShellState extends State<MainShell> {
       _keys[_index].currentState?.popUntil((route) => route.isFirst);
     }
     setState(() => _index = index);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reloadTabData(index));
   }
 
-  void _openPage(Widget page) {
+  /// Reloads the datasets shown by the given tab so the screens never show
+  /// stale data after a change happened elsewhere.
+  void _reloadTabData(int index) {
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId == null || businessId.isEmpty) return;
+    switch (index) {
+      case 0:
+        context.read<DashboardProvider>().load(businessId);
+        context.read<ReportProvider>().loadOverdue(businessId);
+        break;
+      case 1:
+        context.read<BatchListProvider>().load(businessId);
+        break;
+      case 2:
+        context.read<SellingBatchesProvider>().load(businessId, status: 'selling');
+        break;
+      case 3:
+        context.read<CustomerProvider>().load(businessId);
+        context.read<CustomerProvider>().loadShared(businessId);
+        break;
+    }
+  }
+
+  /// Fired from [DataRefreshNotifier] after any successful mutation: reloads
+  /// every tab's dataset so the other screens using that data update too.
+  void _onSharedDataChanged() {
+    final businessId = DataRefreshNotifier.instance.lastBusinessId;
+    if (businessId == null || businessId.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (var i = 0; i < _pages.length; i++) {
+        _reloadTabData(i);
+      }
+    });
+  }
+
+  Future<void> _openPage(Widget page) async {
     _closeDrawer();
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    if (!mounted) return;
+    _reloadTabData(_index);
   }
 
   void _logout() {

@@ -8,6 +8,7 @@ import '../../../data/models/customer_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../providers/data_refresh.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
@@ -240,6 +241,10 @@ class _CustomerListPageState extends State<CustomerListPage> {
                 final archived = await provider.archive(customer.id);
                 if (!context.mounted) return archived;
                 if (archived) {
+                  final businessId = context.read<AuthProvider>().businessId;
+                  if (businessId != null && businessId.isNotEmpty) {
+                    DataRefreshNotifier.instance.refresh(businessId);
+                  }
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text('${customer.fullName} archived'),
@@ -248,6 +253,14 @@ class _CustomerListPageState extends State<CustomerListPage> {
                         onPressed: () async {
                           final restored = await provider.unarchive(customer.id);
                           if (!context.mounted) return;
+                          final restoredBusinessId =
+                              context.read<AuthProvider>().businessId;
+                          if (restoredBusinessId != null &&
+                              restoredBusinessId.isNotEmpty) {
+                            DataRefreshNotifier.instance.refresh(
+                              restoredBusinessId,
+                            );
+                          }
                           messenger.showSnackBar(
                             SnackBar(content: Text(restored ? 'Restored' : 'Failed to restore')),
                           );

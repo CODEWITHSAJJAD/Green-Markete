@@ -29,7 +29,7 @@ class _SalesListPageState extends State<SalesListPage> {
   void _load() {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
-      context.read<BatchListProvider>().load(businessId, status: 'selling');
+      context.read<SellingBatchesProvider>().load(businessId, status: 'selling');
     }
   }
 
@@ -44,7 +44,7 @@ class _SalesListPageState extends State<SalesListPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final batchesProvider = context.watch<BatchListProvider>();
+    final batchesProvider = context.watch<SellingBatchesProvider>();
     final sellingBatches = batchesProvider.batches;
     final isLoading = batchesProvider.isLoading;
     final error = batchesProvider.error;

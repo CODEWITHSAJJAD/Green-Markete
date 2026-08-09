@@ -11,6 +11,15 @@ import '../../data/repositories/batch_repository.dart';
 import '../../data/repositories/expense_repository.dart';
 import '../../data/repositories/sale_repository.dart';
 
+/// Dedicated list for the Sales tab (selling batches only).
+///
+/// Kept as its own provider type (separate from [BatchListProvider]) so the
+/// Batches and Sales tabs don't share one mutable dataset with different
+/// status filters — the two startup loads used to race and clobber each other.
+class SellingBatchesProvider extends BatchListProvider {
+  SellingBatchesProvider(super.repo);
+}
+
 class BatchListProvider extends ChangeNotifier {
   BatchListProvider(this._repo);
 

@@ -16,6 +16,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/capability.dart';
+import '../../providers/data_refresh.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/vehicle_provider.dart';
@@ -296,7 +297,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () async {
-          await showSaleEntrySheet(
+          final saved = await showSaleEntrySheet(
             context,
             batch: batch,
             soldQuantity: soldQuantity,
@@ -305,6 +306,12 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           context.read<SaleProvider>().loadByBatch(batchId);
           context.read<BatchPLProvider>().load(batchId);
           context.read<BatchDetailProvider>().load(batchId);
+          if (saved == true) {
+            final businessId = context.read<AuthProvider>().businessId;
+            if (businessId != null && businessId.isNotEmpty) {
+              DataRefreshNotifier.instance.refresh(businessId);
+            }
+          }
         },
         icon: const Icon(MingCuteIcons.mgc_add_line),
         label: const Text('Sale'),
@@ -1859,6 +1866,10 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       await context.read<BatchDetailProvider>().updateStatus(nextStatus);
       if (!context.mounted) return;
       context.read<BatchPLProvider>().load(batchId);
+      final businessId = context.read<AuthProvider>().businessId;
+      if (businessId != null && businessId.isNotEmpty) {
+        DataRefreshNotifier.instance.refresh(businessId);
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Batch moved to $nextStatus')));
@@ -1884,8 +1895,12 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     if (!context.mounted) return;
     final provider = context.read<BatchDetailProvider>();
     final messenger = ScaffoldMessenger.of(context);
+    final businessId = context.read<AuthProvider>().businessId;
     try {
       await provider.updateStatus('closed');
+      if (businessId != null && businessId.isNotEmpty) {
+        DataRefreshNotifier.instance.refresh(businessId);
+      }
       messenger.showSnackBar(
         const SnackBar(content: Text('Batch marked as closed')),
       );

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/config/theme.dart';
 import '../../../data/models/product_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/data_refresh.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/green_card.dart';
@@ -205,6 +206,7 @@ class _ProductListPageState extends State<ProductListPage> {
                 'base_unit': unitCtrl.text.trim().isEmpty ? 'kg' : unitCtrl.text.trim(),
               });
               productProvider.load(businessId);
+              DataRefreshNotifier.instance.refresh(businessId);
               if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Create'),
@@ -253,6 +255,7 @@ class _ProductListPageState extends State<ProductListPage> {
                 'base_unit': unitCtrl.text.trim().isEmpty ? 'kg' : unitCtrl.text.trim(),
               });
               productProvider.load(businessId);
+              DataRefreshNotifier.instance.refresh(businessId);
               if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Save'),
@@ -265,6 +268,7 @@ class _ProductListPageState extends State<ProductListPage> {
   Future<bool> _confirmDelete(ProductModel product) async {
     final messenger = ScaffoldMessenger.of(context);
     final provider = context.read<ProductProvider>();
+    final businessId = context.read<AuthProvider>().businessId;
     final ok = await showConfirmDialog(
       context,
       title: 'Delete ${product.name}?',
@@ -275,6 +279,9 @@ class _ProductListPageState extends State<ProductListPage> {
     if (ok != true) return false;
     final deleted = await provider.delete(product.id);
     if (!context.mounted) return deleted;
+    if (businessId != null && businessId.isNotEmpty) {
+      DataRefreshNotifier.instance.refresh(businessId);
+    }
     messenger.showSnackBar(
       SnackBar(content: Text(deleted ? 'Product deleted' : 'Failed to delete product')),
     );

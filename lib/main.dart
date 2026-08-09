@@ -50,6 +50,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => BusinessProvider(BusinessRepository())),
         ChangeNotifierProvider(create: (_) => DashboardProvider(DashboardRepository())),
         ChangeNotifierProvider(create: (_) => BatchListProvider(BatchRepository())),
+        ChangeNotifierProvider(create: (_) => SellingBatchesProvider(BatchRepository())),
         ChangeNotifierProvider(create: (_) => BatchDetailProvider(BatchRepository())),
         ChangeNotifierProvider(create: (_) => BatchPLProvider(BatchRepository())),
         ChangeNotifierProvider(create: (_) => BatchWizardProvider()),

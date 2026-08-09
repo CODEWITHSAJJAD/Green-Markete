@@ -8,13 +8,14 @@ import '../providers/batch_provider.dart';
 import '../providers/customer_provider.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
-Future<void> showSaleEntrySheet(
+/// Returns `true` when a sale was actually saved, `null`/`false` otherwise.
+Future<bool?> showSaleEntrySheet(
   BuildContext context, {
   required BatchModel batch,
   double? suggestedPrice,
   double soldQuantity = 0,
-}) async {
-  await showModalBottomSheet(
+}) {
+  return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     builder: (ctx) => Padding(
@@ -128,7 +129,7 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) {
-      Navigator.pop(context);
+      Navigator.pop(context, true);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Sale recorded')));
