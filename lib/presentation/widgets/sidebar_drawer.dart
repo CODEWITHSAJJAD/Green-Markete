@@ -7,6 +7,7 @@ import '../pages/products/product_list_page.dart';
 import '../pages/reports/reports_page.dart';
 import '../pages/settings/settings_page.dart';
 import '../pages/transactions/transaction_list_page.dart';
+import '../pages/vehicles/vehicle_list_page.dart';
 
 class SidebarDrawer extends StatelessWidget {
   const SidebarDrawer({
@@ -87,6 +88,12 @@ class SidebarDrawer extends StatelessWidget {
                     activeIcon: MingCuteIcons.mgc_store_2_fill,
                     label: 'Markets',
                     onTap: () => onOpenPage(const MarketListPage()),
+                  ),
+                  _NavTile(
+                    icon: MingCuteIcons.mgc_truck_line,
+                    activeIcon: MingCuteIcons.mgc_truck_fill,
+                    label: 'Vehicles',
+                    onTap: () => onOpenPage(const VehicleListPage()),
                   ),
                   const SizedBox(height: 8),
                   const _SectionHeader('Insights'),

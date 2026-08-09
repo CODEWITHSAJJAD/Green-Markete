@@ -24,6 +24,7 @@ import 'presentation/providers/partner_provider.dart';
 import 'presentation/providers/product_provider.dart';
 import 'presentation/providers/report_provider.dart';
 import 'presentation/providers/transaction_provider.dart';
+import 'presentation/providers/vehicle_provider.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/batch_repository.dart';
 import 'data/repositories/business_repository.dart';
@@ -36,6 +37,7 @@ import 'data/repositories/product_repository.dart';
 import 'data/repositories/report_repository.dart';
 import 'data/repositories/sale_repository.dart';
 import 'data/repositories/transaction_repository.dart';
+import 'data/repositories/vehicle_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +61,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ProductProvider(ProductRepository())),
         ChangeNotifierProvider(create: (_) => ReportProvider(ReportRepository())),
         ChangeNotifierProvider(create: (_) => TransactionProvider(TransactionRepository())),
+        ChangeNotifierProvider(create: (_) => VehicleProvider(VehicleRepository())),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: const _AuthStateBootstrap(child: GreenMarketApp()),
