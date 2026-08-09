@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreateVehiclePage extends StatefulWidget {
   final VehicleModel? vehicle;
@@ -34,8 +35,9 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
       _plateCtrl.text = vehicle.plateNumber;
       _driverNameCtrl.text = vehicle.driverName ?? '';
       _driverPhoneCtrl.text = vehicle.driverPhone ?? '';
-      _capacityValueCtrl.text =
-          vehicle.capacityValue == null ? '' : _formatNumber(vehicle.capacityValue!);
+      _capacityValueCtrl.text = vehicle.capacityValue == null
+          ? ''
+          : _formatNumber(vehicle.capacityValue!);
       _capacityUnit = vehicle.capacityUnit ?? 'bag';
       _notesCtrl.text = vehicle.notes ?? '';
     }
@@ -58,14 +60,18 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
   }
 
   Map<String, dynamic> _buildData(String businessId) => {
-        'business_id': businessId,
-        'plate_number': _plateCtrl.text.trim(),
-        'driver_name': _driverNameCtrl.text.trim().isEmpty ? null : _driverNameCtrl.text.trim(),
-        'driver_phone': _driverPhoneCtrl.text.trim().isEmpty ? null : _driverPhoneCtrl.text.trim(),
-        'capacity_value': double.tryParse(_capacityValueCtrl.text.trim()),
-        'capacity_unit': _capacityUnit,
-        'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-      };
+    'business_id': businessId,
+    'plate_number': _plateCtrl.text.trim(),
+    'driver_name': _driverNameCtrl.text.trim().isEmpty
+        ? null
+        : _driverNameCtrl.text.trim(),
+    'driver_phone': _driverPhoneCtrl.text.trim().isEmpty
+        ? null
+        : _driverPhoneCtrl.text.trim(),
+    'capacity_value': double.tryParse(_capacityValueCtrl.text.trim()),
+    'capacity_unit': _capacityUnit,
+    'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+  };
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -85,7 +91,11 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
     if (saved != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEditing ? 'Vehicle updated successfully' : 'Vehicle created successfully'),
+          content: Text(
+            _isEditing
+                ? 'Vehicle updated successfully'
+                : 'Vehicle created successfully',
+          ),
         ),
       );
       Navigator.of(context).pop();
@@ -99,7 +109,9 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Vehicle' : 'Create Vehicle')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit Vehicle' : 'Create Vehicle'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -109,7 +121,8 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
               TextFormField(
                 controller: _plateCtrl,
                 decoration: const InputDecoration(labelText: 'Plate number'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -125,20 +138,24 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _capacityValueCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(labelText: 'Capacity value'),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _capacityUnit,
+              DropdownButtonFormField2<String>(
+                isExpanded: true,
+                valueListenable: ValueNotifier(_capacityUnit),
                 decoration: const InputDecoration(labelText: 'Capacity unit'),
                 items: const [
-                  DropdownMenuItem(value: 'bag', child: Text('Bags')),
-                  DropdownMenuItem(value: 'kg', child: Text('Kilograms')),
-                  DropdownMenuItem(value: 'crate', child: Text('Crates')),
-                  DropdownMenuItem(value: 'unit', child: Text('Units')),
+                  DropdownItem(value: 'bag', child: Text('Bags')),
+                  DropdownItem(value: 'kg', child: Text('Kilograms')),
+                  DropdownItem(value: 'crate', child: Text('Crates')),
+                  DropdownItem(value: 'unit', child: Text('Units')),
                 ],
-                onChanged: (value) => setState(() => _capacityUnit = value ?? 'bag'),
+                onChanged: (value) =>
+                    setState(() => _capacityUnit = value ?? 'bag'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -153,7 +170,10 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : Text(_isEditing ? 'Save Changes' : 'Save Vehicle'),
               ),

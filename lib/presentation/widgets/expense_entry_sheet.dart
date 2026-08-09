@@ -4,6 +4,7 @@ import '../../data/models/batch_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
 import '../providers/partner_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 Future<void> showExpenseEntrySheet(
   BuildContext context, {
@@ -62,30 +63,36 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
   Future<void> _save() async {
     final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
       return;
     }
     setState(() => _saving = true);
     final ok = await context.read<ExpenseProvider>().add(
-          widget.batchId,
-          ExpenseCreate(
-            expenseSide: _side,
-            expenseType: _type,
-            amount: amount,
-            description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-            paidBy: _paidBy,
-            paymentMode: _paymentMode,
-            paymentReference: _refCtrl.text.trim().isEmpty ? null : _refCtrl.text.trim(),
-            expenseDate: DateTime.now().toIso8601String().split('T').first,
-          ),
-        );
+      widget.batchId,
+      ExpenseCreate(
+        expenseSide: _side,
+        expenseType: _type,
+        amount: amount,
+        description: _descCtrl.text.trim().isEmpty
+            ? null
+            : _descCtrl.text.trim(),
+        paidBy: _paidBy,
+        paymentMode: _paymentMode,
+        paymentReference: _refCtrl.text.trim().isEmpty
+            ? null
+            : _refCtrl.text.trim(),
+        expenseDate: DateTime.now().toIso8601String().split('T').first,
+      ),
+    );
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Expense added')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Expense added')));
     }
   }
 
@@ -105,31 +112,54 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _side,
+                  child: DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(_side),
                     decoration: const InputDecoration(labelText: 'Side'),
                     items: const [
-                      DropdownMenuItem(value: 'purchaser', child: Text('Purchaser')),
-                      DropdownMenuItem(value: 'transport', child: Text('Transport')),
-                      DropdownMenuItem(value: 'seller', child: Text('Seller')),
+                      DropdownItem(
+                        value: 'purchaser',
+                        child: Text('Purchaser'),
+                      ),
+                      DropdownItem(
+                        value: 'transport',
+                        child: Text('Transport'),
+                      ),
+                      DropdownItem(value: 'seller', child: Text('Seller')),
                     ],
                     onChanged: (v) => setState(() => _side = v ?? 'purchaser'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _type,
+                  child: DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(_type),
                     decoration: const InputDecoration(labelText: 'Type'),
                     items: const [
-                      DropdownMenuItem(value: 'daily_charge', child: Text('Daily Charge')),
-                      DropdownMenuItem(value: 'labor', child: Text('Labor')),
-                      DropdownMenuItem(value: 'accountant', child: Text('Accountant')),
-                      DropdownMenuItem(value: 'packing', child: Text('Packing')),
-                      DropdownMenuItem(value: 'stall_fee', child: Text('Stall Fee')),
-                      DropdownMenuItem(value: 'transport', child: Text('Transport')),
-                      DropdownMenuItem(value: 'local_transport', child: Text('Local Transport')),
-                      DropdownMenuItem(value: 'misc', child: Text('Misc')),
+                      DropdownItem(
+                        value: 'daily_charge',
+                        child: Text('Daily Charge'),
+                      ),
+                      DropdownItem(value: 'labor', child: Text('Labor')),
+                      DropdownItem(
+                        value: 'accountant',
+                        child: Text('Accountant'),
+                      ),
+                      DropdownItem(value: 'packing', child: Text('Packing')),
+                      DropdownItem(
+                        value: 'stall_fee',
+                        child: Text('Stall Fee'),
+                      ),
+                      DropdownItem(
+                        value: 'transport',
+                        child: Text('Transport'),
+                      ),
+                      DropdownItem(
+                        value: 'local_transport',
+                        child: Text('Local Transport'),
+                      ),
+                      DropdownItem(value: 'misc', child: Text('Misc')),
                     ],
                     onChanged: (v) => setState(() => _type = v ?? 'misc'),
                   ),
@@ -139,7 +169,9 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
             const SizedBox(height: 12),
             TextField(
               controller: _amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(labelText: 'Amount'),
             ),
             const SizedBox(height: 12),
@@ -148,25 +180,32 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
               decoration: const InputDecoration(labelText: 'Description'),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String?>(
-              initialValue: _paidBy,
+            DropdownButtonFormField2<String?>(
+              isExpanded: true,
+              valueListenable: ValueNotifier(_paidBy),
               decoration: const InputDecoration(labelText: 'Paid by (partner)'),
               items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('—')),
-                ...partners.map((p) => DropdownMenuItem<String?>(
-                      value: p.id,
-                      child: Text(p.fullName),
-                    )),
+                const DropdownItem<String?>(value: null, child: Text('â€”')),
+                ...partners.map(
+                  (p) => DropdownItem<String?>(
+                    value: p.id,
+                    child: Text(p.fullName),
+                  ),
+                ),
               ],
               onChanged: (v) => setState(() => _paidBy = v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _paymentMode,
+            DropdownButtonFormField2<String>(
+              isExpanded: true,
+              valueListenable: ValueNotifier(_paymentMode),
               decoration: const InputDecoration(labelText: 'Payment mode'),
               items: const [
-                DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                DropdownItem(value: 'cash', child: Text('Cash')),
+                DropdownItem(
+                  value: 'bank_transfer',
+                  child: Text('Bank Transfer'),
+                ),
               ],
               onChanged: (v) => setState(() => _paymentMode = v ?? 'cash'),
             ),
@@ -181,7 +220,14 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
             ElevatedButton(
               onPressed: _saving ? null : _save,
               child: _saving
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Save Expense'),
             ),
           ],

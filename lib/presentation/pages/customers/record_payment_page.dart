@@ -8,6 +8,7 @@ import '../../../data/models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/green_card.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class RecordPaymentPage extends StatefulWidget {
   final CustomerModel customer;
@@ -37,7 +38,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
   Future<void> _submit() async {
     final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Amount must be positive')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Amount must be positive')));
       return;
     }
     if (amount > widget.customer.outstandingBalance + 0.01) {
@@ -58,18 +61,20 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
     setState(() => _saving = true);
     try {
       final ok = await context.read<CustomerProvider>().recordPayment(
-            widget.customer.id,
-            PaymentCreateRequest(
-              customerId: widget.customer.id,
-              businessId: businessId,
-              amount: double.parse(_amountCtrl.text.trim()),
-              paymentMode: _paymentMode,
-              bankReference: _referenceCtrl.text.trim().isEmpty ? null : _referenceCtrl.text.trim(),
-              paymentDate: DateTime.now().toIso8601String().split('T').first,
-              receivedBy: auth.user?.id,
-              notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-            ),
-          );
+        widget.customer.id,
+        PaymentCreateRequest(
+          customerId: widget.customer.id,
+          businessId: businessId,
+          amount: double.parse(_amountCtrl.text.trim()),
+          paymentMode: _paymentMode,
+          bankReference: _referenceCtrl.text.trim().isEmpty
+              ? null
+              : _referenceCtrl.text.trim(),
+          paymentDate: DateTime.now().toIso8601String().split('T').first,
+          receivedBy: auth.user?.id,
+          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        ),
+      );
       if (!mounted) return;
       if (ok) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +84,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
       } else {
         final err = context.read<CustomerProvider>().error;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(err?.toString() ?? 'Failed to record payment')),
+          SnackBar(
+            content: Text(err?.toString() ?? 'Failed to record payment'),
+          ),
         );
       }
     } catch (e) {
@@ -115,12 +122,20 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: (outstanding > 0 ? AppColors.error : AppColors.success).withValues(alpha: 0.12),
+                        color:
+                            (outstanding > 0
+                                    ? AppColors.error
+                                    : AppColors.success)
+                                .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        outstanding > 0 ? MingCuteIcons.mgc_wallet_3_line : MingCuteIcons.mgc_check_circle_fill,
-                        color: outstanding > 0 ? AppColors.error : AppColors.success,
+                        outstanding > 0
+                            ? MingCuteIcons.mgc_wallet_3_line
+                            : MingCuteIcons.mgc_check_circle_fill,
+                        color: outstanding > 0
+                            ? AppColors.error
+                            : AppColors.success,
                         size: 20,
                       ),
                     ),
@@ -130,7 +145,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            outstanding > 0 ? 'Outstanding balance' : 'No balance owed',
+                            outstanding > 0
+                                ? 'Outstanding balance'
+                                : 'No balance owed',
                             style: theme.textTheme.labelMedium,
                           ),
                           const SizedBox(height: 2),
@@ -138,7 +155,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                             CurrencyFormatter.format(outstanding),
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: outstanding > 0 ? AppColors.error : AppColors.success,
+                              color: outstanding > 0
+                                  ? AppColors.error
+                                  : AppColors.success,
                             ),
                           ),
                         ],
@@ -150,7 +169,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
               const SizedBox(height: 20),
               TextFormField(
                 controller: _amountCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Amount',
                   helperText: outstanding > 0
@@ -162,20 +183,26 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                   if (value == null || value.trim().isEmpty) return 'Required';
                   final v = double.tryParse(value.trim());
                   if (v == null || v <= 0) return 'Enter a positive number';
-                  if (v > outstanding + 0.01) return 'Exceeds outstanding balance';
+                  if (v > outstanding + 0.01)
+                    return 'Exceeds outstanding balance';
                   return null;
                 },
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _paymentMode,
+              DropdownButtonFormField2<String>(
+                isExpanded: true,
+                valueListenable: ValueNotifier(_paymentMode),
                 decoration: const InputDecoration(labelText: 'Payment mode'),
                 items: const [
-                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                  DropdownMenuItem(value: 'bank_transfer', child: Text('Bank transfer')),
+                  DropdownItem(value: 'cash', child: Text('Cash')),
+                  DropdownItem(
+                    value: 'bank_transfer',
+                    child: Text('Bank transfer'),
+                  ),
                 ],
-                onChanged: (value) => setState(() => _paymentMode = value ?? 'cash'),
+                onChanged: (value) =>
+                    setState(() => _paymentMode = value ?? 'cash'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -195,7 +222,10 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text('Save Payment'),
               ),

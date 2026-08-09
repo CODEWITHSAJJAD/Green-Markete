@@ -6,6 +6,7 @@ import '../../data/models/sale_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
 import '../providers/customer_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 Future<void> showSaleEntrySheet(
   BuildContext context, {
@@ -81,46 +82,56 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
     final price = double.tryParse(_priceCtrl.text.trim()) ?? 0;
     final remaining = widget.batch.totalQuantity - widget.soldQuantity;
     if (qty <= 0 || price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter quantity and price')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter quantity and price')));
       return;
     }
     if (qty > remaining + 0.0001) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining for this batch')),
+        SnackBar(
+          content: Text(
+            'Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining for this batch',
+          ),
+        ),
       );
       return;
     }
-    final cash = _cashCtrl.text.trim().isEmpty ? 0.0 : double.tryParse(_cashCtrl.text.trim()) ?? 0;
+    final cash = _cashCtrl.text.trim().isEmpty
+        ? 0.0
+        : double.tryParse(_cashCtrl.text.trim()) ?? 0;
     final total = qty * price;
     final credit = _paymentMode == 'partial_credit'
         ? (total - cash).clamp(0, total).toDouble()
         : _paymentMode == 'credit'
-            ? total
-            : 0.0;
+        ? total
+        : 0.0;
 
     setState(() => _saving = true);
     final ok = await context.read<SaleProvider>().add(
-          SaleCreateRequest(
-            batchId: widget.batch.id,
-            sellerId: context.read<AuthProvider>().userId,
-            customerId: _customer?.id,
-            saleDate: DateTime.now().toIso8601String().split('T').first,
-            quantitySold: qty,
-            pricePerUnit: price,
-            paymentMode: _paymentMode,
-            cashReceived: cash,
-            creditAmount: credit,
-            bankReference: _bankRefCtrl.text.trim().isEmpty ? null : _bankRefCtrl.text.trim(),
-            notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-          ),
-        );
+      SaleCreateRequest(
+        batchId: widget.batch.id,
+        sellerId: context.read<AuthProvider>().userId,
+        customerId: _customer?.id,
+        saleDate: DateTime.now().toIso8601String().split('T').first,
+        quantitySold: qty,
+        pricePerUnit: price,
+        paymentMode: _paymentMode,
+        cashReceived: cash,
+        creditAmount: credit,
+        bankReference: _bankRefCtrl.text.trim().isEmpty
+            ? null
+            : _bankRefCtrl.text.trim(),
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      ),
+    );
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sale recorded')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Sale recorded')));
     }
   }
 
@@ -140,105 +151,137 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Record Sale', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text('${widget.batch.batchCode} • ${widget.batch.productName ?? ''}', style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () async {
-                final picked = await showModalBottomSheet<CustomerModel?>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (ctx) => _CustomerPicker(
-                    customers: customers,
-                    initial: _customer,
-                  ),
-                );
-                if (!mounted) return;
-                setState(() => _customer = picked);
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Customer'),
-                child: Text(
-                  _customer?.fullName ?? 'Walk-in customer',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: _customer == null ? theme.colorScheme.onSurface.withValues(alpha: 0.6) : null,
+            children: [
+              Text('Record Sale', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                '${widget.batch.batchCode} â€¢ ${widget.batch.productName ?? ''}',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () async {
+                  final picked = await showModalBottomSheet<CustomerModel?>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (ctx) => _CustomerPicker(
+                      customers: customers,
+                      initial: _customer,
+                    ),
+                  );
+                  if (!mounted) return;
+                  setState(() => _customer = picked);
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Customer'),
+                  child: Text(
+                    _customer?.fullName ?? 'Walk-in customer',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: _customer == null
+                          ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
+                          : null,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _quantityCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Quantity (${widget.batch.unit})',
-                helperText: 'Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining (of ${widget.batch.totalQuantity.toStringAsFixed(0)})',
-                errorText: overLimit ? 'Exceeds remaining quantity' : null,
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Required';
-                final n = double.tryParse(v.trim());
-                if (n == null || n <= 0) return 'Enter a positive number';
-                if (n > remaining + 0.0001) return 'Exceeds remaining quantity';
-                return null;
-              },
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _priceCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Price per unit'),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Required';
-                final n = double.tryParse(v.trim());
-                if (n == null || n <= 0) return 'Enter a positive number';
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _paymentMode,
-              decoration: const InputDecoration(labelText: 'Payment mode'),
-              items: const [
-                DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                DropdownMenuItem(value: 'credit', child: Text('Credit')),
-                DropdownMenuItem(value: 'partial_credit', child: Text('Partial Credit')),
-                DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-              ],
-              onChanged: (v) => setState(() => _paymentMode = v ?? 'cash'),
-            ),
-            if (_paymentMode == 'partial_credit' || _paymentMode == 'bank_transfer') ...[
               const SizedBox(height: 12),
-              TextField(
-                controller: _cashCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              TextFormField(
+                controller: _quantityCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
-                  labelText: _paymentMode == 'partial_credit' ? 'Cash received' : 'Cash received (optional)',
+                  labelText: 'Quantity (${widget.batch.unit})',
+                  helperText:
+                      'Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining (of ${widget.batch.totalQuantity.toStringAsFixed(0)})',
+                  errorText: overLimit ? 'Exceeds remaining quantity' : null,
                 ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  final n = double.tryParse(v.trim());
+                  if (n == null || n <= 0) return 'Enter a positive number';
+                  if (n > remaining + 0.0001)
+                    return 'Exceeds remaining quantity';
+                  return null;
+                },
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
+              TextFormField(
+                controller: _priceCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(labelText: 'Price per unit'),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  final n = double.tryParse(v.trim());
+                  if (n == null || n <= 0) return 'Enter a positive number';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField2<String>(
+                isExpanded: true,
+                valueListenable: ValueNotifier(_paymentMode),
+                decoration: const InputDecoration(labelText: 'Payment mode'),
+                items: const [
+                  DropdownItem(value: 'cash', child: Text('Cash')),
+                  DropdownItem(value: 'credit', child: Text('Credit')),
+                  DropdownItem(
+                    value: 'partial_credit',
+                    child: Text('Partial Credit'),
+                  ),
+                  DropdownItem(
+                    value: 'bank_transfer',
+                    child: Text('Bank Transfer'),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _paymentMode = v ?? 'cash'),
+              ),
+              if (_paymentMode == 'partial_credit' ||
+                  _paymentMode == 'bank_transfer') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _cashCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: _paymentMode == 'partial_credit'
+                        ? 'Cash received'
+                        : 'Cash received (optional)',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _bankRefCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Bank reference',
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
               TextField(
-                controller: _bankRefCtrl,
-                decoration: const InputDecoration(labelText: 'Bank reference'),
+                controller: _notesCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Notes'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: (_saving || overLimit) ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Save Sale'),
               ),
             ],
-            const SizedBox(height: 12),
-            TextField(
-              controller: _notesCtrl,
-              maxLines: 2,
-              decoration: const InputDecoration(labelText: 'Notes'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: (_saving || overLimit) ? null : _save,
-              child: _saving
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Save Sale'),
-            ),
-          ],
           ),
         ),
       ),
@@ -271,9 +314,13 @@ class _CustomerPickerState extends State<_CustomerPicker> {
           (c.shopName?.toLowerCase().contains(q) ?? false);
     }).toList();
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -328,10 +375,16 @@ class _CustomerPickerState extends State<_CustomerPicker> {
                           title: Text(c.fullName),
                           subtitle: Text(
                             [
-                              if (c.phone != null && c.phone!.isNotEmpty) c.phone,
-                              if (c.city != null && c.city!.isNotEmpty) c.city,
-                              if (c.shopName != null && c.shopName!.isNotEmpty) c.shopName,
-                            ].where((e) => e != null && e.isNotEmpty).join(' • '),
+                                  if (c.phone != null && c.phone!.isNotEmpty)
+                                    c.phone,
+                                  if (c.city != null && c.city!.isNotEmpty)
+                                    c.city,
+                                  if (c.shopName != null &&
+                                      c.shopName!.isNotEmpty)
+                                    c.shopName,
+                                ]
+                                .where((e) => e != null && e.isNotEmpty)
+                                .join(' â€¢ '),
                           ),
                           selected: widget.initial?.id == c.id,
                           onTap: () => Navigator.pop(context, c),

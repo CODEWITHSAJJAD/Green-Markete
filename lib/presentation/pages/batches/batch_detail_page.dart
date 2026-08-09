@@ -25,6 +25,7 @@ import '../../widgets/sale_entry_sheet.dart';
 import '../../widgets/status_pill.dart';
 import '../../widgets/status_timeline.dart';
 import 'batch_pl_page.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class BatchDetailPage extends StatefulWidget {
   final String batchId;
@@ -35,7 +36,8 @@ class BatchDetailPage extends StatefulWidget {
   State<BatchDetailPage> createState() => _BatchDetailPageState();
 }
 
-class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProviderStateMixin {
+class _BatchDetailPageState extends State<BatchDetailPage>
+    with SingleTickerProviderStateMixin {
   static const _statusFlow = [
     'purchased',
     'packed',
@@ -162,14 +164,18 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           ),
           if (canDelete)
             IconButton(
-              tooltip: batch?.status == 'closed' ? 'Batch closed' : 'Mark as closed',
+              tooltip: batch?.status == 'closed'
+                  ? 'Batch closed'
+                  : 'Mark as closed',
               icon: Icon(
                 batch?.status == 'closed'
                     ? MingCuteIcons.mgc_check_circle_fill
                     : MingCuteIcons.mgc_archive_line,
                 color: batch?.status == 'closed' ? AppColors.primary : null,
               ),
-              onPressed: batch?.status == 'closed' ? null : () => _confirmClose(context),
+              onPressed: batch?.status == 'closed'
+                  ? null
+                  : () => _confirmClose(context),
             ),
         ],
         bottom: TabBar(
@@ -188,11 +194,17 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         ),
       ),
       body: _buildBody(context, theme, batchProvider),
-      floatingActionButton: (canEdit && batch?.status != 'closed') ? _buildFab(context) : null,
+      floatingActionButton: (canEdit && batch?.status != 'closed')
+          ? _buildFab(context)
+          : null,
     );
   }
 
-  Widget _buildBody(BuildContext context, ThemeData theme, BatchDetailProvider batchProvider) {
+  Widget _buildBody(
+    BuildContext context,
+    ThemeData theme,
+    BatchDetailProvider batchProvider,
+  ) {
     final batch = batchProvider.batch;
     if (batch == null) {
       if (batchProvider.isLoading) {
@@ -208,7 +220,8 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                 Text(batchProvider.error!),
                 const SizedBox(height: 12),
                 OutlinedButton(
-                  onPressed: () => context.read<BatchDetailProvider>().load(batchId),
+                  onPressed: () =>
+                      context.read<BatchDetailProvider>().load(batchId),
                   child: const Text('Retry'),
                 ),
               ],
@@ -277,13 +290,17 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       final batch = context.read<BatchDetailProvider>().batch;
       if (batch == null) return const SizedBox.shrink();
       final soldQuantity = context.read<SaleProvider>().sales.fold<double>(
-            0,
-            (acc, s) => acc + s.quantitySold,
-          );
+        0,
+        (acc, s) => acc + s.quantitySold,
+      );
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () async {
-          await showSaleEntrySheet(context, batch: batch, soldQuantity: soldQuantity);
+          await showSaleEntrySheet(
+            context,
+            batch: batch,
+            soldQuantity: soldQuantity,
+          );
           if (!context.mounted) return;
           context.read<SaleProvider>().loadByBatch(batchId);
           context.read<BatchPLProvider>().load(batchId);
@@ -313,7 +330,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.08),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,18 +340,27 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               if (batch.status == 'closed')
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.6,
+                    ),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     children: [
-                      Icon(MingCuteIcons.mgc_lock_line, size: 16, color: theme.colorScheme.onSurface),
+                      Icon(
+                        MingCuteIcons.mgc_lock_line,
+                        size: 16,
+                        color: theme.colorScheme.onSurface,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Closed — read only. Edits, packing, expenses and sales are locked.',
+                          'Closed â€” read only. Edits, packing, expenses and sales are locked.',
                           style: theme.textTheme.labelMedium,
                         ),
                       ),
@@ -345,9 +373,15 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(batch.productName ?? 'Batch', style: theme.textTheme.headlineMedium),
+                        Text(
+                          batch.productName ?? 'Batch',
+                          style: theme.textTheme.headlineMedium,
+                        ),
                         const SizedBox(height: 6),
-                        Text(batch.batchCode, style: theme.textTheme.bodyMedium),
+                        Text(
+                          batch.batchCode,
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -363,12 +397,21 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _metric(theme, 'Purchase Cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
-                  _metric(theme, 'Price / Unit', CurrencyFormatter.format(batch.purchasePricePerUnit)),
+                  _metric(
+                    theme,
+                    'Purchase Cost',
+                    CurrencyFormatter.format(batch.totalPurchaseCost),
+                  ),
+                  _metric(
+                    theme,
+                    'Price / Unit',
+                    CurrencyFormatter.format(batch.purchasePricePerUnit),
+                  ),
                   _metric(theme, 'Transport', batch.transportPaidBy ?? '-'),
                 ],
               ),
-              if (batch.supplierName != null && batch.supplierName!.isNotEmpty) ...[
+              if (batch.supplierName != null &&
+                  batch.supplierName!.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -433,7 +476,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       );
     }
     final totalUnits = records.fold<int>(0, (acc, r) => acc + r.unitCount);
-    final totalCost = records.fold<double>(0, (acc, r) => acc + r.totalPackingCost);
+    final totalCost = records.fold<double>(
+      0,
+      (acc, r) => acc + r.totalPackingCost,
+    );
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       children: [
@@ -441,13 +487,23 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              Expanded(child: _metric(theme, 'Units', totalUnits.toStringAsFixed(0))),
-              Expanded(child: _metric(theme, 'Packing Cost', CurrencyFormatter.format(totalCost))),
+              Expanded(
+                child: _metric(theme, 'Units', totalUnits.toStringAsFixed(0)),
+              ),
+              Expanded(
+                child: _metric(
+                  theme,
+                  'Packing Cost',
+                  CurrencyFormatter.format(totalCost),
+                ),
+              ),
             ],
           ),
         ),
@@ -462,7 +518,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-        child: Icon(MingCuteIcons.mgc_box_3_line, color: theme.colorScheme.primary, size: 18),
+        child: Icon(
+          MingCuteIcons.mgc_box_3_line,
+          color: theme.colorScheme.primary,
+          size: 18,
+        ),
       ),
       title: Text(
         record.unitLabel != null && record.unitLabel!.isNotEmpty
@@ -471,7 +531,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
-        '${record.unitCount} × ${record.unitType} @ ${CurrencyFormatter.format(record.costPerUnit)}',
+        '${record.unitCount} Ã— ${record.unitType} @ ${CurrencyFormatter.format(record.costPerUnit)}',
       ),
       trailing: Text(
         CurrencyFormatter.format(record.totalPackingCost),
@@ -500,7 +560,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       );
     }
     final totalQty = returns.fold<double>(0, (acc, r) => acc + r.quantity);
-    final totalCost = returns.fold<double>(0, (acc, r) => acc + r.totalReturnCost);
+    final totalCost = returns.fold<double>(
+      0,
+      (acc, r) => acc + r.totalReturnCost,
+    );
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       children: [
@@ -508,13 +571,27 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              Expanded(child: _metric(theme, 'Returned', '${totalQty.toStringAsFixed(0)} ${batch.unit}')),
-              Expanded(child: _metric(theme, 'Return Value', CurrencyFormatter.format(totalCost))),
+              Expanded(
+                child: _metric(
+                  theme,
+                  'Returned',
+                  '${totalQty.toStringAsFixed(0)} ${batch.unit}',
+                ),
+              ),
+              Expanded(
+                child: _metric(
+                  theme,
+                  'Return Value',
+                  CurrencyFormatter.format(totalCost),
+                ),
+              ),
             ],
           ),
         ),
@@ -529,7 +606,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.error.withValues(alpha: 0.12),
-        child: Icon(MingCuteIcons.mgc_arrow_to_left_line, color: theme.colorScheme.error, size: 18),
+        child: Icon(
+          MingCuteIcons.mgc_arrow_to_left_line,
+          color: theme.colorScheme.error,
+          size: 18,
+        ),
       ),
       title: Text(
         '${item.quantity.toStringAsFixed(0)} ${item.unitType ?? 'units'} returned',
@@ -540,16 +621,19 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           item.packingLabel,
           item.returnDate,
           item.notes,
-        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' â€¢ '),
       ),
       trailing: item.totalReturnCost > 0
           ? Text(
               CurrencyFormatter.format(item.totalReturnCost),
-              style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontFamily: 'Roboto Mono',
+              ),
             )
           : null,
     );
-    final canDelete = (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
+    final canDelete =
+        (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
     if (!canDelete) return tile;
     return Dismissible(
       key: ValueKey('return-${item.id}'),
@@ -558,14 +642,18 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         color: theme.colorScheme.error.withValues(alpha: 0.15),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
+        child: Icon(
+          MingCuteIcons.mgc_delete_2_line,
+          color: theme.colorScheme.error,
+        ),
       ),
       confirmDismiss: (_) async {
         final batchDetailProvider = context.read<BatchDetailProvider>();
         final ok = await showConfirmDialog(
           context,
           title: 'Remove this return?',
-          message: 'The return of ${item.quantity.toStringAsFixed(0)} units will be removed from this batch.',
+          message:
+              'The return of ${item.quantity.toStringAsFixed(0)} units will be removed from this batch.',
           confirmLabel: 'Remove',
           isDestructive: true,
         );
@@ -577,7 +665,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           return true;
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString().replaceAll('Exception: ', '')),
+              ),
+            );
           }
           return false;
         }
@@ -610,15 +702,18 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue: packingIndex,
-                  decoration: const InputDecoration(labelText: 'Packing record'),
+                DropdownButtonFormField2<String>(
+                  isExpanded: true,
+                  valueListenable: ValueNotifier(packingIndex),
+                  decoration: const InputDecoration(
+                    labelText: 'Packing record',
+                  ),
                   items: [
                     for (var i = 0; i < packing.length; i++)
-                      DropdownMenuItem(
+                      DropdownItem(
                         value: '$i',
                         child: Text(
-                          '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} × ${packing[i].unitCount}',
+                          '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} Ã— ${packing[i].unitCount}',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -628,41 +723,56 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                 const SizedBox(height: 12),
                 TextField(
                   controller: quantityCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Quantity returned'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity returned',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: countCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Count (optional)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Count (optional)',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: notesCtrl,
                   maxLines: 2,
-                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Return value is estimated from the linked packing record’s cost per unit.',
+                  'Return value is estimated from the linked packing recordâ€™s cost per unit.',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             FilledButton(
               onPressed: () async {
                 final idx = int.tryParse(packingIndex ?? '') ?? -1;
                 if (idx < 0 || idx >= packing.length) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select a packing record')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('Select a packing record')),
+                  );
                   return;
                 }
                 final quantity = double.tryParse(quantityCtrl.text.trim()) ?? 0;
                 if (quantity <= 0) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Quantity must be > 0')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('Quantity must be > 0')),
+                  );
                   return;
                 }
                 try {
@@ -671,8 +781,13 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                       packingRecordId: packing[idx].id,
                       quantity: quantity,
                       count: int.tryParse(countCtrl.text.trim()),
-                      returnDate: DateTime.now().toIso8601String().split('T').first,
-                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                      returnDate: DateTime.now()
+                          .toIso8601String()
+                          .split('T')
+                          .first,
+                      notes: notesCtrl.text.trim().isEmpty
+                          ? null
+                          : notesCtrl.text.trim(),
                     ),
                   );
                   if (!ctx.mounted) return;
@@ -680,7 +795,13 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                   if (ctx.mounted) Navigator.pop(ctx);
                 } catch (e) {
                   if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
+                        ),
+                      ),
+                    );
                   }
                 }
               },
@@ -706,7 +827,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('No expenses yet. Tap + to add one.', style: theme.textTheme.bodyMedium),
+          child: Text(
+            'No expenses yet. Tap + to add one.',
+            style: theme.textTheme.bodyMedium,
+          ),
         ),
       );
     }
@@ -721,17 +845,28 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       children: [
         ...grouped.entries.map((entry) {
           final sideLabel = entry.key.toUpperCase();
-          final sideTotal = entry.value.fold<double>(0, (acc, e) => acc + e.amount);
+          final sideTotal = entry.value.fold<double>(
+            0,
+            (acc, e) => acc + e.amount,
+          );
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Text(sideLabel, style: theme.textTheme.titleMedium),
                     const Spacer(),
-                    Text(CurrencyFormatter.format(sideTotal), style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary)),
+                    Text(
+                      CurrencyFormatter.format(sideTotal),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -743,7 +878,12 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Text('VOIDED (excluded from totals)', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.error)),
+            child: Text(
+              'VOIDED (excluded from totals)',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
           ),
           ...voidedExpenses.map((e) => _expenseTile(context, e)),
         ],
@@ -757,13 +897,19 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     final tile = ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: isVoided
-          ? Icon(MingCuteIcons.mgc_forbid_circle_line, color: theme.colorScheme.error, size: 22)
+          ? Icon(
+              MingCuteIcons.mgc_forbid_circle_line,
+              color: theme.colorScheme.error,
+              size: 22,
+            )
           : null,
       title: Text(
         expense.expenseType,
         style: TextStyle(
           fontWeight: FontWeight.w500,
-          color: isVoided ? theme.colorScheme.onSurface.withValues(alpha: 0.4) : null,
+          color: isVoided
+              ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+              : null,
           decoration: isVoided ? TextDecoration.lineThrough : null,
         ),
       ),
@@ -772,18 +918,24 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           expense.description,
           expense.expenseDate,
           expense.paymentMode,
-          if (isVoided && expense.voidedReason != null && expense.voidedReason!.isNotEmpty)
+          if (isVoided &&
+              expense.voidedReason != null &&
+              expense.voidedReason!.isNotEmpty)
             'Voided: ${expense.voidedReason}',
-        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' â€¢ '),
         style: TextStyle(
-          color: isVoided ? theme.colorScheme.error.withValues(alpha: 0.7) : null,
+          color: isVoided
+              ? theme.colorScheme.error.withValues(alpha: 0.7)
+              : null,
         ),
       ),
       trailing: Text(
         CurrencyFormatter.format(expense.amount),
         style: theme.textTheme.titleMedium?.copyWith(
           fontFamily: 'Roboto Mono',
-          color: isVoided ? theme.colorScheme.onSurface.withValues(alpha: 0.4) : null,
+          color: isVoided
+              ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+              : null,
           decoration: isVoided ? TextDecoration.lineThrough : null,
         ),
       ),
@@ -791,7 +943,8 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
 
     if (isVoided) return tile;
 
-    final canVoid = (context.read<AuthProvider>().user?.role ?? '').canVoidExpense;
+    final canVoid =
+        (context.read<AuthProvider>().user?.role ?? '').canVoidExpense;
     if (!canVoid) return tile;
 
     return Dismissible(
@@ -801,7 +954,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         color: theme.colorScheme.error.withValues(alpha: 0.15),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(MingCuteIcons.mgc_forbid_circle_line, color: theme.colorScheme.error),
+        child: Icon(
+          MingCuteIcons.mgc_forbid_circle_line,
+          color: theme.colorScheme.error,
+        ),
       ),
       confirmDismiss: (_) async {
         final reasonCtrl = TextEditingController();
@@ -816,7 +972,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Voided expenses are kept for audit and excluded from totals. This cannot be undone.'),
+                const Text(
+                  'Voided expenses are kept for audit and excluded from totals. This cannot be undone.',
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: reasonCtrl,
@@ -826,10 +984,16 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
-                onPressed: () => Navigator.pop(ctx, reasonCtrl.text.trim().isNotEmpty),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                ),
+                onPressed: () =>
+                    Navigator.pop(ctx, reasonCtrl.text.trim().isNotEmpty),
                 child: const Text('Void'),
               ),
             ],
@@ -844,10 +1008,20 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Reason required'),
-              content: TextField(controller: reason2, autofocus: true, decoration: const InputDecoration(labelText: 'Reason')),
+              content: TextField(
+                controller: reason2,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Reason'),
+              ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Submit'),
+                ),
               ],
             ),
           );
@@ -862,7 +1036,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           return true;
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString().replaceAll('Exception: ', '')),
+              ),
+            );
           }
           return false;
         }
@@ -885,7 +1063,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('No sales yet. Tap + to record a sale.', style: theme.textTheme.bodyMedium),
+          child: Text(
+            'No sales yet. Tap + to record a sale.',
+            style: theme.textTheme.bodyMedium,
+          ),
         ),
       );
     }
@@ -898,13 +1079,27 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              Expanded(child: _metric(theme, 'Sold', '${totalQty.toStringAsFixed(0)} ${batch.unit}')),
-              Expanded(child: _metric(theme, 'Revenue', CurrencyFormatter.format(totalRev))),
+              Expanded(
+                child: _metric(
+                  theme,
+                  'Sold',
+                  '${totalQty.toStringAsFixed(0)} ${batch.unit}',
+                ),
+              ),
+              Expanded(
+                child: _metric(
+                  theme,
+                  'Revenue',
+                  CurrencyFormatter.format(totalRev),
+                ),
+              ),
             ],
           ),
         ),
@@ -918,11 +1113,20 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: CircleAvatar(
-        backgroundColor: _paymentColor(theme, sale.paymentMode).withValues(alpha: 0.15),
-        child: Icon(_paymentIcon(sale.paymentMode), color: _paymentColor(theme, sale.paymentMode), size: 18),
+        backgroundColor: _paymentColor(
+          theme,
+          sale.paymentMode,
+        ).withValues(alpha: 0.15),
+        child: Icon(
+          _paymentIcon(sale.paymentMode),
+          color: _paymentColor(theme, sale.paymentMode),
+          size: 18,
+        ),
       ),
-      title: Text('${sale.quantitySold.toStringAsFixed(0)} @ ${CurrencyFormatter.format(sale.pricePerUnit)}'),
-      subtitle: Text('${sale.saleDate} • ${sale.paymentMode}'),
+      title: Text(
+        '${sale.quantitySold.toStringAsFixed(0)} @ ${CurrencyFormatter.format(sale.pricePerUnit)}',
+      ),
+      subtitle: Text('${sale.saleDate} â€¢ ${sale.paymentMode}'),
       trailing: Text(
         CurrencyFormatter.format(sale.totalAmount),
         style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
@@ -957,13 +1161,21 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
               Expanded(child: _metric(theme, 'Vehicles', '${loads.length}')),
-              Expanded(child: _metric(theme, 'Transport Cost', CurrencyFormatter.format(totalCost))),
+              Expanded(
+                child: _metric(
+                  theme,
+                  'Transport Cost',
+                  CurrencyFormatter.format(totalCost),
+                ),
+              ),
             ],
           ),
         ),
@@ -978,7 +1190,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-        child: Icon(MingCuteIcons.mgc_truck_line, color: theme.colorScheme.primary, size: 18),
+        child: Icon(
+          MingCuteIcons.mgc_truck_line,
+          color: theme.colorScheme.primary,
+          size: 18,
+        ),
       ),
       title: Text(
         load.vehiclePlateNumber ?? 'Vehicle',
@@ -987,17 +1203,20 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       subtitle: Text(
         [
           load.driverName,
-          load.costType == 'per_packing' ? '${load.unitCount.toStringAsFixed(0)} units @ ${CurrencyFormatter.format(load.transportCost)}' : load.costType,
+          load.costType == 'per_packing'
+              ? '${load.unitCount.toStringAsFixed(0)} units @ ${CurrencyFormatter.format(load.transportCost)}'
+              : load.costType,
           load.packingLabel,
           load.loadDate,
-        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' â€¢ '),
       ),
       trailing: Text(
         CurrencyFormatter.format(load.totalCost),
         style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
       ),
     );
-    final canDelete = (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
+    final canDelete =
+        (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
     if (!canDelete) return tile;
     return Dismissible(
       key: ValueKey('vehicle-load-${load.id}'),
@@ -1006,7 +1225,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         color: theme.colorScheme.error.withValues(alpha: 0.15),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
+        child: Icon(
+          MingCuteIcons.mgc_delete_2_line,
+          color: theme.colorScheme.error,
+        ),
       ),
       confirmDismiss: (_) async {
         final batchDetailProvider = context.read<BatchDetailProvider>();
@@ -1014,7 +1236,8 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         final ok = await showConfirmDialog(
           context,
           title: 'Remove this load?',
-          message: 'The transport load for ${load.vehiclePlateNumber ?? 'this vehicle'} will be removed from this batch.',
+          message:
+              'The transport load for ${load.vehiclePlateNumber ?? 'this vehicle'} will be removed from this batch.',
           confirmLabel: 'Remove',
           isDestructive: true,
         );
@@ -1026,7 +1249,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           return true;
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString().replaceAll('Exception: ', '')),
+              ),
+            );
           }
           return false;
         }
@@ -1038,7 +1265,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
   Future<void> _showAddTransportDialog(BuildContext context) async {
     final vehiclesProvider = context.read<VehicleProvider>();
     final businessId = context.read<AuthProvider>().businessId;
-    if (businessId != null && businessId.isNotEmpty && vehiclesProvider.vehicles.isEmpty) {
+    if (businessId != null &&
+        businessId.isNotEmpty &&
+        vehiclesProvider.vehicles.isEmpty) {
       await vehiclesProvider.load(businessId);
     }
     if (!context.mounted) return;
@@ -1054,104 +1283,151 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     await showDialog<void>(
       context: context,
       builder: (ctx) {
-        return StatefulBuilder(builder: (ctx, setSt) {
-          return AlertDialog(
-            title: const Text('Add Vehicle Load'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: vehicleId,
-                    decoration: const InputDecoration(labelText: 'Vehicle'),
-                    items: [
-                      for (final v in vehicles)
-                        DropdownMenuItem(
-                          value: v.id,
-                          child: Text(v.plateNumber, overflow: TextOverflow.ellipsis),
-                        ),
-                    ],
-                    onChanged: (v) => setSt(() => vehicleId = v),
-                  ),
-                  if (packing.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<int>(
-                      initialValue: packingIndex,
-                      decoration: const InputDecoration(labelText: 'Packing record (optional)'),
+        return StatefulBuilder(
+          builder: (ctx, setSt) {
+            return AlertDialog(
+              title: const Text('Add Vehicle Load'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField2<String>(
+                      isExpanded: true,
+                      valueListenable: ValueNotifier(vehicleId),
+                      decoration: const InputDecoration(labelText: 'Vehicle'),
                       items: [
-                        for (var i = 0; i < packing.length; i++)
-                          DropdownMenuItem(
-                            value: i,
+                        for (final v in vehicles)
+                          DropdownItem(
+                            value: v.id,
                             child: Text(
-                              '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} × ${packing[i].unitCount}',
+                              v.plateNumber,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                       ],
-                      onChanged: (v) => setSt(() => packingIndex = v),
+                      onChanged: (v) => setSt(() => vehicleId = v),
+                    ),
+                    if (packing.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField2<int>(
+                        isExpanded: true,
+                        valueListenable: ValueNotifier(packingIndex),
+                        decoration: const InputDecoration(
+                          labelText: 'Packing record (optional)',
+                        ),
+                        items: [
+                          for (var i = 0; i < packing.length; i++)
+                            DropdownItem(
+                              value: i,
+                              child: Text(
+                                '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} Ã— ${packing[i].unitCount}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                        onChanged: (v) => setSt(() => packingIndex = v),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField2<String>(
+                      isExpanded: true,
+                      valueListenable: ValueNotifier(costType),
+                      decoration: const InputDecoration(labelText: 'Cost type'),
+                      items: const [
+                        DropdownItem(
+                          value: 'per_vehicle',
+                          child: Text('Flat per vehicle'),
+                        ),
+                        DropdownItem(
+                          value: 'per_packing',
+                          child: Text('Per unit loaded'),
+                        ),
+                        DropdownItem(
+                          value: 'lump_sum',
+                          child: Text('Lump sum'),
+                        ),
+                      ],
+                      onChanged: (v) =>
+                          setSt(() => costType = v ?? 'per_vehicle'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: unitCountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Units loaded',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: transportCostCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: costType == 'per_packing'
+                            ? 'Transport cost per unit'
+                            : 'Transport cost',
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: costType,
-                    decoration: const InputDecoration(labelText: 'Cost type'),
-                    items: const [
-                      DropdownMenuItem(value: 'per_vehicle', child: Text('Flat per vehicle')),
-                      DropdownMenuItem(value: 'per_packing', child: Text('Per unit loaded')),
-                      DropdownMenuItem(value: 'lump_sum', child: Text('Lump sum')),
-                    ],
-                    onChanged: (v) => setSt(() => costType = v ?? 'per_vehicle'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: unitCountCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Units loaded'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: transportCostCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: costType == 'per_packing' ? 'Transport cost per unit' : 'Transport cost',
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              FilledButton(
-                onPressed: () async {
-                  if (vehicleId == null) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select a vehicle')));
-                    return;
-                  }
-                  try {
-                    await detailProvider.addVehicleLoad(
-                      VehicleLoadCreate(
-                        vehicleId: vehicleId!,
-                        packingRecordId: packingIndex != null ? packing[packingIndex!].id : null,
-                        unitCount: double.tryParse(unitCountCtrl.text.trim()) ?? 0,
-                        costType: costType,
-                        transportCost: double.tryParse(transportCostCtrl.text.trim()) ?? 0,
-                        loadDate: DateTime.now().toIso8601String().split('T').first,
-                      ),
-                    );
-                    if (!ctx.mounted) return;
-                    context.read<BatchPLProvider>().load(batchId);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    if (vehicleId == null) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('Select a vehicle')),
+                      );
+                      return;
                     }
-                  }
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        });
+                    try {
+                      await detailProvider.addVehicleLoad(
+                        VehicleLoadCreate(
+                          vehicleId: vehicleId!,
+                          packingRecordId: packingIndex != null
+                              ? packing[packingIndex!].id
+                              : null,
+                          unitCount:
+                              double.tryParse(unitCountCtrl.text.trim()) ?? 0,
+                          costType: costType,
+                          transportCost:
+                              double.tryParse(transportCostCtrl.text.trim()) ??
+                              0,
+                          loadDate: DateTime.now()
+                              .toIso8601String()
+                              .split('T')
+                              .first,
+                        ),
+                      );
+                      if (!ctx.mounted) return;
+                      context.read<BatchPLProvider>().load(batchId);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
@@ -1183,10 +1459,11 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       );
     }
     final sellerId = sellers.first['partner_id'] as String;
-    final sellerName = partnerProvider.partners
-        .where((p) => p.id == sellerId)
-        .map((p) => p.fullName)
-        .firstOrNull ??
+    final sellerName =
+        partnerProvider.partners
+            .where((p) => p.id == sellerId)
+            .map((p) => p.fullName)
+            .firstOrNull ??
         'Seller';
 
     if (_ledgerSellerId != sellerId) {
@@ -1199,24 +1476,29 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     final ledgerRows = txProvider.ledger?['transactions'];
     final ledgerTxs = ledgerRows is List
         ? ledgerRows
-            .whereType<Map<String, dynamic>>()
-            .map(TransactionModel.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(TransactionModel.fromJson)
+              .toList()
         : <TransactionModel>[];
     final settledForBatch = ledgerTxs
-        .where((t) =>
-            (t.notes?.contains(batch.batchCode) ?? false) ||
-            (t.reference?.contains(batch.batchCode) ?? false))
+        .where(
+          (t) =>
+              (t.notes?.contains(batch.batchCode) ?? false) ||
+              (t.reference?.contains(batch.batchCode) ?? false),
+        )
         .where((t) => t.toPartnerId == sellerId)
         .fold<double>(0, (sum, t) => sum + t.amount);
 
     final sellerDaily = pl?.costBreakdown.sellerDailyCharges ?? 0;
     final sellerExpenses = pl?.costBreakdown.sellerExpenses ?? 0;
     final transport = pl?.costBreakdown.transportCost ?? 0;
-    final owed = sellerDaily +
+    final owed =
+        sellerDaily +
         sellerExpenses +
         (batch.transportPaidBy == 'seller' ? transport : 0);
-    final remaining = (owed - settledForBatch).clamp(0, double.infinity).toDouble();
+    final remaining = (owed - settledForBatch)
+        .clamp(0, double.infinity)
+        .toDouble();
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -1233,7 +1515,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.08),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1311,104 +1595,140 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
 
     await showDialog<void>(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setSt) {
-        return AlertDialog(
-          title: Text('Settle $sellerName'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: fromPartnerId,
-                  decoration: const InputDecoration(labelText: 'Paid by (partner)'),
-                  items: [
-                    for (final p in purchasers)
-                      DropdownMenuItem(
-                        value: p,
-                        child: Text(partnerName(p), overflow: TextOverflow.ellipsis),
-                      ),
-                  ],
-                  onChanged: (v) => setSt(() => fromPartnerId = v),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: amountCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Amount'),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: paymentMode,
-                  decoration: const InputDecoration(labelText: 'Payment mode'),
-                  items: const [
-                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                    DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                  ],
-                  onChanged: (v) => setSt(() => paymentMode = v ?? 'cash'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: notesCtrl,
-                  maxLines: 2,
-                  decoration: const InputDecoration(labelText: 'Notes'),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Owed: ${CurrencyFormatter.format(remaining)} · Settled: ${CurrencyFormatter.format(settledForBatch)}',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () async {
-                final amount = double.tryParse(amountCtrl.text.trim());
-                if (amount == null || amount <= 0) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
-                  return;
-                }
-                if (fromPartnerId == null || fromPartnerId!.isEmpty) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select who is paying')));
-                  return;
-                }
-                final txProvider = context.read<TransactionProvider>();
-                try {
-                  final created = await txProvider.create(
-                    TransactionCreateRequest(
-                      businessId: businessId,
-                      fromPartnerId: fromPartnerId!,
-                      toPartnerId: sellerId,
-                      amount: amount,
-                      transactionType: 'settlement',
-                      paymentMode: paymentMode,
-                      transactionDate: DateTime.now().toIso8601String().split('T').first,
-                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          return AlertDialog(
+            title: Text('Settle $sellerName'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(fromPartnerId),
+                    decoration: const InputDecoration(
+                      labelText: 'Paid by (partner)',
                     ),
-                  );
-                  if (created != null) {
-                    txProvider.loadLedger(sellerId);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  } else if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text('Failed: ${txProvider.error ?? 'Unknown error'}')),
-                    );
-                  }
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-                    );
-                  }
-                }
-              },
-              child: const Text('Save Settlement'),
+                    items: [
+                      for (final p in purchasers)
+                        DropdownItem(
+                          value: p,
+                          child: Text(
+                            partnerName(p),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: (v) => setSt(() => fromPartnerId = v),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Amount'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(paymentMode),
+                    decoration: const InputDecoration(
+                      labelText: 'Payment mode',
+                    ),
+                    items: const [
+                      DropdownItem(value: 'cash', child: Text('Cash')),
+                      DropdownItem(
+                        value: 'bank_transfer',
+                        child: Text('Bank Transfer'),
+                      ),
+                    ],
+                    onChanged: (v) => setSt(() => paymentMode = v ?? 'cash'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Notes'),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Owed: ${CurrencyFormatter.format(remaining)} Â· Settled: ${CurrencyFormatter.format(settledForBatch)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
-          ],
-        );
-      }),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountCtrl.text.trim());
+                  if (amount == null || amount <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Enter a valid amount')),
+                    );
+                    return;
+                  }
+                  if (fromPartnerId == null || fromPartnerId!.isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Select who is paying')),
+                    );
+                    return;
+                  }
+                  final txProvider = context.read<TransactionProvider>();
+                  try {
+                    final created = await txProvider.create(
+                      TransactionCreateRequest(
+                        businessId: businessId,
+                        fromPartnerId: fromPartnerId!,
+                        toPartnerId: sellerId,
+                        amount: amount,
+                        transactionType: 'settlement',
+                        paymentMode: paymentMode,
+                        transactionDate: DateTime.now()
+                            .toIso8601String()
+                            .split('T')
+                            .first,
+                        notes: notesCtrl.text.trim().isEmpty
+                            ? null
+                            : notesCtrl.text.trim(),
+                      ),
+                    );
+                    if (created != null) {
+                      txProvider.loadLedger(sellerId);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    } else if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Failed: ${txProvider.error ?? 'Unknown error'}',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e.toString().replaceAll('Exception: ', ''),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Save Settlement'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -1439,7 +1759,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.08),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1449,7 +1771,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
               Text(
                 CurrencyFormatter.format(pl.netProfitLoss),
                 style: theme.textTheme.displayMedium?.copyWith(
-                  color: pl.netProfitLoss >= 0 ? theme.colorScheme.primary : theme.colorScheme.error,
+                  color: pl.netProfitLoss >= 0
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.error,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -1459,11 +1783,23 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         const SizedBox(height: 16),
         _sectionHeader(theme, 'Cost Breakdown'),
         _costLine(theme, 'Purchase Cost', pl.costBreakdown.purchaseCost),
-        _costLine(theme, 'Purchaser Daily Charges', pl.costBreakdown.purchaserDailyCharges),
-        _costLine(theme, 'Purchaser Expenses', pl.costBreakdown.purchaserExpenses),
+        _costLine(
+          theme,
+          'Purchaser Daily Charges',
+          pl.costBreakdown.purchaserDailyCharges,
+        ),
+        _costLine(
+          theme,
+          'Purchaser Expenses',
+          pl.costBreakdown.purchaserExpenses,
+        ),
         _costLine(theme, 'Packing Cost', pl.costBreakdown.packingCost),
         _costLine(theme, 'Transport', pl.costBreakdown.transportCost),
-        _costLine(theme, 'Seller Daily Charges', pl.costBreakdown.sellerDailyCharges),
+        _costLine(
+          theme,
+          'Seller Daily Charges',
+          pl.costBreakdown.sellerDailyCharges,
+        ),
         _costLine(theme, 'Seller Expenses', pl.costBreakdown.sellerExpenses),
         const Divider(),
         _costLine(theme, 'TOTAL COST', pl.costBreakdown.totalCost, bold: true),
@@ -1477,17 +1813,27 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
   }
 
   Widget _sectionHeader(ThemeData theme, String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(text, style: theme.textTheme.titleLarge),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Text(text, style: theme.textTheme.titleLarge),
+  );
 
-  Widget _costLine(ThemeData theme, String title, double value, {bool bold = false}) {
+  Widget _costLine(
+    ThemeData theme,
+    String title,
+    double value, {
+    bool bold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
           Text(
             CurrencyFormatter.format(value),
             style: TextStyle(
@@ -1501,7 +1847,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     );
   }
 
-  Future<void> _advanceStatus(BuildContext context, String currentStatus) async {
+  Future<void> _advanceStatus(
+    BuildContext context,
+    String currentStatus,
+  ) async {
     final index = _statusFlow.indexOf(currentStatus);
     if (index < 0 || index == _statusFlow.length - 1) return;
 
@@ -1510,9 +1859,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       await context.read<BatchDetailProvider>().updateStatus(nextStatus);
       if (!context.mounted) return;
       context.read<BatchPLProvider>().load(batchId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Batch moved to $nextStatus')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Batch moved to $nextStatus')));
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1526,7 +1875,8 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     final confirm = await showConfirmDialog(
       context,
       title: 'Mark batch as closed?',
-      message: 'Closing a batch is permanent — it locks all edits, sales, packing, and expenses for this batch. Use this when the batch is fully settled.',
+      message:
+          'Closing a batch is permanent â€” it locks all edits, sales, packing, and expenses for this batch. Use this when the batch is fully settled.',
       confirmLabel: 'Mark as closed',
       isDestructive: true,
     );
@@ -1555,67 +1905,96 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
     await showDialog<void>(
       context: context,
       builder: (ctx) {
-        return StatefulBuilder(builder: (ctx, setSt) {
-          return AlertDialog(
-            title: const Text('Add Packing Record'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: unitType,
-                    decoration: const InputDecoration(labelText: 'Unit type'),
-                    items: const [
-                      DropdownMenuItem(value: 'bag', child: Text('Bag')),
-                      DropdownMenuItem(value: 'packet', child: Text('Packet')),
-                      DropdownMenuItem(value: 'crate', child: Text('Crate')),
-                      DropdownMenuItem(value: 'box', child: Text('Box')),
-                      DropdownMenuItem(value: 'custom', child: Text('Custom')),
-                    ],
-                    onChanged: (v) => setSt(() {
-                      unitType = v ?? 'bag';
-                      unitTypeCtrl.text = unitType;
-                    }),
-                  ),
-                  TextField(controller: unitTypeCtrl, decoration: const InputDecoration(labelText: 'Unit label (optional)')),
-                  TextField(controller: countCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Count')),
-                  TextField(controller: costCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Cost per unit')),
-                ],
+        return StatefulBuilder(
+          builder: (ctx, setSt) {
+            return AlertDialog(
+              title: const Text('Add Packing Record'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField2<String>(
+                      isExpanded: true,
+                      valueListenable: ValueNotifier(unitType),
+                      decoration: const InputDecoration(labelText: 'Unit type'),
+                      items: const [
+                        DropdownItem(value: 'bag', child: Text('Bag')),
+                        DropdownItem(value: 'packet', child: Text('Packet')),
+                        DropdownItem(value: 'crate', child: Text('Crate')),
+                        DropdownItem(value: 'box', child: Text('Box')),
+                        DropdownItem(value: 'custom', child: Text('Custom')),
+                      ],
+                      onChanged: (v) => setSt(() {
+                        unitType = v ?? 'bag';
+                        unitTypeCtrl.text = unitType;
+                      }),
+                    ),
+                    TextField(
+                      controller: unitTypeCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Unit label (optional)',
+                      ),
+                    ),
+                    TextField(
+                      controller: countCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Count'),
+                    ),
+                    TextField(
+                      controller: costCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Cost per unit',
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              FilledButton(
-                onPressed: () async {
-                  final count = int.tryParse(countCtrl.text.trim()) ?? 0;
-                  final cost = double.tryParse(costCtrl.text.trim()) ?? 0;
-                  if (count <= 0) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Count must be > 0')));
-                    return;
-                  }
-                  try {
-                    await context.read<BatchDetailProvider>().addPacking(
-                          PackingRecordCreate(
-                            unitType: unitType,
-                            unitLabel: unitTypeCtrl.text.trim().isEmpty ? null : unitTypeCtrl.text.trim(),
-                            unitCount: count,
-                            costPerUnit: cost,
-                          ),
-                        );
-                    if (!context.mounted) return;
-                    context.read<BatchPLProvider>().load(batchId);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.toString())));
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final count = int.tryParse(countCtrl.text.trim()) ?? 0;
+                    final cost = double.tryParse(costCtrl.text.trim()) ?? 0;
+                    if (count <= 0) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('Count must be > 0')),
+                      );
+                      return;
                     }
-                  }
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        });
+                    try {
+                      await context.read<BatchDetailProvider>().addPacking(
+                        PackingRecordCreate(
+                          unitType: unitType,
+                          unitLabel: unitTypeCtrl.text.trim().isEmpty
+                              ? null
+                              : unitTypeCtrl.text.trim(),
+                          unitCount: count,
+                          costPerUnit: cost,
+                        ),
+                      );
+                      if (!context.mounted) return;
+                      context.read<BatchPLProvider>().load(batchId);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(
+                          ctx,
+                        ).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
@@ -1623,9 +2002,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
   Widget _buildQuantityProgress(BuildContext context, BatchModel batch) {
     final theme = Theme.of(context);
     final sold = context.watch<SaleProvider>().sales.fold<double>(
-          0,
-          (acc, s) => acc + s.quantitySold,
-        );
+      0,
+      (acc, s) => acc + s.quantitySold,
+    );
     final total = batch.totalQuantity;
     final remaining = (total - sold).clamp(0, total).toDouble();
     final pct = total > 0 ? (sold / total).clamp(0, 1).toDouble() : 0.0;
@@ -1634,7 +2013,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.08),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1642,7 +2023,10 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           Row(
             children: [
               Expanded(
-                child: Text('Sold vs Remaining', style: theme.textTheme.bodySmall),
+                child: Text(
+                  'Sold vs Remaining',
+                  style: theme.textTheme.bodySmall,
+                ),
               ),
               Text(
                 '${(pct * 100).toStringAsFixed(0)}%',
@@ -1657,11 +2041,19 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
           Row(
             children: [
               Expanded(
-                child: _metric(theme, 'Sold', '${sold.toStringAsFixed(0)} ${batch.quantityUnit}'),
+                child: _metric(
+                  theme,
+                  'Sold',
+                  '${sold.toStringAsFixed(0)} ${batch.quantityUnit}',
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _metric(theme, 'Remaining', '${remaining.toStringAsFixed(0)} ${batch.quantityUnit}'),
+                child: _metric(
+                  theme,
+                  'Remaining',
+                  '${remaining.toStringAsFixed(0)} ${batch.quantityUnit}',
+                ),
               ),
             ],
           ),
@@ -1692,13 +2084,14 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       'part_credit' => 'Part cash / part credit',
       _ => 'Paid in cash',
     };
-    final remaining = (batch.totalPurchaseCost - batch.purchaseAmountPaid).clamp(0, double.infinity);
+    final remaining = (batch.totalPurchaseCost - batch.purchaseAmountPaid)
+        .clamp(0, double.infinity);
     if (batch.purchaseAmountPaid > 0) {
-      return '$label — paid ${CurrencyFormatter.format(batch.purchaseAmountPaid)}, '
+      return '$label â€” paid ${CurrencyFormatter.format(batch.purchaseAmountPaid)}, '
           'remaining ${CurrencyFormatter.format(remaining)}';
     }
     if (mode == 'credit') {
-      return '$label — full ${CurrencyFormatter.format(remaining)} outstanding';
+      return '$label â€” full ${CurrencyFormatter.format(remaining)} outstanding';
     }
     return label;
   }
@@ -1710,7 +2103,9 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.08),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1725,21 +2120,31 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
 
   IconData _paymentIcon(String mode) {
     switch (mode) {
-      case 'cash': return MingCuteIcons.mgc_wallet_3_line;
-      case 'credit': return MingCuteIcons.mgc_time_line;
-      case 'bank_transfer': return MingCuteIcons.mgc_bank_line;
-      case 'partial_credit': return MingCuteIcons.mgc_chart_pie_line;
-      default: return MingCuteIcons.mgc_bill_line;
+      case 'cash':
+        return MingCuteIcons.mgc_wallet_3_line;
+      case 'credit':
+        return MingCuteIcons.mgc_time_line;
+      case 'bank_transfer':
+        return MingCuteIcons.mgc_bank_line;
+      case 'partial_credit':
+        return MingCuteIcons.mgc_chart_pie_line;
+      default:
+        return MingCuteIcons.mgc_bill_line;
     }
   }
 
   Color _paymentColor(ThemeData theme, String mode) {
     switch (mode) {
-      case 'cash': return theme.colorScheme.primary;
-      case 'credit': return theme.colorScheme.error;
-      case 'bank_transfer': return Colors.blue;
-      case 'partial_credit': return theme.colorScheme.secondary;
-      default: return theme.colorScheme.outline;
+      case 'cash':
+        return theme.colorScheme.primary;
+      case 'credit':
+        return theme.colorScheme.error;
+      case 'bank_transfer':
+        return Colors.blue;
+      case 'partial_credit':
+        return theme.colorScheme.secondary;
+      default:
+        return theme.colorScheme.outline;
     }
   }
 }

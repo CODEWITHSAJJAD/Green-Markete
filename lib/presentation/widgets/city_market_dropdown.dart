@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/market_model.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CityMarketDropdown extends StatefulWidget {
   final List<MarketModel> markets;
@@ -24,7 +25,8 @@ class CityMarketDropdown extends StatefulWidget {
 }
 
 class _CityMarketDropdownState extends State<CityMarketDropdown> {
-  List<String> get _cities => widget.markets.map((m) => m.city).toSet().toList()..sort();
+  List<String> get _cities =>
+      widget.markets.map((m) => m.city).toSet().toList()..sort();
 
   List<MarketModel> get _filteredMarkets {
     if (widget.selectedCity == null) return [];
@@ -36,21 +38,25 @@ class _CityMarketDropdownState extends State<CityMarketDropdown> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: widget.selectedCity,
+        DropdownButtonFormField2<String>(
+          isExpanded: true,
+          valueListenable: ValueNotifier(widget.selectedCity),
           decoration: InputDecoration(labelText: '${widget.label} City'),
-          items: _cities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
+          items: _cities
+              .map((city) => DropdownItem(value: city, child: Text(city)))
+              .toList(),
           onChanged: (city) {
             widget.onCityChanged(city);
             widget.onMarketChanged(null);
           },
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: widget.selectedMarketId,
+        DropdownButtonFormField2<String>(
+          isExpanded: true,
+          valueListenable: ValueNotifier(widget.selectedMarketId),
           decoration: InputDecoration(labelText: widget.label),
           items: _filteredMarkets
-              .map((m) => DropdownMenuItem(value: m.id, child: Text(m.name)))
+              .map((m) => DropdownItem(value: m.id, child: Text(m.name)))
               .toList(),
           onChanged: widget.onMarketChanged,
         ),

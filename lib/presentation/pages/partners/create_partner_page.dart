@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreatePartnerPage extends StatefulWidget {
   const CreatePartnerPage({super.key});
@@ -49,7 +50,11 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.read<PartnerProvider>().error ?? 'Failed to create partner')),
+        SnackBar(
+          content: Text(
+            context.read<PartnerProvider>().error ?? 'Failed to create partner',
+          ),
+        ),
       );
     }
   }
@@ -67,7 +72,8 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
               TextFormField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(labelText: 'Full name'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -85,17 +91,19 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
                 decoration: const InputDecoration(labelText: 'City'),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _role,
+              DropdownButtonFormField2<String>(
+                isExpanded: true,
+                valueListenable: ValueNotifier(_role),
                 decoration: const InputDecoration(labelText: 'Business role'),
                 items: const [
-                  DropdownMenuItem(value: 'purchaser', child: Text('Purchaser')),
-                  DropdownMenuItem(value: 'seller', child: Text('Seller')),
-                  DropdownMenuItem(value: 'both', child: Text('Both')),
-                  DropdownMenuItem(value: 'accountant', child: Text('Accountant')),
-                  DropdownMenuItem(value: 'partner', child: Text('Partner')),
+                  DropdownItem(value: 'purchaser', child: Text('Purchaser')),
+                  DropdownItem(value: 'seller', child: Text('Seller')),
+                  DropdownItem(value: 'both', child: Text('Both')),
+                  DropdownItem(value: 'accountant', child: Text('Accountant')),
+                  DropdownItem(value: 'partner', child: Text('Partner')),
                 ],
-                onChanged: (value) => setState(() => _role = value ?? 'partner'),
+                onChanged: (value) =>
+                    setState(() => _role = value ?? 'partner'),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -104,7 +112,10 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text('Save Partner'),
               ),

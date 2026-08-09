@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../data/models/market_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreateMarketPage extends StatefulWidget {
   final MarketModel? market;
@@ -48,13 +49,17 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
   }
 
   Map<String, dynamic> _buildData(String businessId) => {
-        'business_id': businessId,
-        'name': _nameCtrl.text.trim(),
-        'city': _cityCtrl.text.trim(),
-        'address': _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
-        'stall_number': _stallCtrl.text.trim().isEmpty ? null : _stallCtrl.text.trim(),
-        'market_type': _marketType,
-      };
+    'business_id': businessId,
+    'name': _nameCtrl.text.trim(),
+    'city': _cityCtrl.text.trim(),
+    'address': _addressCtrl.text.trim().isEmpty
+        ? null
+        : _addressCtrl.text.trim(),
+    'stall_number': _stallCtrl.text.trim().isEmpty
+        ? null
+        : _stallCtrl.text.trim(),
+    'market_type': _marketType,
+  };
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -74,7 +79,11 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
     if (saved != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEditing ? 'Market updated successfully' : 'Market created successfully'),
+          content: Text(
+            _isEditing
+                ? 'Market updated successfully'
+                : 'Market created successfully',
+          ),
         ),
       );
       Navigator.of(context).pop();
@@ -98,13 +107,15 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
               TextFormField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(labelText: 'Market name'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _cityCtrl,
                 decoration: const InputDecoration(labelText: 'City'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -117,15 +128,17 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
                 decoration: const InputDecoration(labelText: 'Stall number'),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _marketType,
+              DropdownButtonFormField2<String>(
+                isExpanded: true,
+                valueListenable: ValueNotifier(_marketType),
                 decoration: const InputDecoration(labelText: 'Market type'),
                 items: const [
-                  DropdownMenuItem(value: 'wholesale', child: Text('Wholesale')),
-                  DropdownMenuItem(value: 'retail', child: Text('Retail')),
-                  DropdownMenuItem(value: 'both', child: Text('Both')),
+                  DropdownItem(value: 'wholesale', child: Text('Wholesale')),
+                  DropdownItem(value: 'retail', child: Text('Retail')),
+                  DropdownItem(value: 'both', child: Text('Both')),
                 ],
-                onChanged: (value) => setState(() => _marketType = value ?? 'wholesale'),
+                onChanged: (value) =>
+                    setState(() => _marketType = value ?? 'wholesale'),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -134,7 +147,10 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : Text(_isEditing ? 'Save Changes' : 'Save Market'),
               ),

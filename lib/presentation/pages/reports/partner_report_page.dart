@@ -6,6 +6,7 @@ import '../../../data/models/batch_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/report_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class PartnerReportPage extends StatefulWidget {
   final String partnerId;
@@ -41,7 +42,8 @@ class _PartnerReportPageState extends State<PartnerReportPage> {
     final report = context.watch<ReportProvider>();
 
     final batches = batchesProvider.batches;
-    final selectedBatchId = _selectedBatchId ?? (batches.isNotEmpty ? batches.first.id : null);
+    final selectedBatchId =
+        _selectedBatchId ?? (batches.isNotEmpty ? batches.first.id : null);
 
     if (selectedBatchId != null && selectedBatchId != _loadedBatchId) {
       _loadedBatchId = selectedBatchId;
@@ -61,30 +63,44 @@ class _PartnerReportPageState extends State<PartnerReportPage> {
                 children: [
                   Text(batchesProvider.error!),
                   const SizedBox(height: 8),
-                  TextButton(onPressed: _loadBatches, child: const Text('Retry')),
+                  TextButton(
+                    onPressed: _loadBatches,
+                    child: const Text('Retry'),
+                  ),
                 ],
               ),
             )
           : batchesProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : selectedBatchId == null
-                  ? const Center(child: Text('No batches available.'))
-                  : _buildContent(selectedBatchId, batches, report),
+          ? const Center(child: CircularProgressIndicator())
+          : selectedBatchId == null
+          ? const Center(child: Text('No batches available.'))
+          : _buildContent(selectedBatchId, batches, report),
     );
   }
 
-  Widget _buildContent(String selectedBatchId, List<BatchModel> batches, ReportProvider report) {
+  Widget _buildContent(
+    String selectedBatchId,
+    List<BatchModel> batches,
+    ReportProvider report,
+  ) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: selectedBatchId,
+        DropdownButtonFormField2<String>(
+          isExpanded: true,
+          valueListenable: ValueNotifier(selectedBatchId),
           decoration: const InputDecoration(labelText: 'Select Batch'),
           items: batches
-              .map((batch) => DropdownMenuItem(
-                    value: batch.id,
-                    child: Text(batch.batchCode.isNotEmpty ? batch.batchCode : (batch.productName ?? batch.id)),
-                  ))
+              .map(
+                (batch) => DropdownItem(
+                  value: batch.id,
+                  child: Text(
+                    batch.batchCode.isNotEmpty
+                        ? batch.batchCode
+                        : (batch.productName ?? batch.id),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) {
             setState(() => _selectedBatchId = value);
@@ -97,7 +113,10 @@ class _PartnerReportPageState extends State<PartnerReportPage> {
             children: [
               Text(report.error!),
               const SizedBox(height: 8),
-              TextButton(onPressed: () => _loadPartnerPL(selectedBatchId), child: const Text('Retry')),
+              TextButton(
+                onPressed: () => _loadPartnerPL(selectedBatchId),
+                child: const Text('Retry'),
+              ),
             ],
           )
         else if (report.isLoading)
@@ -119,7 +138,9 @@ class _PartnerReportPageState extends State<PartnerReportPage> {
         title: Text(title),
         trailing: Text(
           CurrencyFormatter.format(amount),
-          style: TextStyle(color: highlight ? (amount >= 0 ? Colors.green : Colors.red) : null),
+          style: TextStyle(
+            color: highlight ? (amount >= 0 ? Colors.green : Colors.red) : null,
+          ),
         ),
       ),
     );

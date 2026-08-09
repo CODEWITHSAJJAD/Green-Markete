@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class PackingEntryForm extends StatefulWidget {
   final List<Map<String, dynamic>> entries;
@@ -25,11 +26,11 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
   }
 
   Map<String, dynamic> _empty() => {
-        'unit_type': 'bag',
-        'unit_label': null,
-        'unit_count': 0,
-        'cost_per_unit': 0.0,
-      };
+    'unit_type': 'bag',
+    'unit_label': null,
+    'unit_count': 0,
+    'cost_per_unit': 0.0,
+  };
 
   void _emit() => widget.onChanged(List<Map<String, dynamic>>.from(_entries));
 
@@ -45,22 +46,29 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.12),
+              ),
             ),
             child: Column(
               children: [
                 Row(
                   children: [
                     Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _entries[i]['unit_type'] as String,
-                        decoration: const InputDecoration(labelText: 'Unit Type'),
+                      child: DropdownButtonFormField2<String>(
+                        isExpanded: true,
+                        valueListenable: ValueNotifier(
+                          _entries[i]['unit_type'] as String,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Unit Type',
+                        ),
                         items: const [
-                          DropdownMenuItem(value: 'bag', child: Text('Bag')),
-                          DropdownMenuItem(value: 'packet', child: Text('Packet')),
-                          DropdownMenuItem(value: 'crate', child: Text('Crate')),
-                          DropdownMenuItem(value: 'box', child: Text('Box')),
-                          DropdownMenuItem(value: 'custom', child: Text('Custom')),
+                          DropdownItem(value: 'bag', child: Text('Bag')),
+                          DropdownItem(value: 'packet', child: Text('Packet')),
+                          DropdownItem(value: 'crate', child: Text('Crate')),
+                          DropdownItem(value: 'box', child: Text('Box')),
+                          DropdownItem(value: 'custom', child: Text('Custom')),
                         ],
                         onChanged: (v) {
                           setState(() => _entries[i]['unit_type'] = v ?? 'bag');
@@ -81,7 +89,9 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
                 const SizedBox(height: 8),
                 TextFormField(
                   initialValue: _entries[i]['unit_label']?.toString(),
-                  decoration: const InputDecoration(labelText: 'Unit label (optional)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Unit label (optional)',
+                  ),
                   onChanged: (v) {
                     _entries[i]['unit_label'] = v.isEmpty ? null : v;
                     _emit();
@@ -105,24 +115,32 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
                     Expanded(
                       child: TextFormField(
                         initialValue: _entries[i]['cost_per_unit'].toString(),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Cost per unit'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Cost per unit',
+                        ),
                         onChanged: (v) {
-                          _entries[i]['cost_per_unit'] = double.tryParse(v) ?? 0.0;
+                          _entries[i]['cost_per_unit'] =
+                              double.tryParse(v) ?? 0.0;
                           _emit();
                         },
                       ),
                     ),
                   ],
                 ),
-                if ((_entries[i]['unit_count'] as int) > 0 && (_entries[i]['cost_per_unit'] as double) > 0)
+                if ((_entries[i]['unit_count'] as int) > 0 &&
+                    (_entries[i]['cost_per_unit'] as double) > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Text(
                         'Subtotal: PKR ${((_entries[i]['unit_count'] as int) * (_entries[i]['cost_per_unit'] as double)).toStringAsFixed(0)}',
-                        style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),

@@ -21,6 +21,7 @@ import '../../providers/vehicle_provider.dart';
 import '../../widgets/partner_selector.dart';
 import '../../widgets/packing_entry_form.dart';
 import '../../../data/models/vehicle_model.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreateBatchWizard extends StatefulWidget {
   const CreateBatchWizard({super.key});
@@ -90,7 +91,11 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     final wizard = context.read<BatchWizardProvider>();
     if (wizard.currentStep < 5) {
       wizard.nextStep();
-      _pageCtrl.animateToPage(wizard.currentStep, duration: const Duration(milliseconds: 250), curve: Curves.ease);
+      _pageCtrl.animateToPage(
+        wizard.currentStep,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.ease,
+      );
     }
   }
 
@@ -98,7 +103,11 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     final wizard = context.read<BatchWizardProvider>();
     if (wizard.currentStep > 0) {
       wizard.previousStep();
-      _pageCtrl.animateToPage(wizard.currentStep, duration: const Duration(milliseconds: 250), curve: Curves.ease);
+      _pageCtrl.animateToPage(
+        wizard.currentStep,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.ease,
+      );
     }
   }
 
@@ -132,7 +141,11 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   String _generateBatchCode() {
     final now = DateTime.now();
     final year = now.year;
-    final suffix = Random().nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase();
+    final suffix = Random()
+        .nextInt(0xFFFFFF)
+        .toRadixString(16)
+        .padLeft(6, '0')
+        .toUpperCase();
     return 'GM-$year-$suffix';
   }
 
@@ -149,23 +162,29 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       productId: _productId!,
       sourceMarketId: _sourceMarketId,
       destinationMarketId: _destinationMarketId,
-      batchCode: _generateBatchCode(),      purchaseDate: _purchaseDate.toIso8601String().split('T').first,
+      batchCode: _generateBatchCode(),
+      purchaseDate: _purchaseDate.toIso8601String().split('T').first,
       totalQuantity: totalQty,
       quantityUnit: _unit,
       purchasePricePerUnit: pricePerUnit,
       transportPaidBy: _transportPaidBy,
-      supplierName: _supplierCtrl.text.trim().isEmpty ? null : _supplierCtrl.text.trim(),
+      supplierName: _supplierCtrl.text.trim().isEmpty
+          ? null
+          : _supplierCtrl.text.trim(),
       purchasePaymentMode: _purchasePaymentMode,
       purchaseAmountPaid: paidAmount,
       partners: [
         ..._partners
             .where((p) => p['partner_id'] != null)
-            .map((p) => BatchPartnerCreate(
-                  partnerId: p['partner_id'] as String,
-                  role: p['role'] as String,
-                  dailyChargeRate: (p['daily_charge_rate'] as num?)?.toDouble() ?? 0,
-                  daysInvolved: (p['days_involved'] as int?) ?? 1,
-                )),
+            .map(
+              (p) => BatchPartnerCreate(
+                partnerId: p['partner_id'] as String,
+                role: p['role'] as String,
+                dailyChargeRate:
+                    (p['daily_charge_rate'] as num?)?.toDouble() ?? 0,
+                daysInvolved: (p['days_involved'] as int?) ?? 1,
+              ),
+            ),
         if (_sellerId != null)
           BatchPartnerCreate(
             partnerId: _sellerId!,
@@ -176,37 +195,44 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       ],
       packingRecords: _packing
           .where((p) => (p['unit_count'] as int) > 0)
-          .map((p) => PackingRecordCreate(
-                unitType: p['unit_type'] as String,
-                unitLabel: p['unit_label'] as String?,
-                unitCount: p['unit_count'] as int,
-                costPerUnit: (p['cost_per_unit'] as num).toDouble(),
-              ))
+          .map(
+            (p) => PackingRecordCreate(
+              unitType: p['unit_type'] as String,
+              unitLabel: p['unit_label'] as String?,
+              unitCount: p['unit_count'] as int,
+              costPerUnit: (p['cost_per_unit'] as num).toDouble(),
+            ),
+          )
           .toList(),
       expenses: _expenses
           .where((e) => (e['amount'] as double) > 0)
-          .map((e) => ExpenseCreate(
-                partnerId: e['partner_id'] as String?,
-                expenseSide: e['expense_side'] as String,
-                expenseType: e['expense_type'] as String,
-                amount: (e['amount'] as num).toDouble(),
-                description: e['description'] as String?,
-                paidBy: e['paid_by'] as String?,
-                paymentMode: e['payment_mode'] as String?,
-                paymentReference: e['payment_reference'] as String?,
-                expenseDate: e['expense_date'] as String?,
-              ))
+          .map(
+            (e) => ExpenseCreate(
+              partnerId: e['partner_id'] as String?,
+              expenseSide: e['expense_side'] as String,
+              expenseType: e['expense_type'] as String,
+              amount: (e['amount'] as num).toDouble(),
+              description: e['description'] as String?,
+              paidBy: e['paid_by'] as String?,
+              paymentMode: e['payment_mode'] as String?,
+              paymentReference: e['payment_reference'] as String?,
+              expenseDate: e['expense_date'] as String?,
+            ),
+          )
           .toList(),
       vehicleLoads: _vehicleLoads
           .where((v) => v['vehicle_id'] != null)
-          .map((v) => VehicleLoadCreate(
-                vehicleId: v['vehicle_id'] as String,
-                packingRecordIndex: v['packing_index'] as int?,
-                unitCount: double.tryParse(v['unit_count'].toString()) ?? 0,
-                costType: v['cost_type'] as String,
-                transportCost: double.tryParse(v['transport_cost'].toString()) ?? 0,
-                loadDate: _purchaseDate.toIso8601String().split('T').first,
-              ))
+          .map(
+            (v) => VehicleLoadCreate(
+              vehicleId: v['vehicle_id'] as String,
+              packingRecordIndex: v['packing_index'] as int?,
+              unitCount: double.tryParse(v['unit_count'].toString()) ?? 0,
+              costType: v['cost_type'] as String,
+              transportCost:
+                  double.tryParse(v['transport_cost'].toString()) ?? 0,
+              loadDate: _purchaseDate.toIso8601String().split('T').first,
+            ),
+          )
           .toList(),
     );
 
@@ -217,13 +243,18 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       if (ok) {
         await _createTransportDebt(businessId);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Batch created')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Batch created')));
         Navigator.of(context).pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.read<BatchListProvider>().error ?? 'Failed to create batch')),
+          SnackBar(
+            content: Text(
+              context.read<BatchListProvider>().error ??
+                  'Failed to create batch',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -239,30 +270,32 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   Future<void> _createTransportDebt(String businessId) async {
     if (_transportPaidBy != 'seller') return;
     if (_sellerId == null) return;
-    final purchaserId = _partners
-        .firstWhere(
-          (p) => p['partner_id'] != null,
-          orElse: () => {},
-        )['partner_id'] as String?;
+    final purchaserId =
+        _partners.firstWhere(
+              (p) => p['partner_id'] != null,
+              orElse: () => {},
+            )['partner_id']
+            as String?;
     if (purchaserId == null) return;
     if (purchaserId == _sellerId) return;
     final transportTotal = _expenses.fold<double>(
       0,
-      (acc, e) =>
-          e['expense_side'] == 'transport' ? acc + ((e['amount'] as num?)?.toDouble() ?? 0) : acc,
+      (acc, e) => e['expense_side'] == 'transport'
+          ? acc + ((e['amount'] as num?)?.toDouble() ?? 0)
+          : acc,
     );
     if (transportTotal <= 0) return;
     await context.read<TransactionProvider>().create(
-          TransactionCreateRequest(
-            businessId: businessId,
-            fromPartnerId: purchaserId,
-            toPartnerId: _sellerId!,
-            amount: transportTotal,
-            transactionType: 'transport_debt',
-            transactionDate: DateTime.now().toIso8601String().split('T').first,
-            notes: 'Auto: seller paid transport for ${_generateBatchCode()}',
-          ),
-        );
+      TransactionCreateRequest(
+        businessId: businessId,
+        fromPartnerId: purchaserId,
+        toPartnerId: _sellerId!,
+        amount: transportTotal,
+        transactionType: 'transport_debt',
+        transactionDate: DateTime.now().toIso8601String().split('T').first,
+        notes: 'Auto: seller paid transport for ${_generateBatchCode()}',
+      ),
+    );
   }
 
   @override
@@ -286,7 +319,10 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Step ${step + 1} of 6', style: theme.textTheme.labelMedium),
+                Text(
+                  'Step ${step + 1} of 6',
+                  style: theme.textTheme.labelMedium,
+                ),
                 const SizedBox(height: 6),
                 LinearProgressIndicator(value: (step + 1) / 6),
                 const SizedBox(height: 8),
@@ -313,7 +349,11 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                border: Border(top: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.2))),
+                border: Border(
+                  top: BorderSide(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                ),
               ),
               child: Row(
                 children: [
@@ -337,7 +377,14 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                               }
                             },
                       child: _submitting
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : Text(step == 5 ? 'Confirm & Create' : 'Next'),
                     ),
                   ),
@@ -352,13 +399,20 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
   String _stepTitle(int s) {
     switch (s) {
-      case 0: return 'Product & Purchase';
-      case 1: return 'Purchasing Partners';
-      case 2: return 'Packing';
-      case 3: return 'Purchaser Expenses';
-      case 4: return 'Transport & Loads';
-      case 5: return 'Review & Confirm';
-      default: return '';
+      case 0:
+        return 'Product & Purchase';
+      case 1:
+        return 'Purchasing Partners';
+      case 2:
+        return 'Packing';
+      case 3:
+        return 'Purchaser Expenses';
+      case 4:
+        return 'Transport & Loads';
+      case 5:
+        return 'Review & Confirm';
+      default:
+        return '';
     }
   }
 
@@ -375,22 +429,30 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           productsProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
               : productsProvider.error != null
-                  ? Text(productsProvider.error!)
-                  : _productDropdown(theme, productsProvider.products),
+              ? Text(productsProvider.error!)
+              : _productDropdown(theme, productsProvider.products),
           const SizedBox(height: 16),
           Text('Markets', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           marketsProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
               : marketsProvider.error != null
-                  ? Text(marketsProvider.error!)
-                  : Column(
-                      children: [
-                        _marketDropdown(theme, marketsProvider.markets, isSource: true),
-                        const SizedBox(height: 12),
-                        _marketDropdown(theme, marketsProvider.markets, isSource: false),
-                      ],
+              ? Text(marketsProvider.error!)
+              : Column(
+                  children: [
+                    _marketDropdown(
+                      theme,
+                      marketsProvider.markets,
+                      isSource: true,
                     ),
+                    const SizedBox(height: 12),
+                    _marketDropdown(
+                      theme,
+                      marketsProvider.markets,
+                      isSource: false,
+                    ),
+                  ],
+                ),
           const SizedBox(height: 16),
           Text('Purchase Date', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -414,7 +476,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 children: [
                   const Icon(MingCuteIcons.mgc_calendar_3_line, size: 18),
                   const SizedBox(width: 8),
-                  Text('${_purchaseDate.year}-${_purchaseDate.month.toString().padLeft(2, '0')}-${_purchaseDate.day.toString().padLeft(2, '0')}'),
+                  Text(
+                    '${_purchaseDate.year}-${_purchaseDate.month.toString().padLeft(2, '0')}-${_purchaseDate.day.toString().padLeft(2, '0')}',
+                  ),
                 ],
               ),
             ),
@@ -426,23 +490,26 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 flex: 2,
                 child: TextField(
                   controller: _quantityCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Quantity'),
                   onChanged: (_) => setState(() {}),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _unit,
+                child: DropdownButtonFormField2<String>(
+                  isExpanded: true,
+                  valueListenable: ValueNotifier(_unit),
                   decoration: const InputDecoration(labelText: 'Unit'),
                   items: const [
-                    DropdownMenuItem(value: 'kg', child: Text('kg')),
-                    DropdownMenuItem(value: 'g', child: Text('g')),
-                    DropdownMenuItem(value: 'L', child: Text('L')),
-                    DropdownMenuItem(value: 'pcs', child: Text('pcs')),
-                    DropdownMenuItem(value: 'bag', child: Text('bag')),
-                    DropdownMenuItem(value: 'crate', child: Text('crate')),
+                    DropdownItem(value: 'kg', child: Text('kg')),
+                    DropdownItem(value: 'g', child: Text('g')),
+                    DropdownItem(value: 'L', child: Text('L')),
+                    DropdownItem(value: 'pcs', child: Text('pcs')),
+                    DropdownItem(value: 'bag', child: Text('bag')),
+                    DropdownItem(value: 'crate', child: Text('crate')),
                   ],
                   onChanged: (v) => setState(() => _unit = v ?? 'kg'),
                 ),
@@ -457,8 +524,10 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),
-          Text('Total: ${CurrencyFormatter.format((double.tryParse(_quantityCtrl.text) ?? 0) * (double.tryParse(_priceCtrl.text) ?? 0))}',
-              style: theme.textTheme.titleSmall),
+          Text(
+            'Total: ${CurrencyFormatter.format((double.tryParse(_quantityCtrl.text) ?? 0) * (double.tryParse(_priceCtrl.text) ?? 0))}',
+            style: theme.textTheme.titleSmall,
+          ),
           const SizedBox(height: 16),
           Text('Supplier', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -472,16 +541,38 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           const SizedBox(height: 16),
           Text('Purchase Payment', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
+          DropdownButtonFormField2<String>(
             isExpanded: true,
-            initialValue: _purchasePaymentMode,
+            valueListenable: ValueNotifier(_purchasePaymentMode),
             decoration: const InputDecoration(labelText: 'Payment mode'),
             items: const [
-              DropdownMenuItem(value: 'cash', child: Text('Cash', overflow: TextOverflow.ellipsis, maxLines: 1)),
-              DropdownMenuItem(value: 'credit', child: Text('Credit / Debt', overflow: TextOverflow.ellipsis, maxLines: 1)),
-              DropdownMenuItem(value: 'part_credit', child: Text('Part cash / part credit', overflow: TextOverflow.ellipsis, maxLines: 1)),
+              DropdownItem(
+                value: 'cash',
+                child: Text(
+                  'Cash',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+              DropdownItem(
+                value: 'credit',
+                child: Text(
+                  'Credit / Debt',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+              DropdownItem(
+                value: 'part_credit',
+                child: Text(
+                  'Part cash / part credit',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
             ],
-            onChanged: (v) => setState(() => _purchasePaymentMode = v ?? 'cash'),
+            onChanged: (v) =>
+                setState(() => _purchasePaymentMode = v ?? 'cash'),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -491,18 +582,26 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 8),
-          Builder(builder: (context) {
-            final purchaseTotal =
-                (double.tryParse(_quantityCtrl.text) ?? 0) * (double.tryParse(_priceCtrl.text) ?? 0);
-            final paid = double.tryParse(_paidCtrl.text) ?? 0;
-            final remaining = (purchaseTotal - paid).clamp(0, double.infinity);
-            return Text(
-              'Remaining payable: ${CurrencyFormatter.format(remaining)}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: remaining > 0 ? theme.colorScheme.error : theme.colorScheme.primary,
-              ),
-            );
-          }),
+          Builder(
+            builder: (context) {
+              final purchaseTotal =
+                  (double.tryParse(_quantityCtrl.text) ?? 0) *
+                  (double.tryParse(_priceCtrl.text) ?? 0);
+              final paid = double.tryParse(_paidCtrl.text) ?? 0;
+              final remaining = (purchaseTotal - paid).clamp(
+                0,
+                double.infinity,
+              );
+              return Text(
+                'Remaining payable: ${CurrencyFormatter.format(remaining)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: remaining > 0
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.primary,
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 16),
           Text('Transport Paid By', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -512,7 +611,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               ButtonSegment(value: 'seller', label: Text('Seller')),
             ],
             selected: {_transportPaidBy},
-            onSelectionChanged: (v) => setState(() => _transportPaidBy = v.first),
+            onSelectionChanged: (v) =>
+                setState(() => _transportPaidBy = v.first),
           ),
         ],
       ),
@@ -520,15 +620,17 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   }
 
   Widget _productDropdown(ThemeData theme, List<ProductModel> products) {
-    return DropdownButtonFormField<String>(
+    return DropdownButtonFormField2<String>(
       isExpanded: true,
-      initialValue: _productId,
+      valueListenable: ValueNotifier(_productId),
       decoration: const InputDecoration(labelText: 'Select product'),
       items: products
-          .map((p) => DropdownMenuItem(
-                value: p.id,
-                child: Text(p.name, overflow: TextOverflow.ellipsis, maxLines: 1),
-              ))
+          .map(
+            (p) => DropdownItem(
+              value: p.id,
+              child: Text(p.name, overflow: TextOverflow.ellipsis, maxLines: 1),
+            ),
+          )
           .toList(),
       onChanged: (v) {
         if (v != null) {
@@ -543,20 +645,30 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     );
   }
 
-  Widget _marketDropdown(ThemeData theme, List<MarketModel> markets, {required bool isSource}) {
-    return DropdownButtonFormField<String>(
+  Widget _marketDropdown(
+    ThemeData theme,
+    List<MarketModel> markets, {
+    required bool isSource,
+  }) {
+    return DropdownButtonFormField2<String>(
       isExpanded: true,
-      initialValue: isSource ? _sourceMarketId : _destinationMarketId,
-      decoration: InputDecoration(labelText: isSource ? 'Source market' : 'Destination market'),
+      valueListenable: ValueNotifier(
+        isSource ? _sourceMarketId : _destinationMarketId,
+      ),
+      decoration: InputDecoration(
+        labelText: isSource ? 'Source market' : 'Destination market',
+      ),
       items: markets
-          .map((m) => DropdownMenuItem(
-                value: m.id,
-                child: Text(
-                  '${m.name} • ${m.city}',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ))
+          .map(
+            (m) => DropdownItem(
+              value: m.id,
+              child: Text(
+                '${m.name} â€¢ ${m.city}',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          )
           .toList(),
       onChanged: (v) {
         setState(() {
@@ -578,7 +690,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Add at least one purchasing partner. Daily charge × days will be added to cost automatically.',
+            'Add at least one purchasing partner. Daily charge Ã— days will be added to cost automatically.',
           ),
           const SizedBox(height: 16),
           PartnerSelector(
@@ -587,22 +699,33 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             onChanged: (partners) => setState(() => _partners = partners),
           ),
           const SizedBox(height: 24),
-          Text('Selling Partner', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Selling Partner',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           partners.isEmpty
               ? const Text(
                   'No partners yet. Add at least one purchasing partner above first.',
                   style: TextStyle(color: Colors.grey),
                 )
-              : DropdownButtonFormField<String>(
+              : DropdownButtonFormField2<String>(
                   isExpanded: true,
-                  initialValue: _sellerId,
-                  decoration: const InputDecoration(labelText: 'Select the selling partner'),
+                  valueListenable: ValueNotifier(_sellerId),
+                  decoration: const InputDecoration(
+                    labelText: 'Select the selling partner',
+                  ),
                   items: partners
-                      .map((p) => DropdownMenuItem(
-                            value: p.id,
-                            child: Text(p.fullName, overflow: TextOverflow.ellipsis, maxLines: 1),
-                          ))
+                      .map(
+                        (p) => DropdownItem(
+                          value: p.id,
+                          child: Text(
+                            p.fullName,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => setState(() => _sellerId = v),
                 ),
@@ -617,7 +740,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Add packing records (optional). Total cost = count × cost per unit.'),
+          const Text(
+            'Add packing records (optional). Total cost = count Ã— cost per unit.',
+          ),
           const SizedBox(height: 16),
           PackingEntryForm(
             entries: const [],
@@ -634,7 +759,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Add expenses (optional). These will appear in batch P&L breakdown.'),
+          const Text(
+            'Add expenses (optional). These will appear in batch P&L breakdown.',
+          ),
           const SizedBox(height: 16),
           _expenseList(),
           Align(
@@ -651,16 +778,20 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   }
 
   void _addExpense() {
-    setState(() => _expenses.add({
-          'expense_side': _transportPaidBy == 'purchaser' ? 'purchaser' : 'transport',
-          'expense_type': 'misc',
-          'amount': 0.0,
-          'description': null,
-          'paid_by': null,
-          'payment_mode': 'cash',
-          'payment_reference': null,
-          'expense_date': DateTime.now().toIso8601String().split('T').first,
-        }));
+    setState(
+      () => _expenses.add({
+        'expense_side': _transportPaidBy == 'purchaser'
+            ? 'purchaser'
+            : 'transport',
+        'expense_type': 'misc',
+        'amount': 0.0,
+        'description': null,
+        'paid_by': null,
+        'payment_mode': 'cash',
+        'payment_reference': null,
+        'expense_date': DateTime.now().toIso8601String().split('T').first,
+      }),
+    );
   }
 
   Widget _expenseList() {
@@ -674,42 +805,127 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.12),
+            ),
           ),
           child: Column(
             children: [
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String>(
+                    child: DropdownButtonFormField2<String>(
                       isExpanded: true,
-                      initialValue: e['expense_side'] as String,
+                      valueListenable: ValueNotifier(
+                        e['expense_side'] as String,
+                      ),
                       decoration: const InputDecoration(labelText: 'Side'),
                       items: const [
-                        DropdownMenuItem(value: 'purchaser', child: Text('Purchaser', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'transport', child: Text('Transport', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'seller', child: Text('Seller', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownItem(
+                          value: 'purchaser',
+                          child: Text(
+                            'Purchaser',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'transport',
+                          child: Text(
+                            'Transport',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'seller',
+                          child: Text(
+                            'Seller',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => e['expense_side'] = v ?? 'purchaser'),
+                      onChanged: (v) =>
+                          setState(() => e['expense_side'] = v ?? 'purchaser'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: DropdownButtonFormField<String>(
+                    child: DropdownButtonFormField2<String>(
                       isExpanded: true,
-                      initialValue: e['expense_type'] as String,
+                      valueListenable: ValueNotifier(
+                        e['expense_type'] as String,
+                      ),
                       decoration: const InputDecoration(labelText: 'Type'),
                       items: const [
-                        DropdownMenuItem(value: 'daily_charge', child: Text('Daily Charge', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'labor', child: Text('Labor', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'accountant', child: Text('Accountant', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'source_stall_fee', child: Text('Stall Fee (source)', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'destination_stall_fee', child: Text('Stall Fee (destination)', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'transport', child: Text('Transport', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'local_transport', child: Text('Local Transport', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'misc', child: Text('Misc', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownItem(
+                          value: 'daily_charge',
+                          child: Text(
+                            'Daily Charge',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'labor',
+                          child: Text(
+                            'Labor',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'accountant',
+                          child: Text(
+                            'Accountant',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'source_stall_fee',
+                          child: Text(
+                            'Stall Fee (source)',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'destination_stall_fee',
+                          child: Text(
+                            'Stall Fee (destination)',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'transport',
+                          child: Text(
+                            'Transport',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'local_transport',
+                          child: Text(
+                            'Local Transport',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'misc',
+                          child: Text(
+                            'Misc',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => e['expense_type'] = v ?? 'misc'),
+                      onChanged: (v) =>
+                          setState(() => e['expense_type'] = v ?? 'misc'),
                     ),
                   ),
                   IconButton(
@@ -721,7 +937,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               const SizedBox(height: 8),
               TextFormField(
                 initialValue: e['amount'].toString(),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(labelText: 'Amount'),
                 onChanged: (v) => e['amount'] = double.tryParse(v) ?? 0.0,
               ),
@@ -735,22 +953,41 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String>(
+                    child: DropdownButtonFormField2<String>(
                       isExpanded: true,
-                      initialValue: e['payment_mode'] as String,
+                      valueListenable: ValueNotifier(
+                        e['payment_mode'] as String,
+                      ),
                       decoration: const InputDecoration(labelText: 'Payment'),
                       items: const [
-                        DropdownMenuItem(value: 'cash', child: Text('Cash', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                        DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        DropdownItem(
+                          value: 'cash',
+                          child: Text(
+                            'Cash',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        DropdownItem(
+                          value: 'bank_transfer',
+                          child: Text(
+                            'Bank Transfer',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => e['payment_mode'] = v ?? 'cash'),
+                      onChanged: (v) =>
+                          setState(() => e['payment_mode'] = v ?? 'cash'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextFormField(
                       initialValue: e['expense_date']?.toString(),
-                      decoration: const InputDecoration(labelText: 'Date (YYYY-MM-DD)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Date (YYYY-MM-DD)',
+                      ),
                       onChanged: (v) => e['expense_date'] = v.isEmpty
                           ? DateTime.now().toIso8601String().split('T').first
                           : v,
@@ -781,7 +1018,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -790,7 +1029,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'No vehicles registered yet. Add them from Manage → Vehicles, or skip this step.',
+                      'No vehicles registered yet. Add them from Manage â†’ Vehicles, or skip this step.',
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
@@ -822,7 +1061,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     );
   }
 
-  Widget _transportLoadCard(ThemeData theme, int index, Map<String, dynamic> load, List<VehicleModel> vehicles) {
+  Widget _transportLoadCard(
+    ThemeData theme,
+    int index,
+    Map<String, dynamic> load,
+    List<VehicleModel> vehicles,
+  ) {
     final packing = _packing;
     return Container(
       key: ValueKey('load-$index'),
@@ -831,7 +1075,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -846,12 +1092,13 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               ),
             ],
           ),
-          DropdownButtonFormField<String>(
-            initialValue: load['vehicle_id'] as String?,
+          DropdownButtonFormField2<String>(
+            isExpanded: true,
+            valueListenable: ValueNotifier(load['vehicle_id'] as String?),
             decoration: const InputDecoration(labelText: 'Vehicle'),
             items: [
               for (final v in vehicles)
-                DropdownMenuItem(
+                DropdownItem(
                   value: v.id,
                   child: Text(v.plateNumber, overflow: TextOverflow.ellipsis),
                 ),
@@ -860,15 +1107,18 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           ),
           if (packing.isNotEmpty) ...[
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
-              initialValue: load['packing_index'] as int?,
-              decoration: const InputDecoration(labelText: 'Packing record (optional)'),
+            DropdownButtonFormField2<int>(
+              isExpanded: true,
+              valueListenable: ValueNotifier(load['packing_index'] as int?),
+              decoration: const InputDecoration(
+                labelText: 'Packing record (optional)',
+              ),
               items: [
                 for (var i = 0; i < packing.length; i++)
-                  DropdownMenuItem(
+                  DropdownItem(
                     value: i,
                     child: Text(
-                      '${i + 1}. ${packing[i]['unit_type']} × ${packing[i]['unit_count']}',
+                      '${i + 1}. ${packing[i]['unit_type']} Ã— ${packing[i]['unit_count']}',
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -884,22 +1134,32 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             onChanged: (v) => setState(() => load['unit_count'] = v),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: load['cost_type'] as String,
+          DropdownButtonFormField2<String>(
+            isExpanded: true,
+            valueListenable: ValueNotifier(load['cost_type'] as String),
             decoration: const InputDecoration(labelText: 'Cost type'),
             items: const [
-              DropdownMenuItem(value: 'per_vehicle', child: Text('Flat per vehicle')),
-              DropdownMenuItem(value: 'per_packing', child: Text('Per unit loaded')),
-              DropdownMenuItem(value: 'lump_sum', child: Text('Lump sum')),
+              DropdownItem(
+                value: 'per_vehicle',
+                child: Text('Flat per vehicle'),
+              ),
+              DropdownItem(
+                value: 'per_packing',
+                child: Text('Per unit loaded'),
+              ),
+              DropdownItem(value: 'lump_sum', child: Text('Lump sum')),
             ],
-            onChanged: (v) => setState(() => load['cost_type'] = v ?? 'per_vehicle'),
+            onChanged: (v) =>
+                setState(() => load['cost_type'] = v ?? 'per_vehicle'),
           ),
           const SizedBox(height: 12),
           TextFormField(
             initialValue: load['transport_cost'].toString(),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
-              labelText: load['cost_type'] == 'per_packing' ? 'Transport cost per unit' : 'Transport cost',
+              labelText: load['cost_type'] == 'per_packing'
+                  ? 'Transport cost per unit'
+                  : 'Transport cost',
             ),
             onChanged: (v) => setState(() => load['transport_cost'] = v),
           ),
@@ -928,14 +1188,25 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       final cost = (p['cost_per_unit'] as num?)?.toDouble() ?? 0;
       return acc + count * cost;
     });
-    final expenseCost = _expenses.fold<double>(0, (acc, e) => acc + ((e['amount'] as num?)?.toDouble() ?? 0));
+    final expenseCost = _expenses.fold<double>(
+      0,
+      (acc, e) => acc + ((e['amount'] as num?)?.toDouble() ?? 0),
+    );
     final dailyCharges = _partners.fold<double>(0, (acc, p) {
       final rate = (p['daily_charge_rate'] as num?)?.toDouble() ?? 0;
       final days = (p['days_involved'] as int?) ?? 1;
       return acc + rate * days;
     });
-    final transportLoadCost = _vehicleLoads.fold<double>(0, (acc, v) => acc + _loadTotal(v));
-    final total = purchaseCost + packingCost + expenseCost + dailyCharges + transportLoadCost;
+    final transportLoadCost = _vehicleLoads.fold<double>(
+      0,
+      (acc, v) => acc + _loadTotal(v),
+    );
+    final total =
+        purchaseCost +
+        packingCost +
+        expenseCost +
+        dailyCharges +
+        transportLoadCost;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -947,7 +1218,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -956,26 +1229,49 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 const SizedBox(height: 12),
                 _summaryRow('Product', _productName ?? '-'),
                 _summaryRow('Quantity', '$qty $_unit'),
-                _summaryRow('Supplier', _supplierCtrl.text.trim().isEmpty ? '-' : _supplierCtrl.text.trim()),
+                _summaryRow(
+                  'Supplier',
+                  _supplierCtrl.text.trim().isEmpty
+                      ? '-'
+                      : _supplierCtrl.text.trim(),
+                ),
                 _summaryRow(
                   'Purchase payment',
                   _purchasePaymentMode == 'cash'
                       ? 'Cash'
                       : _purchasePaymentMode == 'credit'
-                          ? 'Credit'
-                          : 'Part cash / credit',
+                      ? 'Credit'
+                      : 'Part cash / credit',
                 ),
                 if ((double.tryParse(_paidCtrl.text) ?? 0) > 0)
-                  _summaryRow('Paid now', CurrencyFormatter.format(double.tryParse(_paidCtrl.text) ?? 0)),
-                _summaryRow('Purchase cost', CurrencyFormatter.format(purchaseCost)),
+                  _summaryRow(
+                    'Paid now',
+                    CurrencyFormatter.format(
+                      double.tryParse(_paidCtrl.text) ?? 0,
+                    ),
+                  ),
+                _summaryRow(
+                  'Purchase cost',
+                  CurrencyFormatter.format(purchaseCost),
+                ),
                 _summaryRow('Partners', '${_partners.length}'),
-                _summaryRow('Daily charges', CurrencyFormatter.format(dailyCharges)),
+                _summaryRow(
+                  'Daily charges',
+                  CurrencyFormatter.format(dailyCharges),
+                ),
                 _summaryRow('Packing', CurrencyFormatter.format(packingCost)),
                 _summaryRow('Expenses', CurrencyFormatter.format(expenseCost)),
                 _summaryRow('Vehicle loads', '${_vehicleLoads.length}'),
-                _summaryRow('Transport loads', CurrencyFormatter.format(transportLoadCost)),
+                _summaryRow(
+                  'Transport loads',
+                  CurrencyFormatter.format(transportLoadCost),
+                ),
                 const Divider(height: 24),
-                _summaryRow('Total estimated cost', CurrencyFormatter.format(total), isBold: true),
+                _summaryRow(
+                  'Total estimated cost',
+                  CurrencyFormatter.format(total),
+                  isBold: true,
+                ),
               ],
             ),
           ),
@@ -983,7 +1279,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1010,8 +1308,18 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.w700 : FontWeight.w400)),
-          Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.w700 : FontWeight.w500)),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
