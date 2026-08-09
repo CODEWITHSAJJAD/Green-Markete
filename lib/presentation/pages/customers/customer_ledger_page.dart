@@ -4,9 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../core/export/bill_export.dart';
+import '../../../core/export/bill_model.dart';
 import '../../../core/supabase/supabase_service.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../data/models/customer_model.dart';
+import '../../providers/business_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/credit_indicator.dart';
 import '../../widgets/green_card.dart';
@@ -83,6 +87,52 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
     context.read<CustomerProvider>().loadLedger(widget.customer.id);
   }
 
+  Future<void> _shareStatement() async {
+    final provider = context.read<CustomerProvider>();
+    if (provider.ledger.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No transactions to share yet')),
+      );
+      return;
+    }
+    final businessName = context.read<BusinessProvider>().business?.name;
+    final customer = widget.customer;
+    final bill = BillModel(
+      documentTitle: 'Credit / Clearance Statement',
+      businessName: businessName,
+      header: [
+        BillHeaderLine('Customer', customer.fullName),
+        if (customer.shopName != null && customer.shopName!.isNotEmpty) BillHeaderLine('Shop', customer.shopName!),
+        if (customer.city != null && customer.city!.isNotEmpty) BillHeaderLine('City', customer.city!),
+        if (customer.phone != null && customer.phone!.isNotEmpty) BillHeaderLine('Phone', customer.phone!),
+      ],
+      sections: [
+        BillSection('Statement of account', [
+          for (final e in provider.ledger)
+            BillLine(
+              '${e.date}  ${e.description}',
+              e.type == 'payment'
+                  ? '- ${CurrencyFormatter.format(e.amount)}'
+                  : '+ ${CurrencyFormatter.format(e.amount)}',
+            ),
+        ]),
+        BillSection('Summary', [
+          BillLine('Total Purchased (Credit)', CurrencyFormatter.format(customer.totalPurchased)),
+          BillLine('Total Cleared (Paid)', CurrencyFormatter.format(customer.totalPaid)),
+        ]),
+      ],
+      total: BillLine('Outstanding Balance', CurrencyFormatter.format(customer.outstandingBalance), emphasize: true),
+      footer: 'Please settle the outstanding balance at your earliest convenience. '
+          'Generated on ${DateFormatter.toDDMMYYYY(DateTime.now())}. Amounts in ${CurrencyFormatter.currentCode}.',
+    );
+    await shareBill(
+      context,
+      bill: bill,
+      fileName: 'statement_${customer.fullName.replaceAll(' ', '_')}',
+      subject: 'Green Market — Credit Statement',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CustomerProvider>();
@@ -152,6 +202,11 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
       appBar: AppBar(
         title: const Text('Customer Ledger'),
         actions: [
+          IconButton(
+            tooltip: 'Share statement',
+            onPressed: _shareStatement,
+            icon: const Icon(MingCuteIcons.mgc_share_2_line),
+          ),
           IconButton(
             onPressed: _openRecordPayment,
             icon: const Icon(MingCuteIcons.mgc_wallet_3_line),

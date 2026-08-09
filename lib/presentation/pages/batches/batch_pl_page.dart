@@ -3,10 +3,12 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
-import '../../../core/export/csv_export.dart';
-import '../../../core/export/csv_writer.dart';
+import '../../../core/export/bill_export.dart';
+import '../../../core/export/bill_model.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../providers/batch_provider.dart';
+import '../../providers/business_provider.dart';
 
 class BatchPLPage extends StatefulWidget {
   final String batchId;
@@ -38,8 +40,8 @@ class _BatchPLPageState extends State<BatchPLPage> {
         title: const Text('Batch P&L'),
         actions: [
           IconButton(
-            tooltip: 'Export P&L CSV',
-            onPressed: () => _exportCsv(context, batchProvider, plProvider),
+            tooltip: 'Share bill',
+            onPressed: () => _shareBill(context, batchProvider, plProvider),
             icon: const Icon(MingCuteIcons.mgc_share_2_line),
           ),
         ],
@@ -48,7 +50,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
     );
   }
 
-  Future<void> _exportCsv(
+  Future<void> _shareBill(
     BuildContext context,
     BatchDetailProvider batchProvider,
     BatchPLProvider plProvider,
@@ -61,35 +63,63 @@ class _BatchPLPageState extends State<BatchPLPage> {
       );
       return;
     }
-    final csv = buildCsv(
-      columns: const ['Item', 'Amount (PKR)'],
-      rows: [
-        ['Batch Code', batch.batchCode],
-        ['Product', batch.productName ?? ''],
-        ['Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'],
-        [],
-        ['COST BREAKDOWN'],
-        ['Purchase Cost', pl.costBreakdown.purchaseCost.toStringAsFixed(2)],
-        ['Purchaser Daily Charges', pl.costBreakdown.purchaserDailyCharges.toStringAsFixed(2)],
-        ['Purchaser Expenses', pl.costBreakdown.purchaserExpenses.toStringAsFixed(2)],
-        ['Packing Cost', pl.costBreakdown.packingCost.toStringAsFixed(2)],
-        ['Transport Cost', pl.costBreakdown.transportCost.toStringAsFixed(2)],
-        ['Seller Daily Charges', pl.costBreakdown.sellerDailyCharges.toStringAsFixed(2)],
-        ['Seller Expenses', pl.costBreakdown.sellerExpenses.toStringAsFixed(2)],
-        ['Total Cost', pl.costBreakdown.totalCost.toStringAsFixed(2)],
-        [],
-        ['REVENUE'],
-        ['Total Revenue', pl.revenue.totalRevenue.toStringAsFixed(2)],
-        ['Cash Received', pl.revenue.cashReceived.toStringAsFixed(2)],
-        ['Credit Outstanding', pl.revenue.creditOutstanding.toStringAsFixed(2)],
-        [],
-        ['NET PROFIT / LOSS', pl.netProfitLoss.toStringAsFixed(2)],
-      ],
+    final party = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Bill for'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'Seller'),
+            child: const Text('Seller — bill of sales with total expenses'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'Purchaser'),
+            child: const Text('Purchaser — purchase bill'),
+          ),
+        ],
+      ),
     );
-    await shareCsv(
-      csv: csv,
-      fileName: '${batch.batchCode}_PL.csv',
-      subject: 'Green Market — ${batch.batchCode} P&L',
+    if (party == null || !context.mounted) return;
+    final businessName = context.read<BusinessProvider>().business?.name;
+    final bill = BillModel(
+      documentTitle: '$party Bill',
+      businessName: businessName,
+      header: [
+        BillHeaderLine('Batch Code', batch.batchCode),
+        BillHeaderLine('Product', batch.productName ?? ''),
+        BillHeaderLine(
+          'Quantity',
+          '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}',
+        ),
+        BillHeaderLine('Status', batch.status),
+        BillHeaderLine('Purchase Date', DateFormatter.display(batch.purchaseDate)),
+      ],
+      sections: [
+        BillSection('Cost Breakdown', [
+          BillLine('Purchase Cost', CurrencyFormatter.format(pl.costBreakdown.purchaseCost)),
+          BillLine('Purchaser Daily Charges', CurrencyFormatter.format(pl.costBreakdown.purchaserDailyCharges)),
+          BillLine('Purchaser Expenses', CurrencyFormatter.format(pl.costBreakdown.purchaserExpenses)),
+          BillLine('Packing Cost', CurrencyFormatter.format(pl.costBreakdown.packingCost)),
+          BillLine('Transport Cost', CurrencyFormatter.format(pl.costBreakdown.transportCost)),
+          BillLine('Seller Daily Charges', CurrencyFormatter.format(pl.costBreakdown.sellerDailyCharges)),
+          BillLine('Seller Expenses', CurrencyFormatter.format(pl.costBreakdown.sellerExpenses)),
+          BillLine('Total Cost', CurrencyFormatter.format(pl.costBreakdown.totalCost), emphasize: true),
+        ]),
+        BillSection('Revenue', [
+          BillLine('Total Revenue', CurrencyFormatter.format(pl.revenue.totalRevenue)),
+          BillLine('Cash Received', CurrencyFormatter.format(pl.revenue.cashReceived)),
+          BillLine('Credit Outstanding', CurrencyFormatter.format(pl.revenue.creditOutstanding)),
+        ]),
+      ],
+      total: BillLine('Net Profit / Loss', CurrencyFormatter.format(pl.netProfitLoss), emphasize: true),
+      footer: 'Generated by Green Market on ${DateFormatter.toDDMMYYYY(DateTime.now())}. '
+          'Amounts in ${CurrencyFormatter.currentCode}.',
+    );
+    await shareBill(
+      context,
+      bill: bill,
+      fileName: '${batch.batchCode}_${party}_bill',
+      subject: 'Green Market — ${batch.batchCode} $party bill',
     );
   }
 
