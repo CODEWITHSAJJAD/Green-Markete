@@ -12,6 +12,21 @@ class CustomerRepository {
     String? search,
     bool includeArchived = false,
   }) async {
+    try {
+      return await _listInternal(businessId, search: search, includeArchived: includeArchived);
+    } on PostgrestException catch (e) {
+      if (includeArchived || e.code != '42703') rethrow;
+      // Live DB's customers table lacks the is_archived column; retry without
+      // the archive filter so the customer list and sell flow keep working.
+      return _listInternal(businessId, search: search, includeArchived: true);
+    }
+  }
+
+  Future<List<CustomerModel>> _listInternal(
+    String businessId, {
+    String? search,
+    bool includeArchived = false,
+  }) async {
     var query = _client
         .from('customers')
         .select()

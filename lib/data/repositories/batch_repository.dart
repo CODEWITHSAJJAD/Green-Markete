@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase/supabase_service.dart';
 import '../models/batch_model.dart';
+import '../models/packing_record_model.dart';
 import '../models/report_model.dart';
 
 class BatchRepository {
@@ -147,6 +148,15 @@ class BatchRepository {
       'cost_per_unit': packing.costPerUnit,
       'total_packing_cost': packing.costPerUnit * packing.unitCount,
     });
+  }
+
+  Future<List<PackingRecordModel>> listPacking(String batchId) async {
+    final rows = await _client
+        .from('packing_records')
+        .select()
+        .eq('batch_id', batchId)
+        .order('created_at', ascending: true);
+    return rows.map(PackingRecordModel.fromJson).toList();
   }
 
   Future<void> addPartner(String id, BatchPartnerCreate partner) async {

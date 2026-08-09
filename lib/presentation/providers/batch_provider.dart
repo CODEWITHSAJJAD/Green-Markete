@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/models/batch_model.dart';
 import '../../data/models/expense_model.dart';
+import '../../data/models/packing_record_model.dart';
 import '../../data/models/report_model.dart';
 import '../../data/models/sale_model.dart';
 import '../../data/repositories/batch_repository.dart';
@@ -107,6 +108,9 @@ class BatchDetailProvider extends ChangeNotifier {
   BatchModel? _batch;
   BatchModel? get batch => _batch;
 
+  List<PackingRecordModel> _packingRecords = const [];
+  List<PackingRecordModel> get packingRecords => _packingRecords;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -121,6 +125,16 @@ class BatchDetailProvider extends ChangeNotifier {
       _batch = await _repo.get(id);
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
+    }
+    await _loadPacking(id);
+  }
+
+  Future<void> _loadPacking(String id) async {
+    try {
+      _packingRecords = await _repo.listPacking(id);
+    } catch (e) {
+      _packingRecords = const [];
+      _error ??= e.toString().replaceAll('Exception: ', '');
     } finally {
       _isLoading = false;
       notifyListeners();

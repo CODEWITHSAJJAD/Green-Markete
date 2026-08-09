@@ -95,6 +95,37 @@ class AuthRepository {
     return row?['business_id'] as String?;
   }
 
+  Future<String?> getMyRole(String userId, String businessId) async {
+    try {
+      final owner = await _client
+          .from('businesses')
+          .select('owner_id')
+          .eq('id', businessId)
+          .maybeSingle();
+      if (owner != null && owner['owner_id'] == userId) return 'owner';
+    } catch (_) {
+      // Some deployments lack owner_id; fall back to partner access level.
+    }
+    try {
+      final partner = await _client
+          .from('business_partners')
+          .select('role, access_level')
+          .eq('user_id', userId)
+          .eq('business_id', businessId)
+          .maybeSingle();
+      if (partner == null) return null;
+      final accessLevel = partner['access_level'] as String?;
+      if (accessLevel == 'editor') return 'editor';
+      if (accessLevel == 'viewer') return 'viewer';
+      final role = partner['role'] as String?;
+      if (role == 'accountant') return 'accountant';
+      if (accessLevel == null && role == null) return null;
+      return 'viewer';
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<BusinessModel>> listMyBusinesses(String userId) async {
     final rows = await _client
         .from('business_partners')

@@ -81,7 +81,10 @@ class AuthProvider extends ChangeNotifier {
         );
       }
       final businessId = await _repo.getMyBusinessId(userId);
-      final role = profile?.role;
+      var role = profile?.role;
+      if (role == null || role.isEmpty) {
+        role = businessId == null ? null : await _repo.getMyRole(userId, businessId);
+      }
       _user = UserModel(
         id: userId,
         fullName: profile?.fullName,
