@@ -85,6 +85,24 @@ class CustomerProvider extends ChangeNotifier {
     }
   }
 
+  Future<CustomerModel?> update(String id, Map<String, dynamic> data) async {
+    try {
+      final customer = await _repo.update(id, data);
+      final index = _customers.indexWhere((c) => c.id == id);
+      if (index != -1) {
+        final updated = [..._customers];
+        updated[index] = customer;
+        _customers = updated;
+        notifyListeners();
+      }
+      return customer;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<void> loadShared(String businessId) async {
     try {
       final result = await _repo.listSharedCustomerIds(businessId);

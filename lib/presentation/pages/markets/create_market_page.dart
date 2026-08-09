@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../../data/models/market_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
 
 class CreateMarketPage extends StatefulWidget {
-  const CreateMarketPage({super.key});
+  final MarketModel? market;
+
+  const CreateMarketPage({super.key, this.market});
 
   @override
   State<CreateMarketPage> createState() => _CreateMarketPageState();
@@ -19,6 +23,21 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
   String _marketType = 'wholesale';
   bool _saving = false;
 
+  bool get _isEditing => widget.market != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final market = widget.market;
+    if (market != null) {
+      _nameCtrl.text = market.name;
+      _cityCtrl.text = market.city;
+      _addressCtrl.text = market.address ?? '';
+      _stallCtrl.text = market.stallNumber ?? '';
+      _marketType = market.marketType ?? 'wholesale';
+    }
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -28,30 +47,40 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
     super.dispose();
   }
 
+  Map<String, dynamic> _buildData(String businessId) => {
+        'business_id': businessId,
+        'name': _nameCtrl.text.trim(),
+        'city': _cityCtrl.text.trim(),
+        'address': _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+        'stall_number': _stallCtrl.text.trim().isEmpty ? null : _stallCtrl.text.trim(),
+        'market_type': _marketType,
+      };
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId == null || businessId.isEmpty) return;
 
     setState(() => _saving = true);
-    final market = await context.read<MarketProvider>().create({
-      'business_id': businessId,
-      'name': _nameCtrl.text.trim(),
-      'city': _cityCtrl.text.trim(),
-      'address': _addressCtrl.text.trim(),
-      'stall_number': _stallCtrl.text.trim(),
-      'market_type': _marketType,
-    });
+    final provider = context.read<MarketProvider>();
+    final MarketModel? saved;
+    if (_isEditing) {
+      saved = await provider.update(widget.market!.id, _buildData(businessId));
+    } else {
+      saved = await provider.create(_buildData(businessId));
+    }
     if (!mounted) return;
     setState(() => _saving = false);
-    if (market != null) {
+    if (saved != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Market created successfully')),
+        SnackBar(
+          content: Text(_isEditing ? 'Market updated successfully' : 'Market created successfully'),
+        ),
       );
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.read<MarketProvider>().error ?? 'Failed to create market')),
+        SnackBar(content: Text(provider.error ?? 'Failed to save market')),
       );
     }
   }
@@ -59,7 +88,7 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Market')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Market' : 'Create Market')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -107,7 +136,7 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Save Market'),
+                    : Text(_isEditing ? 'Save Changes' : 'Save Market'),
               ),
             ],
           ),

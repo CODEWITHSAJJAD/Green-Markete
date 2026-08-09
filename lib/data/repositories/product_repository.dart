@@ -37,6 +37,20 @@ class ProductRepository {
     return ProductModel.fromJson(row);
   }
 
+  Future<ProductModel> update(String id, Map<String, dynamic> data) async {
+    final row = await _client
+        .from('products')
+        .update({
+          'name': data['name'],
+          'category': data['category'],
+          'base_unit': data['base_unit'] ?? data['default_unit'] ?? 'kg',
+        })
+        .eq('id', id)
+        .select()
+        .single();
+    return ProductModel.fromJson(row);
+  }
+
   Future<void> delete(String id) async {
     await _client.from('products').delete().eq('id', id);
   }

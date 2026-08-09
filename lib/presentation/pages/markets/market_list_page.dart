@@ -3,8 +3,10 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../data/models/market_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
+import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
 import 'create_market_page.dart';
@@ -34,6 +36,34 @@ class _MarketListPageState extends State<MarketListPage> {
     if (!mounted) return;
     final businessId = context.read<AuthProvider>().businessId ?? '';
     if (businessId.isNotEmpty) context.read<MarketProvider>().load(businessId);
+  }
+
+  Future<void> _openEdit(MarketModel market) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => CreateMarketPage(market: market)),
+    );
+    if (!mounted) return;
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    if (businessId.isNotEmpty) context.read<MarketProvider>().load(businessId);
+  }
+
+  Future<bool> _confirmDelete(MarketModel market) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final provider = context.read<MarketProvider>();
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Delete ${market.name}?',
+      message: 'This market will be permanently deleted. Batches that already reference it keep their records.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (ok != true) return false;
+    final deleted = await provider.delete(market.id);
+    if (!context.mounted) return deleted;
+    messenger.showSnackBar(
+      SnackBar(content: Text(deleted ? 'Market deleted' : 'Failed to delete market')),
+    );
+    return deleted;
   }
 
   @override
@@ -117,37 +147,61 @@ class _MarketListPageState extends State<MarketListPage> {
             Column(
               children: markets
                   .map(
-                    (market) => GreenCard(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(MingCuteIcons.mgc_store_2_line, color: theme.colorScheme.secondary),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(market.name, style: theme.textTheme.titleMedium),
-                                const SizedBox(height: 4),
-                                Text(
-                                  [market.city, market.stallNumber, market.marketType]
-                                      .where((item) => item != null && item.isNotEmpty)
-                                      .join('  •  '),
-                                  style: theme.textTheme.bodySmall,
+                    (market) => Dismissible(
+                      key: ValueKey('market-${market.id}'),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
+                      ),
+                      confirmDismiss: (_) => _confirmDelete(market),
+                      child: GestureDetector(
+                        onTap: () => _openEdit(market),
+                        child: GreenCard(
+                          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ],
-                            ),
+                                child: Icon(MingCuteIcons.mgc_store_2_line, color: theme.colorScheme.secondary),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(market.name, style: theme.textTheme.titleMedium),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      [market.city, market.stallNumber, market.marketType]
+                                          .where((item) => item != null && item.isNotEmpty)
+                                          .join('  •  '),
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                MingCuteIcons.mgc_edit_2_line,
+                                size: 20,
+                                color: theme.colorScheme.outline,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   )

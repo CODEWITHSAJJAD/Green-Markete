@@ -3,9 +3,11 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/confirm_dialog.dart';
 import '../../widgets/green_card.dart';
 import 'create_vehicle_page.dart';
 
@@ -34,6 +36,34 @@ class _VehicleListPageState extends State<VehicleListPage> {
     if (!mounted) return;
     final businessId = context.read<AuthProvider>().businessId ?? '';
     if (businessId.isNotEmpty) context.read<VehicleProvider>().load(businessId);
+  }
+
+  Future<void> _openEdit(VehicleModel vehicle) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => CreateVehiclePage(vehicle: vehicle)),
+    );
+    if (!mounted) return;
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    if (businessId.isNotEmpty) context.read<VehicleProvider>().load(businessId);
+  }
+
+  Future<bool> _confirmDelete(VehicleModel vehicle) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final provider = context.read<VehicleProvider>();
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Delete ${vehicle.plateNumber}?',
+      message: 'This vehicle will be permanently deleted. Batches that already reference it keep their records.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (ok != true) return false;
+    final deleted = await provider.delete(vehicle.id);
+    if (!context.mounted) return deleted;
+    messenger.showSnackBar(
+      SnackBar(content: Text(deleted ? 'Vehicle deleted' : 'Failed to delete vehicle')),
+    );
+    return deleted;
   }
 
   @override
@@ -117,41 +147,65 @@ class _VehicleListPageState extends State<VehicleListPage> {
             Column(
               children: vehicles
                   .map(
-                    (vehicle) => GreenCard(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(MingCuteIcons.mgc_truck_line, color: theme.colorScheme.secondary),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(vehicle.plateNumber, style: theme.textTheme.titleMedium),
-                                const SizedBox(height: 4),
-                                Text(
-                                  [
-                                    vehicle.driverName,
-                                    if (vehicle.capacityValue != null)
-                                      '${_formatCapacity(vehicle.capacityValue!)}${vehicle.capacityUnit ?? ''}',
-                                  ]
-                                      .where((item) => item != null && item.isNotEmpty)
-                                      .join('  •  '),
-                                  style: theme.textTheme.bodySmall,
+                    (vehicle) => Dismissible(
+                      key: ValueKey('vehicle-${vehicle.id}'),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
+                      ),
+                      confirmDismiss: (_) => _confirmDelete(vehicle),
+                      child: GestureDetector(
+                        onTap: () => _openEdit(vehicle),
+                        child: GreenCard(
+                          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ],
-                            ),
+                                child: Icon(MingCuteIcons.mgc_truck_line, color: theme.colorScheme.secondary),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(vehicle.plateNumber, style: theme.textTheme.titleMedium),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      [
+                                        vehicle.driverName,
+                                        if (vehicle.capacityValue != null)
+                                          '${_formatCapacity(vehicle.capacityValue!)}${vehicle.capacityUnit ?? ''}',
+                                      ]
+                                          .where((item) => item != null && item.isNotEmpty)
+                                          .join('  •  '),
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                MingCuteIcons.mgc_edit_2_line,
+                                size: 20,
+                                color: theme.colorScheme.outline,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   )

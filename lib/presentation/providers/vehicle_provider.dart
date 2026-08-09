@@ -42,4 +42,30 @@ class VehicleProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<VehicleModel?> update(String id, Map<String, dynamic> data) async {
+    try {
+      final vehicle = await _repo.update(id, data);
+      final businessId = vehicle.businessId;
+      await load(businessId);
+      return vehicle;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> delete(String id) async {
+    try {
+      await _repo.delete(id);
+      _vehicles = _vehicles.where((v) => v.id != id).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

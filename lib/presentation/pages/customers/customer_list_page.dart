@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/customer_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
@@ -48,6 +49,15 @@ class _CustomerListPageState extends State<CustomerListPage> {
   Future<void> _openCreateCustomer() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const CreateCustomerPage()),
+    );
+    if (!mounted) return;
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    context.read<CustomerProvider>().load(businessId, search: _searchCtrl.text.trim());
+  }
+
+  Future<void> _openEditCustomer(CustomerModel customer) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => CreateCustomerPage(customer: customer)),
     );
     if (!mounted) return;
     final businessId = context.read<AuthProvider>().businessId ?? '';
@@ -184,6 +194,13 @@ class _CustomerListPageState extends State<CustomerListPage> {
                       const SizedBox(height: 4),
                       Text('Outstanding', style: theme.textTheme.bodySmall),
                     ],
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Edit customer',
+                    icon: const Icon(MingCuteIcons.mgc_edit_2_line, size: 20),
+                    onPressed: () => _openEditCustomer(customer),
                   ),
                 ],
               ),

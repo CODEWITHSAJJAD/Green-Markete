@@ -42,6 +42,37 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
+  Future<ProductModel?> update(String id, Map<String, dynamic> data) async {
+    try {
+      final product = await _repo.update(id, data);
+      final index = _products.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        final updated = [..._products];
+        updated[index] = product;
+        _products = updated;
+        notifyListeners();
+      }
+      return product;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> delete(String id) async {
+    try {
+      await _repo.delete(id);
+      _products = _products.where((p) => p.id != id).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<ProductModel?> get(String id) async {
     try {
       return await _repo.get(id);

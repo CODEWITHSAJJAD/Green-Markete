@@ -42,4 +42,29 @@ class MarketProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<MarketModel?> update(String id, Map<String, dynamic> data) async {
+    try {
+      final market = await _repo.update(id, data);
+      await load(market.businessId);
+      return market;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> delete(String id) async {
+    try {
+      await _repo.delete(id);
+      _markets = _markets.where((m) => m.id != id).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
 
 class CreateVehiclePage extends StatefulWidget {
-  const CreateVehiclePage({super.key});
+  final VehicleModel? vehicle;
+
+  const CreateVehiclePage({super.key, this.vehicle});
 
   @override
   State<CreateVehiclePage> createState() => _CreateVehiclePageState();
@@ -17,8 +20,26 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
   final _driverNameCtrl = TextEditingController();
   final _driverPhoneCtrl = TextEditingController();
   final _capacityValueCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
   String _capacityUnit = 'bag';
   bool _saving = false;
+
+  bool get _isEditing => widget.vehicle != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final vehicle = widget.vehicle;
+    if (vehicle != null) {
+      _plateCtrl.text = vehicle.plateNumber;
+      _driverNameCtrl.text = vehicle.driverName ?? '';
+      _driverPhoneCtrl.text = vehicle.driverPhone ?? '';
+      _capacityValueCtrl.text =
+          vehicle.capacityValue == null ? '' : _formatNumber(vehicle.capacityValue!);
+      _capacityUnit = vehicle.capacityUnit ?? 'bag';
+      _notesCtrl.text = vehicle.notes ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -26,8 +47,25 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
     _driverNameCtrl.dispose();
     _driverPhoneCtrl.dispose();
     _capacityValueCtrl.dispose();
+    _notesCtrl.dispose();
     super.dispose();
   }
+
+  String _formatNumber(double value) {
+    return value == value.roundToDouble()
+        ? value.toInt().toString()
+        : value.toStringAsFixed(2);
+  }
+
+  Map<String, dynamic> _buildData(String businessId) => {
+        'business_id': businessId,
+        'plate_number': _plateCtrl.text.trim(),
+        'driver_name': _driverNameCtrl.text.trim().isEmpty ? null : _driverNameCtrl.text.trim(),
+        'driver_phone': _driverPhoneCtrl.text.trim().isEmpty ? null : _driverPhoneCtrl.text.trim(),
+        'capacity_value': double.tryParse(_capacityValueCtrl.text.trim()),
+        'capacity_unit': _capacityUnit,
+        'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      };
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -35,24 +73,25 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
     if (businessId == null || businessId.isEmpty) return;
 
     setState(() => _saving = true);
-    final vehicle = await context.read<VehicleProvider>().create({
-      'business_id': businessId,
-      'plate_number': _plateCtrl.text.trim(),
-      'driver_name': _driverNameCtrl.text.trim().isEmpty ? null : _driverNameCtrl.text.trim(),
-      'driver_phone': _driverPhoneCtrl.text.trim().isEmpty ? null : _driverPhoneCtrl.text.trim(),
-      'capacity_value': double.tryParse(_capacityValueCtrl.text.trim()),
-      'capacity_unit': _capacityUnit,
-    });
+    final provider = context.read<VehicleProvider>();
+    final VehicleModel? saved;
+    if (_isEditing) {
+      saved = await provider.update(widget.vehicle!.id, _buildData(businessId));
+    } else {
+      saved = await provider.create(_buildData(businessId));
+    }
     if (!mounted) return;
     setState(() => _saving = false);
-    if (vehicle != null) {
+    if (saved != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vehicle created successfully')),
+        SnackBar(
+          content: Text(_isEditing ? 'Vehicle updated successfully' : 'Vehicle created successfully'),
+        ),
       );
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.read<VehicleProvider>().error ?? 'Failed to create vehicle')),
+        SnackBar(content: Text(provider.error ?? 'Failed to save vehicle')),
       );
     }
   }
@@ -60,7 +99,7 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Vehicle')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Vehicle' : 'Create Vehicle')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -101,6 +140,12 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
                 ],
                 onChanged: (value) => setState(() => _capacityUnit = value ?? 'bag'),
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _notesCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Notes'),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _saving ? null : _submit,
@@ -110,7 +155,7 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Save Vehicle'),
+                    : Text(_isEditing ? 'Save Changes' : 'Save Vehicle'),
               ),
             ],
           ),

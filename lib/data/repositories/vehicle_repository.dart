@@ -31,4 +31,25 @@ class VehicleRepository {
         .single();
     return VehicleModel.fromJson(row);
   }
+
+  Future<VehicleModel> update(String id, Map<String, dynamic> data) async {
+    final row = await _client
+        .from('vehicles')
+        .update({
+          'plate_number': data['plate_number'],
+          'driver_name': data['driver_name'],
+          'driver_phone': data['driver_phone'],
+          'capacity_value': data['capacity_value'],
+          'capacity_unit': data['capacity_unit'],
+          'notes': data['notes'],
+        })
+        .eq('id', id)
+        .select()
+        .single();
+    return VehicleModel.fromJson(row);
+  }
+
+  Future<void> delete(String id) async {
+    await _client.from('vehicles').delete().eq('id', id);
+  }
 }

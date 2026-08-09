@@ -31,4 +31,24 @@ class MarketRepository {
         .single();
     return MarketModel.fromJson(row);
   }
+
+  Future<MarketModel> update(String id, Map<String, dynamic> data) async {
+    final row = await _client
+        .from('markets')
+        .update({
+          'name': data['name'],
+          'city': data['city'],
+          'address': data['address'],
+          'stall_number': data['stall_number'],
+          'market_type': data['market_type'],
+        })
+        .eq('id', id)
+        .select()
+        .single();
+    return MarketModel.fromJson(row);
+  }
+
+  Future<void> delete(String id) async {
+    await _client.from('markets').delete().eq('id', id);
+  }
 }
