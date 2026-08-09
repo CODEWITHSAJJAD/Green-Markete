@@ -14,6 +14,9 @@ class BatchModel {
   final String status;
   final String? transportPaidBy;
   final String? notes;
+  final String? supplierName;
+  final String? purchasePaymentMode;
+  final double purchaseAmountPaid;
   final String? createdAt;
   final String? startDate;
   final String? endDate;
@@ -37,6 +40,9 @@ class BatchModel {
     required this.status,
     this.transportPaidBy,
     this.notes,
+    this.supplierName,
+    this.purchasePaymentMode,
+    this.purchaseAmountPaid = 0,
     this.createdAt,
     this.startDate,
     this.endDate,
@@ -64,6 +70,12 @@ class BatchModel {
       status: json['status'] as String? ?? 'purchased',
       transportPaidBy: json['transport_paid_by'] as String? ?? json['transportPaidBy'] as String?,
       notes: json['notes'] as String?,
+      supplierName: json['supplier_name'] as String? ?? json['supplierName'] as String?,
+      purchasePaymentMode:
+          json['purchase_payment_mode'] as String? ?? json['purchasePaymentMode'] as String?,
+      purchaseAmountPaid: (json['purchase_amount_paid'] as num?)?.toDouble() ??
+          (json['purchaseAmountPaid'] as num?)?.toDouble() ??
+          0,
       createdAt: json['created_at'] as String? ?? json['createdAt'] as String?,
       startDate: json['start_date'] as String? ?? json['startDate'] as String?,
       endDate: json['end_date'] as String? ?? json['endDate'] as String?,
@@ -86,6 +98,9 @@ class BatchCreateRequest {
   final String? transportPaidBy;
   final String? notes;
   final String? batchCode;
+  final String? supplierName;
+  final String? purchasePaymentMode;
+  final double purchaseAmountPaid;
   final List<BatchPartnerCreate>? partners;
   final List<PackingRecordCreate>? packingRecords;
   final List<ExpenseCreate>? expenses;
@@ -102,6 +117,9 @@ class BatchCreateRequest {
     this.transportPaidBy,
     this.notes,
     this.batchCode,
+    this.supplierName,
+    this.purchasePaymentMode,
+    this.purchaseAmountPaid = 0,
     this.partners,
     this.packingRecords,
     this.expenses,
@@ -119,6 +137,10 @@ class BatchCreateRequest {
     'transport_paid_by': transportPaidBy,
     'notes': notes,
     if (batchCode != null && batchCode!.isNotEmpty) 'batch_code': batchCode,
+    if (supplierName != null && supplierName!.isNotEmpty) 'supplier_name': supplierName,
+    if (purchasePaymentMode != null && purchasePaymentMode!.isNotEmpty)
+      'purchase_payment_mode': purchasePaymentMode,
+    'purchase_amount_paid': purchaseAmountPaid,
     'partners': partners?.map((e) => e.toJson()).toList(),
     'packing_records': packingRecords?.map((e) => e.toJson()).toList(),
     'expenses': expenses?.map((e) => e.toJson()).toList(),

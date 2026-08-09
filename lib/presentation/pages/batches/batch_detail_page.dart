@@ -336,6 +336,34 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
                   _metric(theme, 'Transport', batch.transportPaidBy ?? '-'),
                 ],
               ),
+              if (batch.supplierName != null && batch.supplierName!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(MingCuteIcons.mgc_store_line, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Supplier: ${batch.supplierName}',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ],
+              if (batch.purchasePaymentMode != null) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(MingCuteIcons.mgc_wallet_3_line, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _purchasePaymentSummary(batch),
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 18),
               if (batch.status != 'closed')
                 Align(
@@ -929,6 +957,24 @@ class _BatchDetailPageState extends State<BatchDetailPage> with SingleTickerProv
         ],
       ),
     );
+  }
+
+  String _purchasePaymentSummary(BatchModel batch) {
+    final mode = batch.purchasePaymentMode ?? 'cash';
+    final label = switch (mode) {
+      'credit' => 'Purchase on credit',
+      'part_credit' => 'Part cash / part credit',
+      _ => 'Paid in cash',
+    };
+    final remaining = (batch.totalPurchaseCost - batch.purchaseAmountPaid).clamp(0, double.infinity);
+    if (batch.purchaseAmountPaid > 0) {
+      return '$label — paid ${CurrencyFormatter.format(batch.purchaseAmountPaid)}, '
+          'remaining ${CurrencyFormatter.format(remaining)}';
+    }
+    if (mode == 'credit') {
+      return '$label — full ${CurrencyFormatter.format(remaining)} outstanding';
+    }
+    return label;
   }
 
   Widget _metric(ThemeData theme, String label, String value) {

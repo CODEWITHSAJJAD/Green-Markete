@@ -24,6 +24,9 @@ class BatchRepository {
       'total_purchase_cost': request.purchasePricePerUnit * request.totalQuantity,
       'transport_paid_by': request.transportPaidBy,
       'notes': request.notes,
+      'supplier_name': request.supplierName,
+      'purchase_payment_mode': request.purchasePaymentMode,
+      'purchase_amount_paid': request.purchaseAmountPaid,
     };
     Object? lastError;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -38,6 +41,28 @@ class BatchRepository {
             .insert(payload)
             .select()
             .single();
+      } on PostgrestException catch (e) {
+        lastError = e;
+        // Columns added in later builds (supplier/purchase payment) may be
+        // missing on the live DB — retry without them so creation still works.
+        if (e.code == '42703' &&
+            (basePayload['supplier_name'] != null ||
+                basePayload['purchase_payment_mode'] != null ||
+                basePayload['purchase_amount_paid'] != 0)) {
+          final retryPayload = Map<String, dynamic>.from(payload)
+            ..remove('supplier_name')
+            ..remove('purchase_payment_mode')
+            ..remove('purchase_amount_paid');
+          return await _client
+              .from('product_batches')
+              .insert(retryPayload)
+              .select()
+              .single();
+        }
+        final isDuplicateBatchCode = e.toString().contains('product_batches_batch_code') ||
+            e.code == '23505';
+        if (!isDuplicateBatchCode || attempt == maxAttempts) rethrow;
+        await Future<void>.delayed(Duration(milliseconds: 80 * attempt));
       } catch (e) {
         lastError = e;
         final isDuplicateBatchCode = e.toString().contains('product_batches_batch_code') ||

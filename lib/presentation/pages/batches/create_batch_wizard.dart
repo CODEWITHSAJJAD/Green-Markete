@@ -39,8 +39,11 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   DateTime _purchaseDate = DateTime.now();
   final _quantityCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
+  final _supplierCtrl = TextEditingController();
+  final _paidCtrl = TextEditingController();
   String _unit = 'kg';
   String _transportPaidBy = 'purchaser';
+  String _purchasePaymentMode = 'cash';
 
   // Step 2
   List<Map<String, dynamic>> _partners = [];
@@ -72,6 +75,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     _pageCtrl.dispose();
     _quantityCtrl.dispose();
     _priceCtrl.dispose();
+    _supplierCtrl.dispose();
+    _paidCtrl.dispose();
     super.dispose();
   }
 
@@ -129,6 +134,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
     final totalQty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
     final pricePerUnit = double.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final paidAmount = double.tryParse(_paidCtrl.text.trim()) ?? 0;
 
     final payload = BatchCreateRequest(
       businessId: businessId,
@@ -140,6 +146,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       quantityUnit: _unit,
       purchasePricePerUnit: pricePerUnit,
       transportPaidBy: _transportPaidBy,
+      supplierName: _supplierCtrl.text.trim().isEmpty ? null : _supplierCtrl.text.trim(),
+      purchasePaymentMode: _purchasePaymentMode,
+      purchaseAmountPaid: paidAmount,
       partners: [
         ..._partners
             .where((p) => p['partner_id'] != null)
@@ -429,6 +438,50 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           const SizedBox(height: 12),
           Text('Total: ${CurrencyFormatter.format((double.tryParse(_quantityCtrl.text) ?? 0) * (double.tryParse(_priceCtrl.text) ?? 0))}',
               style: theme.textTheme.titleSmall),
+          const SizedBox(height: 16),
+          Text('Supplier', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _supplierCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Supplier name',
+              hintText: 'e.g. Ahmed Brothers, Karachi market',
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Purchase Payment', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: _purchasePaymentMode,
+            decoration: const InputDecoration(labelText: 'Payment mode'),
+            items: const [
+              DropdownMenuItem(value: 'cash', child: Text('Cash', overflow: TextOverflow.ellipsis, maxLines: 1)),
+              DropdownMenuItem(value: 'credit', child: Text('Credit / Debt', overflow: TextOverflow.ellipsis, maxLines: 1)),
+              DropdownMenuItem(value: 'part_credit', child: Text('Part cash / part credit', overflow: TextOverflow.ellipsis, maxLines: 1)),
+            ],
+            onChanged: (v) => setState(() => _purchasePaymentMode = v ?? 'cash'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _paidCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Amount paid now'),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 8),
+          Builder(builder: (context) {
+            final purchaseTotal =
+                (double.tryParse(_quantityCtrl.text) ?? 0) * (double.tryParse(_priceCtrl.text) ?? 0);
+            final paid = double.tryParse(_paidCtrl.text) ?? 0;
+            final remaining = (purchaseTotal - paid).clamp(0, double.infinity);
+            return Text(
+              'Remaining payable: ${CurrencyFormatter.format(remaining)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: remaining > 0 ? theme.colorScheme.error : theme.colorScheme.primary,
+              ),
+            );
+          }),
           const SizedBox(height: 16),
           Text('Transport Paid By', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -727,6 +780,17 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 const SizedBox(height: 12),
                 _summaryRow('Product', _productName ?? '-'),
                 _summaryRow('Quantity', '$qty $_unit'),
+                _summaryRow('Supplier', _supplierCtrl.text.trim().isEmpty ? '-' : _supplierCtrl.text.trim()),
+                _summaryRow(
+                  'Purchase payment',
+                  _purchasePaymentMode == 'cash'
+                      ? 'Cash'
+                      : _purchasePaymentMode == 'credit'
+                          ? 'Credit'
+                          : 'Part cash / credit',
+                ),
+                if ((double.tryParse(_paidCtrl.text) ?? 0) > 0)
+                  _summaryRow('Paid now', CurrencyFormatter.format(double.tryParse(_paidCtrl.text) ?? 0)),
                 _summaryRow('Purchase cost', CurrencyFormatter.format(purchaseCost)),
                 _summaryRow('Partners', '${_partners.length}'),
                 _summaryRow('Daily charges', CurrencyFormatter.format(dailyCharges)),
