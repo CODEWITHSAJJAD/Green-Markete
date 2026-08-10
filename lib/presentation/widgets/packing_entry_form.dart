@@ -26,7 +26,9 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
   void initState() {
     super.initState();
     _entries = widget.entries.isEmpty ? [_empty()] : List.from(widget.entries);
-    _emit();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _emit();
+    });
   }
 
   Map<String, dynamic> _empty() => {
