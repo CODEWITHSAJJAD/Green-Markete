@@ -11,7 +11,7 @@ class PackingEntryForm extends StatefulWidget {
   const PackingEntryForm({
     super.key,
     required this.entries,
-    this.totalKg,
+    required this.totalKg,
     required this.onChanged,
   });
 
@@ -26,9 +26,6 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
   void initState() {
     super.initState();
     _entries = widget.entries.isEmpty ? [_empty()] : List.from(widget.entries);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _emit();
-    });
   }
 
   Map<String, dynamic> _empty() => {
@@ -132,119 +129,19 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
           const SizedBox(height: 16),
         ],
         for (var i = 0; i < _entries.length; i++)
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.12),
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField2<String>(
-                        isExpanded: true,
-                        valueListenable: ValueNotifier(
-                          _entries[i]['unit_type'] as String,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: 'Packing type',
-                        ),
-                        items: [
-                          for (final t in packingTypes)
-                            DropdownItem(
-                              value: t.key,
-                              child: Text(
-                                t.label,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                        ],
-                        onChanged: (v) {
-                          setState(() {
-                            _entries[i]['unit_type'] = v ?? 'bag_5';
-                            _entries[i]['unit_label'] =
-                                packingTypeByKey(v ?? 'bag_5').label;
-                          });
-                          _emit();
-                        },
-                      ),
-                    ),
-                    if (_entries.length > 1)
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () {
-                          setState(() => _entries.removeAt(i));
-                          _emit();
-                        },
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  initialValue: _entries[i]['unit_label']?.toString(),
-                  decoration: const InputDecoration(
-                    labelText: 'Unit label (optional)',
-                  ),
-                  onChanged: (v) {
-                    _entries[i]['unit_label'] = v.isEmpty ? null : v;
-                    _emit();
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        initialValue: _entries[i]['unit_count'].toString(),
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Count'),
-                        onChanged: (v) {
-                          _entries[i]['unit_count'] = int.tryParse(v) ?? 0;
-                          _emit();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        initialValue: _entries[i]['cost_per_unit'].toString(),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: 'Cost per unit',
-                        ),
-                        onChanged: (v) {
-                          _entries[i]['cost_per_unit'] =
-                              double.tryParse(v) ?? 0.0;
-                          _emit();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                if ((_entries[i]['unit_count'] as int) > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        _entrySummary(i),
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          _PackingEntryCard(
+            key: ValueKey('pack-$i'),
+            index: i,
+            entry: _entries[i],
+            deletable: _entries.length > 1,
+            onChanged: (next) {
+              _entries[i] = next;
+              _emit();
+            },
+            onDelete: () {
+              setState(() => _entries.removeAt(i));
+              _emit();
+            },
           ),
         Align(
           alignment: Alignment.centerLeft,
@@ -261,32 +158,207 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
     );
   }
 
-  String _entrySummary(int i) {
-    final count = (_entries[i]['unit_count'] as num?)?.toDouble() ?? 0;
-    final cost = (_entries[i]['cost_per_unit'] as num?)?.toDouble() ?? 0;
-    final size = _sizeKg(_entries[i]['unit_type'] as String);
+  Widget _summaryRow(String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: theme.textTheme.bodyMedium),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PackingEntryCard extends StatefulWidget {
+  final int index;
+  final Map<String, dynamic> entry;
+  final bool deletable;
+  final ValueChanged<Map<String, dynamic>> onChanged;
+  final VoidCallback onDelete;
+
+  const _PackingEntryCard({
+    super.key,
+    required this.index,
+    required this.entry,
+    required this.deletable,
+    required this.onChanged,
+    required this.onDelete,
+  });
+
+  @override
+  State<_PackingEntryCard> createState() => _PackingEntryCardState();
+}
+
+class _PackingEntryCardState extends State<_PackingEntryCard> {
+  late String _unitType;
+  late final ValueNotifier<String> _unitTypeNotifier;
+  late final TextEditingController _labelCtrl;
+  late final TextEditingController _countCtrl;
+  late final TextEditingController _costCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.entry;
+    _unitType = (e['unit_type'] as String?) ?? 'bag_5';
+    _unitTypeNotifier = ValueNotifier(_unitType);
+    _labelCtrl = TextEditingController(text: e['unit_label']?.toString() ?? '');
+    _countCtrl = TextEditingController(text: (e['unit_count'] as num?)?.toString() ?? '0');
+    _costCtrl = TextEditingController(text: (e['cost_per_unit'] as num?)?.toString() ?? '0');
+  }
+
+  @override
+  void dispose() {
+    _unitTypeNotifier.dispose();
+    _labelCtrl.dispose();
+    _countCtrl.dispose();
+    _costCtrl.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _buildPayload() {
+    final size = packingTypeByKey(_unitType).kgCapacity;
+    final count = int.tryParse(_countCtrl.text) ?? 0;
+    final cost = double.tryParse(_costCtrl.text) ?? 0.0;
+    return {
+      'unit_type': _unitType,
+      'unit_label': _labelCtrl.text.isEmpty ? null : _labelCtrl.text,
+      'unit_count': count,
+      'cost_per_unit': cost,
+      'packed_kg': size * count,
+      'subtotal': cost * count,
+    };
+  }
+
+  void _emit() => widget.onChanged({...widget.entry, ..._buildPayload()});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final count = int.tryParse(_countCtrl.text) ?? 0;
+    final cost = double.tryParse(_costCtrl.text) ?? 0.0;
+    final size = packingTypeByKey(_unitType).kgCapacity;
     final weight = size * count;
     final subtotal = cost * count;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField2<String>(
+                  isExpanded: true,
+                  valueListenable: _unitTypeNotifier,
+                  decoration: const InputDecoration(
+                    labelText: 'Packing type',
+                  ),
+                  items: [
+                    for (final t in packingTypes)
+                      DropdownItem(
+                        value: t.key,
+                        child: Text(
+                          t.label,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    _unitType = v;
+                    _unitTypeNotifier.value = v;
+                    _emit();
+                  },
+                ),
+              ),
+              if (widget.deletable)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: widget.onDelete,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _labelCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Unit label (optional)',
+            ),
+            onChanged: (_) => _emit(),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _countCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Count'),
+                  onChanged: (_) {
+                    setState(() {});
+                    _emit();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _costCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Cost per unit',
+                  ),
+                  onChanged: (_) {
+                    setState(() {});
+                    _emit();
+                  },
+                ),
+              ),
+            ],
+          ),
+          if (count > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  _summary(weight, subtotal),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _summary(double weight, double subtotal) {
     final parts = <String>[];
     if (weight > 0) parts.add('${weight.toStringAsFixed(1)} kg');
     if (subtotal > 0) parts.add('PKR ${subtotal.toStringAsFixed(0)}');
     return parts.join(' · ');
   }
-
-  Widget _summaryRow(String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        Text(
-          value,
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
-        ),
-      ],
-    ),
-  );
 }

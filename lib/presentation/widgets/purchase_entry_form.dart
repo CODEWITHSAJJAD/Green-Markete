@@ -29,9 +29,6 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
   void initState() {
     super.initState();
     _entries = widget.entries.isEmpty ? [_empty()] : List.from(widget.entries);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _emit();
-    });
   }
 
   Map<String, dynamic> _empty() => {
