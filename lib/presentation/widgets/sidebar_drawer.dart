@@ -6,6 +6,7 @@ import '../pages/partners/partner_list_page.dart';
 import '../pages/products/product_list_page.dart';
 import '../pages/reports/reports_page.dart';
 import '../pages/settings/settings_page.dart';
+import '../pages/suppliers/supplier_settlement_page.dart';
 import '../pages/transactions/transaction_list_page.dart';
 import '../pages/vehicles/vehicle_list_page.dart';
 
@@ -94,6 +95,12 @@ class SidebarDrawer extends StatelessWidget {
                     activeIcon: MingCuteIcons.mgc_truck_fill,
                     label: 'Vehicles',
                     onTap: () => onOpenPage(const VehicleListPage()),
+                  ),
+                  _NavTile(
+                    icon: MingCuteIcons.mgc_store_2_line,
+                    activeIcon: MingCuteIcons.mgc_store_2_fill,
+                    label: 'Supplier Settlements',
+                    onTap: () => onOpenPage(const SupplierSettlementPage()),
                   ),
                   const SizedBox(height: 8),
                   const _SectionHeader('Insights'),

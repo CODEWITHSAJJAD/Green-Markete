@@ -7,6 +7,27 @@ import '../models/batch_vehicle_model.dart';
 import '../models/packing_record_model.dart';
 import '../models/packing_return_model.dart';
 import '../models/report_model.dart';
+import '../models/supplier_payment_model.dart';
+
+class _SupplierAgg {
+  final String name;
+  double totalDue = 0;
+  double totalPaidAtPurchase = 0;
+  double totalPaidAfter = 0;
+
+  _SupplierAgg({
+    required this.name,
+    this.totalDue = 0,
+    this.totalPaidAtPurchase = 0,
+    this.totalPaidAfter = 0,
+  });
+
+  void merge(_SupplierAgg other) {
+    totalDue += other.totalDue;
+    totalPaidAtPurchase += other.totalPaidAtPurchase;
+    totalPaidAfter += other.totalPaidAfter;
+  }
+}
 
 class BatchRepository {
   SupabaseClient get _client => SupabaseService.instance.client;
@@ -312,6 +333,200 @@ class BatchRepository {
       return BatchPLDetailModel.fromJson({...data, 'batch_id': id});
     }
     return BatchPLDetailModel(batchId: id);
+  }
+
+  /// Per-supplier outstanding balance, computed from `batch_purchases`
+  /// (due = quantity × price_per_unit, amount_paid already paid at purchase)
+  /// minus subsequent `supplier_payments` for the same supplier name. Defensive
+  /// on tables that may not exist live.
+  Future<List<SupplierOutstanding>> getSupplierOutstanding(
+    String businessId,
+  ) async {
+    final purchaseRows = await _safeSelect(
+      table: 'batch_purchases',
+      select:
+          'supplier_name, quantity, price_per_unit, amount_paid, product_batches!inner(business_id, purchase_date, batch_code)',
+      filter: (q) => q.eq('product_batches.business_id', businessId),
+    );
+    final paymentRows = await _safeSelect(
+      table: 'supplier_payments',
+      select: 'supplier_name, amount',
+      filter: (q) => q.eq('business_id', businessId),
+    );
+
+    final byName = <String, _SupplierAgg>{};
+    void bump(String name, _SupplierAgg agg) {
+      final key = name.trim();
+      if (key.isEmpty) return;
+      byName.putIfAbsent(key, () => _SupplierAgg(name: key));
+      byName[key]!.merge(agg);
+    }
+
+    for (final r in purchaseRows) {
+      final name = r['supplier_name'] as String? ?? '';
+      if (name.trim().isEmpty) continue;
+      final qty = (r['quantity'] as num?)?.toDouble() ?? 0;
+      final price = (r['price_per_unit'] as num?)?.toDouble() ?? 0;
+      final paid = (r['amount_paid'] as num?)?.toDouble() ?? 0;
+      bump(name, _SupplierAgg(
+        name: name,  // ✅ Add this required parameter
+        totalDue: qty * price,
+        totalPaidAtPurchase: paid,
+      ));
+
+    }
+    for (final r in paymentRows) {
+      final name = r['supplier_name'] as String? ?? '';
+      if (name.trim().isEmpty) continue;
+      bump(name, _SupplierAgg(
+        name: name,  // ✅ Add this required parameter
+        totalPaidAfter: (r['amount'] as num?)?.toDouble() ?? 0,
+      ));
+    }
+
+    final result = byName.values
+        .map(
+          (a) => SupplierOutstanding(
+            supplierName: a.name,
+            totalDue: a.totalDue,
+            totalPaidAtPurchase: a.totalPaidAtPurchase,
+            totalPaidAfter: a.totalPaidAfter,
+            outstanding:
+                (a.totalDue - a.totalPaidAtPurchase - a.totalPaidAfter)
+                    .clamp(0, double.infinity),
+          ),
+        )
+        .toList()
+      ..sort((x, y) {
+        final byO = y.outstanding.compareTo(x.outstanding);
+        if (byO != 0) return byO;
+        return x.supplierName.compareTo(y.supplierName);
+      });
+    return result;
+  }
+
+  /// Ledger entries (purchases + payments) for one supplier, with running
+  /// balance. Mirrors customer credit ledger UX. Defensive on missing tables.
+  Future<List<SupplierLedgerEntry>> getSupplierLedger(
+    String businessId,
+    String supplierName,
+  ) async {
+    final key = supplierName.trim();
+    final purchaseRows = await _safeSelect(
+      table: 'batch_purchases',
+      select:
+          'quantity, price_per_unit, amount_paid, unit_label, unit_kg, supplier_name, product_batches!inner(business_id, batch_code, purchase_date)',
+      filter: (q) => q
+          .eq('product_batches.business_id', businessId)
+          .ilike('supplier_name', key),
+    );
+    final paymentRows = await _safeSelect(
+      table: 'supplier_payments',
+      select:
+          'amount, payment_mode, bank_reference, payment_date, notes',
+      filter: (q) =>
+          q.eq('business_id', businessId).ilike('supplier_name', key),
+    );
+
+    final entries = <({DateTime sortKey, SupplierLedgerEntry entry})>[];
+    for (final p in purchaseRows) {
+      final qty = (p['quantity'] as num?)?.toDouble() ?? 0;
+      final price = (p['price_per_unit'] as num?)?.toDouble() ?? 0;
+      final due = qty * price;
+      if (due <= 0) continue;
+      final batch = p['product_batches'];
+      final batchCode = batch is Map<String, dynamic>
+          ? batch['batch_code'] as String?
+          : null;
+      final purchaseDate = batch is Map<String, dynamic>
+          ? batch['purchase_date'] as String? ?? ''
+          : '';
+      final unitLabel = (p['unit_label'] as String?) ?? '';
+      final unitKg = (p['unit_kg'] as num?)?.toDouble();
+      final qtyLabel = unitLabel.isNotEmpty
+          ? '$qty × $unitLabel'
+          : qty.toStringAsFixed(1);
+      entries.add((
+        sortKey:
+            DateTime.tryParse(purchaseDate) ?? DateTime(2000),
+        entry: SupplierLedgerEntry(
+          date: purchaseDate,
+          description: unitKg != null && unitLabel.isNotEmpty
+              ? 'Purchase${batchCode != null ? ' — $batchCode' : ''} ($qtyLabel @ ${unitKg}kg)'
+              : 'Purchase${batchCode != null ? ' — $batchCode' : ''}',
+          amount: due,
+          runningBalance: 0,
+          type: 'purchase',
+        ),
+      ));
+    }
+    for (final p in paymentRows) {
+      final amt = (p['amount'] as num?)?.toDouble() ?? 0;
+      if (amt <= 0) continue;
+      final date = p['payment_date'] as String? ?? '';
+      final mode = (p['payment_mode'] as String?) ?? 'cash';
+      final ref = (p['bank_reference'] as String?);
+      entries.add((
+        sortKey: DateTime.tryParse(date) ?? DateTime(2000),
+        entry: SupplierLedgerEntry(
+          date: date,
+          description: ref != null && ref.isNotEmpty
+              ? 'Payment ($mode · $ref)'
+              : 'Payment ($mode)',
+          amount: amt,
+          runningBalance: 0,
+          type: 'payment',
+        ),
+      ));
+    }
+
+    entries.sort((a, b) => a.sortKey.compareTo(b.sortKey));
+    var running = 0.0;
+    return entries.map((e) {
+      final entry = e.entry;
+      running += entry.type == 'purchase' ? entry.amount : -entry.amount;
+      return SupplierLedgerEntry(
+        date: entry.date,
+        description: entry.description,
+        amount: entry.amount,
+        runningBalance: running,
+        type: entry.type,
+      );
+    }).toList();
+  }
+
+  Future<SupplierPaymentModel> recordSupplierPayment(
+    SupplierPaymentCreateRequest request,
+  ) async {
+    final row = await _client
+        .from('supplier_payments')
+        .insert(request.toJson())
+        .select()
+        .single();
+    return SupplierPaymentModel.fromJson(row);
+  }
+
+  Future<List<Map<String, dynamic>>> _safeSelect({
+    required String table,
+    required String select,
+    required dynamic Function(dynamic) filter,
+  }) async {
+    try {
+      var query = _client.from(table).select(select);
+      query = filter(query);
+      final result = await query;
+      return List<Map<String, dynamic>>.from(result as List);
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST205' ||
+          e.code == '42P01' ||
+          e.code == '42703') {
+        debugPrint(
+          '$table not available for supplier settlement (${e.code}); skipping',
+        );
+        return const [];
+      }
+      rethrow;
+    }
   }
 
   Map<String, dynamic> _withProductName(Map<String, dynamic> row) {

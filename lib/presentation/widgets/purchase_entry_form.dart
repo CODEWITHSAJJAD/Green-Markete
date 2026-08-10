@@ -23,15 +23,19 @@ class PurchaseEntryForm extends StatefulWidget {
 
 class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
   late List<Map<String, dynamic>> _entries;
+  int _uidSeq = 0;
 
   @override
   void initState() {
     super.initState();
     _entries = widget.entries.isEmpty ? [_empty()] : List.from(widget.entries);
-    _emit();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _emit();
+    });
   }
 
   Map<String, dynamic> _empty() => {
+    'uid': _uidSeq++,
     'supplierName': '',
     'marketId': null,
     'unitKey': 'kg',
@@ -73,7 +77,7 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
       children: [
         for (var i = 0; i < _entries.length; i++)
           _EntryCard(
-            key: ObjectKey(_entries[i]),
+            key: ObjectKey(_entries[i]['uid'] ?? i),
             index: i,
             entry: _entries[i],
             markets: widget.markets,
@@ -229,6 +233,7 @@ class _EntryCardState extends State<_EntryCard> {
     final qty = double.tryParse(_qtyCtrl.text) ?? 0;
     final price = double.tryParse(_priceCtrl.text) ?? 0;
     return {
+      'uid': widget.entry['uid'] ?? 0,
       'supplierName': _supplierCtrl.text.trim(),
       'marketId': _marketId,
       'unitKey': unitKey,
@@ -282,19 +287,22 @@ class _EntryCardState extends State<_EntryCard> {
                 child: Text('Supplier ${widget.index + 1}',
                     style: theme.textTheme.titleSmall),
               ),
-              DropdownButtonFormField2<int>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_batchGroup),
-                decoration: const InputDecoration(
-                  labelText: 'Batch',
-                  isDense: true,
+              SizedBox(
+                width: 110,
+                child: DropdownButtonFormField2<int>(
+                  isExpanded: true,
+                  valueListenable: ValueNotifier(_batchGroup),
+                  decoration: const InputDecoration(
+                    labelText: 'Batch',
+                    isDense: true,
+                  ),
+                  items: [
+                    for (var g = 1; g <= 6; g++)
+                      DropdownItem(value: g, child: Text('Batch $g')),
+                  ],
+                  onChanged: (v) =>
+                      _update(() => _batchGroup = v ?? 1),
                 ),
-                items: [
-                  for (var g = 1; g <= 6; g++)
-                    DropdownItem(value: g, child: Text('Batch $g')),
-                ],
-                onChanged: (v) =>
-                    _update(() => _batchGroup = v ?? 1),
               ),
               if (widget.deletable)
                 IconButton(

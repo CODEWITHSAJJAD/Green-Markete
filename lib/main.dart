@@ -23,6 +23,7 @@ import 'presentation/providers/market_provider.dart';
 import 'presentation/providers/partner_provider.dart';
 import 'presentation/providers/product_provider.dart';
 import 'presentation/providers/report_provider.dart';
+import 'presentation/providers/supplier_provider.dart';
 import 'presentation/providers/transaction_provider.dart';
 import 'presentation/providers/vehicle_provider.dart';
 import 'data/repositories/auth_repository.dart';
@@ -63,6 +64,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ReportProvider(ReportRepository())),
         ChangeNotifierProvider(create: (_) => TransactionProvider(TransactionRepository())),
         ChangeNotifierProvider(create: (_) => VehicleProvider(VehicleRepository())),
+        ChangeNotifierProvider(create: (_) => SupplierProvider(BatchRepository())),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: const _AuthStateBootstrap(child: GreenMarketApp()),
