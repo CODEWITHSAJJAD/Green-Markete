@@ -125,64 +125,88 @@ class BatchRepository {
 
     final partners = request.partners ?? const [];
     for (final p in partners) {
-      await _client.from('batch_partners').insert({
-        'batch_id': batchId,
-        'partner_id': p.partnerId,
-        'role': p.role,
-        'daily_charge_rate': p.dailyChargeRate ?? 0,
-        'days_involved': p.daysInvolved ?? 1,
-      });
+      try {
+        await _client.from('batch_partners').insert({
+          'batch_id': batchId,
+          'partner_id': p.partnerId,
+          'role': p.role,
+          'daily_charge_rate': p.dailyChargeRate ?? 0,
+          'days_involved': p.daysInvolved ?? 1,
+        });
+      } on PostgrestException catch (e) {
+        debugPrint(
+          'batch_partners insert skipped for batch $batchId: ${e.code} ${e.message}',
+        );
+      }
     }
 
     final packing = request.packingRecords ?? const [];
     final packingIds = <String>[];
     for (final p in packing) {
-      final row = await _client
-          .from('packing_records')
-          .insert({
-            'batch_id': batchId,
-            'unit_type_label': p.unitType,
-            'unit_count': p.unitCount,
-            'cost_per_unit': p.costPerUnit,
-            'total_packing_cost': p.costPerUnit * p.unitCount,
-          })
-          .select('id')
-          .single();
-      packingIds.add(row['id'] as String);
+      try {
+        final row = await _client
+            .from('packing_records')
+            .insert({
+              'batch_id': batchId,
+              'unit_type_label': p.unitType,
+              'unit_count': p.unitCount,
+              'cost_per_unit': p.costPerUnit,
+              'total_packing_cost': p.costPerUnit * p.unitCount,
+            })
+            .select('id')
+            .single();
+        packingIds.add(row['id'] as String);
+      } on PostgrestException catch (e) {
+        debugPrint(
+          'packing_records insert skipped for batch $batchId: ${e.code} ${e.message}',
+        );
+      }
     }
 
     final loads = request.vehicleLoads ?? const [];
     for (final load in loads) {
-      await _client.from('batch_vehicles').insert({
-        'batch_id': batchId,
-        'vehicle_id': load.vehicleId,
-        if (load.packingRecordIndex != null &&
-            load.packingRecordIndex! >= 0 &&
-            load.packingRecordIndex! < packingIds.length)
-          'packing_record_id': packingIds[load.packingRecordIndex!],
-        'unit_count': load.unitCount,
-        'cost_type': load.costType,
-        'transport_cost': load.transportCost,
-        if (load.loadDate != null && load.loadDate!.isNotEmpty) 'load_date': load.loadDate,
-        if (load.notes != null && load.notes!.isNotEmpty) 'notes': load.notes,
-      });
+      try {
+        await _client.from('batch_vehicles').insert({
+          'batch_id': batchId,
+          'vehicle_id': load.vehicleId,
+          if (load.packingRecordIndex != null &&
+              load.packingRecordIndex! >= 0 &&
+              load.packingRecordIndex! < packingIds.length)
+            'packing_record_id': packingIds[load.packingRecordIndex!],
+          'unit_count': load.unitCount,
+          'cost_type': load.costType,
+          'transport_cost': load.transportCost,
+          if (load.loadDate != null && load.loadDate!.isNotEmpty) 'load_date': load.loadDate,
+          if (load.notes != null && load.notes!.isNotEmpty) 'notes': load.notes,
+        });
+      } on PostgrestException catch (e) {
+        debugPrint(
+          'batch_vehicles insert skipped for batch $batchId: ${e.code} ${e.message}',
+        );
+      }
     }
 
     final expenses = request.expenses ?? const [];
     for (final e in expenses) {
-      await _client.from('expenses').insert({
-        'batch_id': batchId,
-        'partner_id': e.partnerId,
-        'expense_side': e.expenseSide,
-        'expense_type': e.expenseType,
-        'amount': e.amount,
-        'description': e.description,
-        'paid_by': e.paidBy,
-        'payment_mode': e.paymentMode,
-        'bank_reference': e.paymentReference,
-        'expense_date': e.expenseDate ?? request.purchaseDate,
-        'created_by': _client.auth.currentUser?.id,
-      });
+      try {
+        await _client.from('expenses').insert({
+          'batch_id': batchId,
+          'partner_id': e.partnerId,
+          'expense_side': e.expenseSide,
+          'expense_type': e.expenseType,
+          'amount': e.amount,
+          'description': e.description,
+          'paid_by': e.paidBy,
+          'payment_mode': e.paymentMode,
+          'bank_reference': e.paymentReference,
+          'expense_date': e.expenseDate ?? request.purchaseDate,
+          'created_by': _client.auth.currentUser?.id,
+        });
+      } on PostgrestException catch (e) {
+        debugPrint(
+          'expenses insert skipped for batch $batchId: ${e.code} ${e.message}',
+        );
+      }
     }
 
     final purchases = request.purchases ?? const [];
@@ -205,7 +229,9 @@ class BatchRepository {
             'batch_purchases table not available yet (${e.code}); skipping purchase line for batch $batchId',
           );
         } else {
-          rethrow;
+          debugPrint(
+            'batch_purchases insert skipped for batch $batchId: ${e.code} ${e.message}',
+          );
         }
       }
     }

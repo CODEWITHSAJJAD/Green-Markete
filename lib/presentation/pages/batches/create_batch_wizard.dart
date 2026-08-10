@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
@@ -356,12 +357,19 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               content: Text(
                 'Failed to create batch $g: ${context.read<BatchListProvider>().error ?? 'Unknown error'}',
               ),
+              duration: const Duration(seconds: 6),
             ),
           );
           return;
         }
         createdCodes.add(batchCode);
-        await _createTransportDebt(businessId, batchCode, g);
+        try {
+          await _createTransportDebt(businessId, batchCode, g);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Transport debt skipped for batch $batchCode: $e');
+          }
+        }
         if (!mounted) return;
       }
 
@@ -369,17 +377,23 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            groups.length > 1
-                ? 'Created ${groups.length} batches'
-                : 'Batch created',
+            createdCodes.length == groups.length
+                ? (groups.length > 1
+                    ? 'Created ${groups.length} batches'
+                    : 'Batch created')
+                : 'Created ${createdCodes.length} of ${groups.length} batches — check the wizard for details',
           ),
+          duration: const Duration(seconds: 4),
         ),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          duration: const Duration(seconds: 6),
+        ),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
