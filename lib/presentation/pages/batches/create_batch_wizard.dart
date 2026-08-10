@@ -21,6 +21,7 @@ import '../../providers/transaction_provider.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../widgets/partner_selector.dart';
 import '../../widgets/packing_entry_form.dart';
+import '../../widgets/purchase_entry_form.dart';
 import '../../../data/models/vehicle_model.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
@@ -41,26 +42,23 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   String? _sourceMarketId;
   String? _destinationMarketId;
   DateTime _purchaseDate = DateTime.now();
-  final _quantityCtrl = TextEditingController();
-  final _priceCtrl = TextEditingController();
-  final _supplierCtrl = TextEditingController();
-  final _paidCtrl = TextEditingController();
-  String _unit = 'kg';
+  List<Map<String, dynamic>> _purchases = [];
   String _transportPaidBy = 'purchaser';
-  String _purchasePaymentMode = 'cash';
 
   // Step 2
-  List<Map<String, dynamic>> _partners = [];
-  String? _sellerId;
+  final Map<int, List<Map<String, dynamic>>> _partnersByGroup = {};
+  final Map<int, String?> _sellerByGroup = {};
 
   // Step 3
-  List<Map<String, dynamic>> _packing = [];
+  final Map<int, List<Map<String, dynamic>>> _packingByGroup = {};
 
   // Step 4
-  final List<Map<String, dynamic>> _expenses = [];
+  final Map<int, List<Map<String, dynamic>>> _expensesByGroup = {};
 
   // Step 5
-  final List<Map<String, dynamic>> _vehicleLoads = [];
+  final Map<int, List<Map<String, dynamic>>> _loadsByGroup = {};
+
+  int _activeGroup = 1;
 
   @override
   void initState() {
@@ -81,10 +79,6 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   @override
   void dispose() {
     _pageCtrl.dispose();
-    _quantityCtrl.dispose();
-    _priceCtrl.dispose();
-    _supplierCtrl.dispose();
-    _paidCtrl.dispose();
     super.dispose();
   }
 
@@ -117,12 +111,22 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       case 0:
         return _productId != null &&
             _sourceMarketId != null &&
-            _quantityCtrl.text.trim().isNotEmpty &&
-            _priceCtrl.text.trim().isNotEmpty;
+            _purchases.isNotEmpty &&
+            _purchases.every((p) =>
+                (p['supplierName'] as String? ?? '').trim().isNotEmpty &&
+                ((p['quantity'] as num?)?.toDouble() ?? 0) > 0 &&
+                ((p['pricePerUnit'] as num?)?.toDouble() ?? 0) > 0);
       case 1:
-        return _partners.isNotEmpty &&
-            _partners.first['partner_id'] != null &&
-            _sellerId != null;
+        final usedGroups = [
+          for (var g = 1; g <= _groupCount; g++)
+            if (_purchasesFor(g).isNotEmpty) g,
+        ];
+        return usedGroups.every(
+          (g) =>
+              _partnersFor(g).isNotEmpty &&
+              _partnersFor(g).first['partner_id'] != null &&
+              _sellerFor(g) != null,
+        );
       case 2:
         return true;
       case 3:
@@ -150,115 +154,228 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     return 'GM-$year-$suffix';
   }
 
+  int get _groupCount {
+    var max = 1;
+    for (final p in _purchases) {
+      final g = (p['batchGroup'] as int?) ?? 1;
+      if (g > max) max = g;
+    }
+    return max;
+  }
+
+  List<Map<String, dynamic>> _purchasesFor(int g) => _purchases
+      .where((p) => ((p['batchGroup'] as int?) ?? 1) == g)
+      .toList();
+
+  double _groupQuantityKg(int g) => _purchasesFor(g).fold<double>(
+      0, (acc, p) => acc + (((p['kgTotal'] as num?)?.toDouble() ?? 0)));
+
+  double _groupPurchaseCost(int g) => _purchasesFor(g).fold<double>(
+      0, (acc, p) => acc + (((p['lineCost'] as num?)?.toDouble() ?? 0)));
+
+  double _groupPaidAmount(int g) => _purchasesFor(g).fold<double>(
+      0, (acc, p) => acc + (((p['amountPaid'] as num?)?.toDouble() ?? 0)));
+
+  List<String> _groupSuppliers(int g) => _purchasesFor(g)
+      .map((p) => (p['supplierName'] as String? ?? '').trim())
+      .where((s) => s.isNotEmpty)
+      .toSet()
+      .toList();
+
+  String _groupPaymentMode(int g) {
+    final modes = _purchasesFor(g)
+        .map((p) => (p['paymentMode'] as String? ?? 'cash'))
+        .where((m) => m.isNotEmpty)
+        .toSet()
+        .toList();
+    if (modes.length == 1) return modes.first;
+    return modes.isEmpty ? 'cash' : 'part_credit';
+  }
+
+  List<Map<String, dynamic>> _partnersFor(int g) =>
+      _partnersByGroup[g] ?? const [];
+
+  String? _sellerFor(int g) => _sellerByGroup[g];
+
+  List<Map<String, dynamic>> _packingFor(int g) =>
+      _packingByGroup[g] ?? const [];
+
+  List<Map<String, dynamic>> _expensesFor(int g) =>
+      _expensesByGroup[g] ?? const [];
+
+  List<Map<String, dynamic>> _loadsFor(int g) => _loadsByGroup[g] ?? const [];
+
+  double _groupPackingCost(int g) => _packingFor(g).fold<double>(0, (acc, p) {
+    final count = (p['unit_count'] as int?) ?? 0;
+    final cost = (p['cost_per_unit'] as num?)?.toDouble() ?? 0;
+    return acc + count * cost;
+  });
+
+  double _groupExpenseCost(int g) => _expensesFor(g).fold<double>(
+      0, (acc, e) => acc + ((e['amount'] as num?)?.toDouble() ?? 0));
+
+  double _groupDailyCharges(int g) => _partnersFor(g).fold<double>(0, (acc, p) {
+    final rate = (p['daily_charge_rate'] as num?)?.toDouble() ?? 0;
+    final days = (p['days_involved'] as int?) ?? 1;
+    return acc + rate * days;
+  });
+
+  double _groupLoadCost(int g) =>
+      _loadsFor(g).fold<double>(0, (acc, v) => acc + _loadTotal(v));
+
   Future<void> _submit() async {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId == null || businessId.isEmpty) return;
 
-    final totalQty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
-    final pricePerUnit = double.tryParse(_priceCtrl.text.trim()) ?? 0;
-    final paidAmount = double.tryParse(_paidCtrl.text.trim()) ?? 0;
-
-    final payload = BatchCreateRequest(
-      businessId: businessId,
-      productId: _productId!,
-      sourceMarketId: _sourceMarketId,
-      destinationMarketId: _destinationMarketId,
-      batchCode: _generateBatchCode(),
-      purchaseDate: _purchaseDate.toIso8601String().split('T').first,
-      totalQuantity: totalQty,
-      quantityUnit: _unit,
-      purchasePricePerUnit: pricePerUnit,
-      transportPaidBy: _transportPaidBy,
-      supplierName: _supplierCtrl.text.trim().isEmpty
-          ? null
-          : _supplierCtrl.text.trim(),
-      purchasePaymentMode: _purchasePaymentMode,
-      purchaseAmountPaid: paidAmount,
-      partners: [
-        ..._partners
-            .where((p) => p['partner_id'] != null)
-            .map(
-              (p) => BatchPartnerCreate(
-                partnerId: p['partner_id'] as String,
-                role: p['role'] as String,
-                dailyChargeRate:
-                    (p['daily_charge_rate'] as num?)?.toDouble() ?? 0,
-                daysInvolved: (p['days_involved'] as int?) ?? 1,
-              ),
-            ),
-        if (_sellerId != null)
-          BatchPartnerCreate(
-            partnerId: _sellerId!,
-            role: 'seller',
-            dailyChargeRate: 0,
-            daysInvolved: 1,
-          ),
-      ],
-      packingRecords: _packing
-          .where((p) => (p['unit_count'] as int) > 0)
-          .map(
-            (p) => PackingRecordCreate(
-              unitType: p['unit_type'] as String,
-              unitLabel: p['unit_label'] as String?,
-              unitCount: p['unit_count'] as int,
-              costPerUnit: (p['cost_per_unit'] as num).toDouble(),
-            ),
-          )
-          .toList(),
-      expenses: _expenses
-          .where((e) => (e['amount'] as double) > 0)
-          .map(
-            (e) => ExpenseCreate(
-              partnerId: e['partner_id'] as String?,
-              expenseSide: e['expense_side'] as String,
-              expenseType: e['expense_type'] as String,
-              amount: (e['amount'] as num).toDouble(),
-              description: e['description'] as String?,
-              paidBy: e['paid_by'] as String?,
-              paymentMode: e['payment_mode'] as String?,
-              paymentReference: e['payment_reference'] as String?,
-              expenseDate: e['expense_date'] as String?,
-            ),
-          )
-          .toList(),
-      vehicleLoads: _vehicleLoads
-          .where((v) => v['vehicle_id'] != null)
-          .map(
-            (v) => VehicleLoadCreate(
-              vehicleId: v['vehicle_id'] as String,
-              packingRecordIndex: v['packing_index'] as int?,
-              unitCount: double.tryParse(v['unit_count'].toString()) ?? 0,
-              costType: v['cost_type'] as String,
-              transportCost:
-                  double.tryParse(v['transport_cost'].toString()) ?? 0,
-              loadDate: _purchaseDate.toIso8601String().split('T').first,
-            ),
-          )
-          .toList(),
-    );
-
+    final groups = [for (var g = 1; g <= _groupCount; g++) g];
+    final createdCodes = <String>[];
     setState(() => _submitting = true);
     try {
-      final ok = await context.read<BatchListProvider>().create(payload);
-      if (!mounted) return;
-      if (ok) {
-        await _createTransportDebt(businessId);
-        if (!mounted) return;
-        DataRefreshNotifier.instance.refresh(businessId);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Batch created')));
-        Navigator.of(context).pop();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.read<BatchListProvider>().error ??
-                  'Failed to create batch',
-            ),
-          ),
+      for (final g in groups) {
+        final lines = _purchasesFor(g)
+            .where((p) => ((p['kgTotal'] as num?)?.toDouble() ?? 0) > 0)
+            .toList();
+        if (lines.isEmpty) continue;
+        final totalQty = lines.fold<double>(
+            0, (acc, p) => acc + ((p['kgTotal'] as num?)?.toDouble() ?? 0));
+        final totalCost = lines.fold<double>(
+            0, (acc, p) => acc + ((p['lineCost'] as num?)?.toDouble() ?? 0));
+        final paidAmount = lines.fold<double>(
+            0, (acc, p) => acc + ((p['amountPaid'] as num?)?.toDouble() ?? 0));
+        final suppliers = lines
+            .map((p) => (p['supplierName'] as String? ?? '').trim())
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .toList();
+        final paymentModes = lines
+            .map((p) => (p['paymentMode'] as String? ?? 'cash'))
+            .where((m) => m.isNotEmpty)
+            .toSet()
+            .toList();
+        final aggregatePaymentMode = paymentModes.length == 1
+            ? paymentModes.first
+            : (paymentModes.isEmpty ? 'cash' : 'part_credit');
+
+        final batchCode = _generateBatchCode();
+        final payload = BatchCreateRequest(
+          businessId: businessId,
+          productId: _productId!,
+          sourceMarketId: _sourceMarketId,
+          destinationMarketId: _destinationMarketId,
+          batchCode: batchCode,
+          purchaseDate: _purchaseDate.toIso8601String().split('T').first,
+          totalQuantity: totalQty,
+          quantityUnit: 'kg',
+          purchasePricePerUnit: totalQty > 0 ? totalCost / totalQty : 0,
+          transportPaidBy: _transportPaidBy,
+          supplierName: suppliers.isEmpty ? null : suppliers.join(', '),
+          purchasePaymentMode: aggregatePaymentMode,
+          purchaseAmountPaid: paidAmount,
+          purchases: lines
+              .map(
+                (p) => BatchPurchaseCreate(
+                  marketId: p['marketId'] as String?,
+                  supplierName: (p['supplierName'] as String? ?? '').trim(),
+                  unitLabel: p['unitLabel'] as String? ?? 'kg',
+                  unitKg: ((p['unitKg'] as num?)?.toDouble() ?? 1),
+                  quantity: ((p['quantity'] as num?)?.toDouble() ?? 0),
+                  pricePerUnit: ((p['pricePerUnit'] as num?)?.toDouble() ?? 0),
+                  paymentMode: p['paymentMode'] as String?,
+                  amountPaid: ((p['amountPaid'] as num?)?.toDouble() ?? 0),
+                ),
+              )
+              .toList(),
+          partners: [
+            ..._partnersFor(g)
+                .where((p) => p['partner_id'] != null)
+                .map(
+                  (p) => BatchPartnerCreate(
+                    partnerId: p['partner_id'] as String,
+                    role: p['role'] as String,
+                    dailyChargeRate:
+                        (p['daily_charge_rate'] as num?)?.toDouble() ?? 0,
+                    daysInvolved: (p['days_involved'] as int?) ?? 1,
+                  ),
+                ),
+            if (_sellerFor(g) != null)
+              BatchPartnerCreate(
+                partnerId: _sellerFor(g)!,
+                role: 'seller',
+                dailyChargeRate: 0,
+                daysInvolved: 1,
+              ),
+          ],
+          packingRecords: _packingFor(g)
+              .where((p) => (p['unit_count'] as int) > 0)
+              .map(
+                (p) => PackingRecordCreate(
+                  unitType: p['unit_type'] as String,
+                  unitLabel: p['unit_label'] as String?,
+                  unitCount: p['unit_count'] as int,
+                  costPerUnit: (p['cost_per_unit'] as num).toDouble(),
+                ),
+              )
+              .toList(),
+          expenses: _expensesFor(g)
+              .where((e) => (e['amount'] as double) > 0)
+              .map(
+                (e) => ExpenseCreate(
+                  partnerId: e['partner_id'] as String?,
+                  expenseSide: e['expense_side'] as String,
+                  expenseType: e['expense_type'] as String,
+                  amount: (e['amount'] as num).toDouble(),
+                  description: e['description'] as String?,
+                  paidBy: e['paid_by'] as String?,
+                  paymentMode: e['payment_mode'] as String?,
+                  paymentReference: e['payment_reference'] as String?,
+                  expenseDate: e['expense_date'] as String?,
+                ),
+              )
+              .toList(),
+          vehicleLoads: _loadsFor(g)
+              .where((v) => v['vehicle_id'] != null)
+              .map(
+                (v) => VehicleLoadCreate(
+                  vehicleId: v['vehicle_id'] as String,
+                  packingRecordIndex: v['packing_index'] as int?,
+                  unitCount: double.tryParse(v['unit_count'].toString()) ?? 0,
+                  costType: v['cost_type'] as String,
+                  transportCost:
+                      double.tryParse(v['transport_cost'].toString()) ?? 0,
+                  loadDate: _purchaseDate.toIso8601String().split('T').first,
+                ),
+              )
+              .toList(),
         );
+
+        final ok = await context.read<BatchListProvider>().create(payload);
+        if (!mounted) return;
+        if (!ok) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Failed to create batch $g: ${context.read<BatchListProvider>().error ?? 'Unknown error'}',
+              ),
+            ),
+          );
+          return;
+        }
+        createdCodes.add(batchCode);
+        await _createTransportDebt(businessId, batchCode, g);
+        if (!mounted) return;
       }
+
+      DataRefreshNotifier.instance.refresh(businessId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            groups.length > 1
+                ? 'Created ${groups.length} batches'
+                : 'Batch created',
+          ),
+        ),
+      );
+      Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -269,18 +386,23 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     }
   }
 
-  Future<void> _createTransportDebt(String businessId) async {
+  Future<void> _createTransportDebt(
+    String businessId,
+    String batchCode,
+    int group,
+  ) async {
     if (_transportPaidBy != 'seller') return;
-    if (_sellerId == null) return;
+    final sellerId = _sellerFor(group);
+    if (sellerId == null) return;
     final purchaserId =
-        _partners.firstWhere(
+        _partnersFor(group).firstWhere(
               (p) => p['partner_id'] != null,
               orElse: () => {},
             )['partner_id']
             as String?;
     if (purchaserId == null) return;
-    if (purchaserId == _sellerId) return;
-    final transportTotal = _expenses.fold<double>(
+    if (purchaserId == sellerId) return;
+    final transportTotal = _expensesFor(group).fold<double>(
       0,
       (acc, e) => e['expense_side'] == 'transport'
           ? acc + ((e['amount'] as num?)?.toDouble() ?? 0)
@@ -291,11 +413,11 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       TransactionCreateRequest(
         businessId: businessId,
         fromPartnerId: purchaserId,
-        toPartnerId: _sellerId!,
+        toPartnerId: sellerId,
         amount: transportTotal,
         transactionType: 'transport_debt',
         transactionDate: DateTime.now().toIso8601String().split('T').first,
-        notes: 'Auto: seller paid transport for ${_generateBatchCode()}',
+        notes: 'Auto: seller paid transport for $batchCode',
       ),
     );
   }
@@ -486,123 +608,17 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _quantityCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Quantity'),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField2<String>(
-                  isExpanded: true,
-                  valueListenable: ValueNotifier(_unit),
-                  decoration: const InputDecoration(labelText: 'Unit'),
-                  items: const [
-                    DropdownItem(value: 'kg', child: Text('kg')),
-                    DropdownItem(value: 'g', child: Text('g')),
-                    DropdownItem(value: 'L', child: Text('L')),
-                    DropdownItem(value: 'pcs', child: Text('pcs')),
-                    DropdownItem(value: 'bag', child: Text('bag')),
-                    DropdownItem(value: 'crate', child: Text('crate')),
-                  ],
-                  onChanged: (v) => setState(() => _unit = v ?? 'kg'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _priceCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Price per unit'),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 12),
+          Text('Purchases', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
           Text(
-            'Total: ${CurrencyFormatter.format((double.tryParse(_quantityCtrl.text) ?? 0) * (double.tryParse(_priceCtrl.text) ?? 0))}',
-            style: theme.textTheme.titleSmall,
+            'Add purchases from one or more suppliers. Each line has its own unit, market and payment mode.',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          Text('Supplier', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _supplierCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Supplier name',
-              hintText: 'e.g. Ahmed Brothers, Karachi market',
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('Purchase Payment', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          DropdownButtonFormField2<String>(
-            isExpanded: true,
-            valueListenable: ValueNotifier(_purchasePaymentMode),
-            decoration: const InputDecoration(labelText: 'Payment mode'),
-            items: const [
-              DropdownItem(
-                value: 'cash',
-                child: Text(
-                  'Cash',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-              DropdownItem(
-                value: 'credit',
-                child: Text(
-                  'Credit / Debt',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-              DropdownItem(
-                value: 'part_credit',
-                child: Text(
-                  'Part cash / part credit',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-            ],
-            onChanged: (v) =>
-                setState(() => _purchasePaymentMode = v ?? 'cash'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _paidCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Amount paid now'),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 8),
-          Builder(
-            builder: (context) {
-              final purchaseTotal =
-                  (double.tryParse(_quantityCtrl.text) ?? 0) *
-                  (double.tryParse(_priceCtrl.text) ?? 0);
-              final paid = double.tryParse(_paidCtrl.text) ?? 0;
-              final remaining = (purchaseTotal - paid).clamp(
-                0,
-                double.infinity,
-              );
-              return Text(
-                'Remaining payable: ${CurrencyFormatter.format(remaining)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: remaining > 0
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.primary,
-                ),
-              );
-            },
+          PurchaseEntryForm(
+            entries: _purchases,
+            markets: marketsProvider.markets,
+            onChanged: (entries) => setState(() => _purchases = entries),
           ),
           const SizedBox(height: 16),
           Text('Transport Paid By', style: theme.textTheme.titleMedium),
@@ -640,7 +656,6 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           setState(() {
             _productId = v;
             _productName = p.name;
-            _unit = p.baseUnit;
           });
         }
       },
@@ -665,7 +680,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             (m) => DropdownItem(
               value: m.id,
               child: Text(
-                '${m.name} â€¢ ${m.city}',
+                '${m.name} • ${m.city}',
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -691,14 +706,19 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _groupSelector(),
+          const SizedBox(height: 12),
           const Text(
             'Add at least one purchasing partner. Daily charge Ã— days will be added to cost automatically.',
           ),
           const SizedBox(height: 16),
           PartnerSelector(
+            key: ValueKey('partners-$_activeGroup'),
             selectedPartners: const <PartnerModel>[],
             businessId: context.read<AuthProvider>().businessId ?? '',
-            onChanged: (partners) => setState(() => _partners = partners),
+            onChanged: (selected) => setState(
+              () => _partnersByGroup[_activeGroup] = selected,
+            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -713,7 +733,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 )
               : DropdownButtonFormField2<String>(
                   isExpanded: true,
-                  valueListenable: ValueNotifier(_sellerId),
+                  valueListenable: ValueNotifier(_sellerFor(_activeGroup)),
                   decoration: const InputDecoration(
                     labelText: 'Select the selling partner',
                   ),
@@ -729,10 +749,38 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                         ),
                       )
                       .toList(),
-                  onChanged: (v) => setState(() => _sellerId = v),
+                  onChanged: (v) => setState(
+                    () => _sellerByGroup[_activeGroup] = v,
+                  ),
                 ),
         ],
       ),
+    );
+  }
+
+  Widget _groupSelector() {
+    if (_groupCount <= 1) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Batch group (split purchases into separate batches)',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (var g = 1; g <= _groupCount; g++)
+              ChoiceChip(
+                label: Text('Batch $g'),
+                selected: _activeGroup == g,
+                onSelected: (_) => setState(() => _activeGroup = g),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 
@@ -742,13 +790,18 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _groupSelector(),
           const Text(
-            'Add packing records (optional). Total cost = count Ã— cost per unit.',
+            'Add packing records (optional). Total cost = count \u00d7 cost per unit.',
           ),
           const SizedBox(height: 16),
           PackingEntryForm(
-            entries: const [],
-            onChanged: (records) => _packing = records,
+            key: ValueKey('packing-$_activeGroup'),
+            entries: _packingFor(_activeGroup),
+            totalKg: _groupQuantityKg(_activeGroup),
+            onChanged: (records) => setState(
+              () => _packingByGroup[_activeGroup] = records,
+            ),
           ),
         ],
       ),
@@ -761,6 +814,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _groupSelector(),
           const Text(
             'Add expenses (optional). These will appear in batch P&L breakdown.',
           ),
@@ -780,27 +834,32 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   }
 
   void _addExpense() {
+    final g = _activeGroup;
     setState(
-      () => _expenses.add({
-        'expense_side': _transportPaidBy == 'purchaser'
-            ? 'purchaser'
-            : 'transport',
-        'expense_type': 'misc',
-        'amount': 0.0,
-        'description': null,
-        'paid_by': null,
-        'payment_mode': 'cash',
-        'payment_reference': null,
-        'expense_date': DateTime.now().toIso8601String().split('T').first,
-      }),
+      () => _expensesByGroup[g] = [
+        ..._expensesFor(g),
+        {
+          'expense_side': _transportPaidBy == 'purchaser'
+              ? 'purchaser'
+              : 'transport',
+          'expense_type': 'misc',
+          'amount': 0.0,
+          'description': null,
+          'paid_by': null,
+          'payment_mode': 'cash',
+          'payment_reference': null,
+          'expense_date': DateTime.now().toIso8601String().split('T').first,
+        },
+      ],
     );
   }
 
   Widget _expenseList() {
     final theme = Theme.of(context);
+    final expenses = _expensesFor(_activeGroup);
     return Column(
-      children: List.generate(_expenses.length, (i) {
-        final e = _expenses[i];
+      children: List.generate(expenses.length, (i) {
+        final e = expenses[i];
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
@@ -932,7 +991,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                   ),
                   IconButton(
                     icon: const Icon(MingCuteIcons.mgc_delete_3_line),
-                    onPressed: () => setState(() => _expenses.removeAt(i)),
+                    onPressed: () {
+                      final g = _activeGroup;
+                      final next = [..._expensesFor(g)];
+                      next.removeAt(i);
+                      setState(() => _expensesByGroup[g] = next);
+                    },
                   ),
                 ],
               ),
@@ -1006,11 +1070,13 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
   Widget _stepTransport(ThemeData theme) {
     final vehicles = context.watch<VehicleProvider>().vehicles;
+    final loads = _loadsFor(_activeGroup);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _groupSelector(),
           Text(
             'Split the batch across vehicles. Linked loads split shared transport fairly between packing records.',
             style: theme.textTheme.bodyMedium,
@@ -1039,21 +1105,27 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               ),
             )
           else ...[
-            ...List.generate(_vehicleLoads.length, (i) {
-              final load = _vehicleLoads[i];
+            ...List.generate(loads.length, (i) {
+              final load = loads[i];
               return _transportLoadCard(theme, i, load, vehicles);
             }),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: () => setState(() {
-                _vehicleLoads.add({
-                  'vehicle_id': null,
-                  'packing_index': null,
-                  'unit_count': '0',
-                  'cost_type': 'per_vehicle',
-                  'transport_cost': '0',
+              onPressed: () {
+                final g = _activeGroup;
+                setState(() {
+                  _loadsByGroup[g] = [
+                    ..._loadsFor(g),
+                    {
+                      'vehicle_id': null,
+                      'packing_index': null,
+                      'unit_count': '0',
+                      'cost_type': 'per_vehicle',
+                      'transport_cost': '0',
+                    },
+                  ];
                 });
-              }),
+              },
               icon: const Icon(MingCuteIcons.mgc_add_line),
               label: const Text('Add vehicle load'),
             ),
@@ -1069,7 +1141,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     Map<String, dynamic> load,
     List<VehicleModel> vehicles,
   ) {
-    final packing = _packing;
+    final packing = _packingFor(_activeGroup);
     return Container(
       key: ValueKey('load-$index'),
       margin: const EdgeInsets.only(bottom: 12),
@@ -1090,7 +1162,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               const Spacer(),
               IconButton(
                 icon: const Icon(MingCuteIcons.mgc_close_line, size: 18),
-                onPressed: () => setState(() => _vehicleLoads.removeAt(index)),
+                onPressed: () {
+                  final g = _activeGroup;
+                  final next = [..._loadsFor(g)];
+                  next.removeAt(index);
+                  setState(() => _loadsByGroup[g] = next);
+                },
               ),
             ],
           ),
@@ -1182,122 +1259,157 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   }
 
   Widget _step5(ThemeData theme) {
-    final qty = double.tryParse(_quantityCtrl.text) ?? 0;
-    final price = double.tryParse(_priceCtrl.text) ?? 0;
-    final purchaseCost = qty * price;
-    final packingCost = _packing.fold<double>(0, (acc, p) {
-      final count = (p['unit_count'] as int?) ?? 0;
-      final cost = (p['cost_per_unit'] as num?)?.toDouble() ?? 0;
-      return acc + count * cost;
-    });
-    final expenseCost = _expenses.fold<double>(
-      0,
-      (acc, e) => acc + ((e['amount'] as num?)?.toDouble() ?? 0),
+    final groups = [for (var g = 1; g <= _groupCount; g++) g];
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final g in groups) _groupSummaryCard(theme, g),
+          if (groups.length > 1) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(MingCuteIcons.mgc_information_line, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${groups.length} batches will be created. Backend will auto-generate batch codes (GM-YYYY-NNNN) and recompute totals.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(MingCuteIcons.mgc_information_line, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Backend will auto-generate a batch code (GM-YYYY-NNNN) and recompute totals.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
-    final dailyCharges = _partners.fold<double>(0, (acc, p) {
-      final rate = (p['daily_charge_rate'] as num?)?.toDouble() ?? 0;
-      final days = (p['days_involved'] as int?) ?? 1;
-      return acc + rate * days;
-    });
-    final transportLoadCost = _vehicleLoads.fold<double>(
-      0,
-      (acc, v) => acc + _loadTotal(v),
-    );
+  }
+
+  Widget _groupSummaryCard(ThemeData theme, int g) {
+    final groupPurchases = _purchasesFor(g);
+    final purchaseCost = _groupPurchaseCost(g);
+    final totalQty = _groupQuantityKg(g);
+    final paidAmount = _groupPaidAmount(g);
+    final suppliers = _groupSuppliers(g);
+    final aggregatePaymentMode = _groupPaymentMode(g);
+    final packingCost = _groupPackingCost(g);
+    final expenseCost = _groupExpenseCost(g);
+    final dailyCharges = _groupDailyCharges(g);
+    final transportLoadCost = _groupLoadCost(g);
     final total =
         purchaseCost +
         packingCost +
         expenseCost +
         dailyCharges +
         transportLoadCost;
+    final partnerCount =
+        _partnersFor(g).where((p) => p['partner_id'] != null).length;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.1),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Summary', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 12),
-                _summaryRow('Product', _productName ?? '-'),
-                _summaryRow('Quantity', '$qty $_unit'),
-                _summaryRow(
-                  'Supplier',
-                  _supplierCtrl.text.trim().isEmpty
-                      ? '-'
-                      : _supplierCtrl.text.trim(),
-                ),
-                _summaryRow(
-                  'Purchase payment',
-                  _purchasePaymentMode == 'cash'
-                      ? 'Cash'
-                      : _purchasePaymentMode == 'credit'
-                      ? 'Credit'
-                      : 'Part cash / credit',
-                ),
-                if ((double.tryParse(_paidCtrl.text) ?? 0) > 0)
-                  _summaryRow(
-                    'Paid now',
-                    CurrencyFormatter.format(
-                      double.tryParse(_paidCtrl.text) ?? 0,
-                    ),
-                  ),
-                _summaryRow(
-                  'Purchase cost',
-                  CurrencyFormatter.format(purchaseCost),
-                ),
-                _summaryRow('Partners', '${_partners.length}'),
-                _summaryRow(
-                  'Daily charges',
-                  CurrencyFormatter.format(dailyCharges),
-                ),
-                _summaryRow('Packing', CurrencyFormatter.format(packingCost)),
-                _summaryRow('Expenses', CurrencyFormatter.format(expenseCost)),
-                _summaryRow('Vehicle loads', '${_vehicleLoads.length}'),
-                _summaryRow(
-                  'Transport loads',
-                  CurrencyFormatter.format(transportLoadCost),
-                ),
-                const Divider(height: 24),
-                _summaryRow(
-                  'Total estimated cost',
-                  CurrencyFormatter.format(total),
-                  isBold: true,
-                ),
-              ],
-            ),
+          Text(
+            _groupCount > 1 ? 'Batch $g' : 'Summary',
+            style: theme.textTheme.titleLarge,
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.4,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(MingCuteIcons.mgc_information_line, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Backend will auto-generate a batch code (GM-YYYY-NNNN) and recompute totals.',
-                    style: theme.textTheme.bodySmall,
-                  ),
+          const SizedBox(height: 12),
+          _summaryRow('Product', _productName ?? '-'),
+          _summaryRow('Quantity', '${totalQty.toStringAsFixed(1)} kg'),
+          _summaryRow('Supplier', suppliers.isEmpty ? '-' : suppliers.join(', ')),
+          if (groupPurchases.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            ...groupPurchases.map(
+              (p) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        p['supplierName'] as String? ?? '-',
+                        style: theme.textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${(p['kgTotal'] as num?)?.toStringAsFixed(1) ?? '0'} kg \u00d7 ${CurrencyFormatter.format((p['lineCost'] as num?)?.toDouble())}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
+          ],
+          _summaryRow(
+            'Purchase payment',
+            aggregatePaymentMode == 'cash'
+                ? 'Cash'
+                : aggregatePaymentMode == 'credit'
+                ? 'Credit'
+                : 'Part cash / credit',
+          ),
+          if (paidAmount > 0)
+            _summaryRow('Paid now', CurrencyFormatter.format(paidAmount)),
+          _summaryRow('Purchase cost', CurrencyFormatter.format(purchaseCost)),
+          _summaryRow('Partners', '$partnerCount'),
+          _summaryRow('Daily charges', CurrencyFormatter.format(dailyCharges)),
+          _summaryRow('Packing', CurrencyFormatter.format(packingCost)),
+          _summaryRow('Expenses', CurrencyFormatter.format(expenseCost)),
+          _summaryRow(
+            'Vehicle loads',
+            '${_loadsFor(g).where((v) => v['vehicle_id'] != null).length}',
+          ),
+          _summaryRow('Transport loads', CurrencyFormatter.format(transportLoadCost)),
+          const Divider(height: 24),
+          _summaryRow(
+            'Total estimated cost',
+            CurrencyFormatter.format(total),
+            isBold: true,
           ),
         ],
       ),

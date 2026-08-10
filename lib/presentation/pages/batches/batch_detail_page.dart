@@ -367,7 +367,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Closed â€” read only. Edits, packing, expenses and sales are locked.',
+                          'Closed — read only. Edits, packing, expenses and sales are locked.',
                           style: theme.textTheme.labelMedium,
                         ),
                       ),
@@ -628,7 +628,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           item.packingLabel,
           item.returnDate,
           item.notes,
-        ].where((e) => e != null && e.toString().isNotEmpty).join(' â€¢ '),
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
       ),
       trailing: item.totalReturnCost > 0
           ? Text(
@@ -755,7 +755,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Return value is estimated from the linked packing recordâ€™s cost per unit.',
+                  'Return value is estimated from the linked packing record\u2019s cost per unit.',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -929,7 +929,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
               expense.voidedReason != null &&
               expense.voidedReason!.isNotEmpty)
             'Voided: ${expense.voidedReason}',
-        ].where((e) => e != null && e.toString().isNotEmpty).join(' â€¢ '),
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
         style: TextStyle(
           color: isVoided
               ? theme.colorScheme.error.withValues(alpha: 0.7)
@@ -1133,7 +1133,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       title: Text(
         '${sale.quantitySold.toStringAsFixed(0)} @ ${CurrencyFormatter.format(sale.pricePerUnit)}',
       ),
-      subtitle: Text('${sale.saleDate} â€¢ ${sale.paymentMode}'),
+      subtitle: Text('${sale.saleDate} • ${sale.paymentMode}'),
       trailing: Text(
         CurrencyFormatter.format(sale.totalAmount),
         style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
@@ -1215,7 +1215,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
               : load.costType,
           load.packingLabel,
           load.loadDate,
-        ].where((e) => e != null && e.toString().isNotEmpty).join(' â€¢ '),
+        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
       ),
       trailing: Text(
         CurrencyFormatter.format(load.totalCost),
@@ -1887,7 +1887,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       context,
       title: 'Mark batch as closed?',
       message:
-          'Closing a batch is permanent â€” it locks all edits, sales, packing, and expenses for this batch. Use this when the batch is fully settled.',
+          'Closing a batch is permanent — it locks all edits, sales, packing, and expenses for this batch. Use this when the batch is fully settled.',
       confirmLabel: 'Mark as closed',
       isDestructive: true,
     );
@@ -2102,11 +2102,11 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     final remaining = (batch.totalPurchaseCost - batch.purchaseAmountPaid)
         .clamp(0, double.infinity);
     if (batch.purchaseAmountPaid > 0) {
-      return '$label â€” paid ${CurrencyFormatter.format(batch.purchaseAmountPaid)}, '
+      return '$label — paid ${CurrencyFormatter.format(batch.purchaseAmountPaid)}, '
           'remaining ${CurrencyFormatter.format(remaining)}';
     }
     if (mode == 'credit') {
-      return '$label â€” full ${CurrencyFormatter.format(remaining)} outstanding';
+      return '$label — full ${CurrencyFormatter.format(remaining)} outstanding';
     }
     return label;
   }

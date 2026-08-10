@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase/supabase_service.dart';
@@ -161,6 +162,31 @@ class BatchRepository {
         'expense_date': e.expenseDate ?? request.purchaseDate,
         'created_by': _client.auth.currentUser?.id,
       });
+    }
+
+    final purchases = request.purchases ?? const [];
+    for (final p in purchases) {
+      try {
+        await _client.from('batch_purchases').insert({
+          'batch_id': batchId,
+          'market_id': p.marketId,
+          'supplier_name': p.supplierName,
+          'unit_label': p.unitLabel,
+          'unit_kg': p.unitKg,
+          'quantity': p.quantity,
+          'price_per_unit': p.pricePerUnit,
+          'payment_mode': p.paymentMode,
+          'amount_paid': p.amountPaid,
+        });
+      } on PostgrestException catch (e) {
+        if (e.code == 'PGRST205' || e.code == '42P01') {
+          debugPrint(
+            'batch_purchases table not available yet (${e.code}); skipping purchase line for batch $batchId',
+          );
+        } else {
+          rethrow;
+        }
+      }
     }
 
     return BatchModel.fromJson(row);

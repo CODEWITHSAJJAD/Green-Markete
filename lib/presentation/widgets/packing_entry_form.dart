@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
+import '../../core/utils/unit_converter.dart';
+
 class PackingEntryForm extends StatefulWidget {
   final List<Map<String, dynamic>> entries;
+  final double? totalKg;
   final ValueChanged<List<Map<String, dynamic>>> onChanged;
 
   const PackingEntryForm({
     super.key,
     required this.entries,
+    this.totalKg,
     required this.onChanged,
   });
 
@@ -26,7 +30,7 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
   }
 
   Map<String, dynamic> _empty() => {
-    'unit_type': 'bag',
+    'unit_type': 'bag_5',
     'unit_label': null,
     'unit_count': 0,
     'cost_per_unit': 0.0,
@@ -34,11 +38,97 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
 
   void _emit() => widget.onChanged(List<Map<String, dynamic>>.from(_entries));
 
+  void _suggest() {
+    final totalKg = widget.totalKg ?? 0;
+    if (totalKg <= 0) return;
+    final suggestions = suggestPackingBreakdown(totalKg);
+    if (suggestions.isEmpty) return;
+    setState(() {
+      _entries = suggestions
+          .map((s) => {
+            'unit_type': s.type.key,
+            'unit_label': s.type.label,
+            'unit_count': s.count,
+            'cost_per_unit': 0.0,
+          })
+          .toList();
+    });
+    _emit();
+  }
+
+  double get _packedKg => _entries.fold<double>(0, (acc, e) {
+    final size = _sizeKg(e['unit_type'] as String);
+    final count = (e['unit_count'] as num?)?.toDouble() ?? 0;
+    return acc + size * count;
+  });
+
+  double _sizeKg(String? unitType) =>
+      packingTypeByKey(unitType ?? 'bag_5').kgCapacity;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final totalKg = widget.totalKg ?? 0;
+    final packedKg = _packedKg;
+    final remainingKg = totalKg - packedKg;
+    final overQty = remainingKg < -0.001;
+    final status = totalKg <= 0
+        ? 'Enter purchases first to see packing coverage.'
+        : overQty
+        ? 'Packed amount exceeds purchased quantity.'
+        : '${remainingKg.toStringAsFixed(1)} kg remaining to pack of ${totalKg.toStringAsFixed(1)} kg';
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (totalKg > 0) ...[
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Packing Coverage', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                _summaryRow(
+                  'Purchased',
+                  '${totalKg.toStringAsFixed(1)} kg',
+                ),
+                _summaryRow(
+                  'Packed',
+                  '${packedKg.toStringAsFixed(1)} kg',
+                ),
+                _summaryRow(
+                  'Remaining',
+                  '${remainingKg.toStringAsFixed(1)} kg',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  status,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: overQty
+                        ? Colors.orange
+                        : remainingKg < 0.001
+                        ? theme.colorScheme.primary
+                        : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _suggest,
+                  icon: const Icon(Icons.auto_fix_high, size: 18),
+                  label: const Text('Suggest packing breakdown'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         for (var i = 0; i < _entries.length; i++)
           Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -61,17 +151,25 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
                           _entries[i]['unit_type'] as String,
                         ),
                         decoration: const InputDecoration(
-                          labelText: 'Unit Type',
+                          labelText: 'Packing type',
                         ),
-                        items: const [
-                          DropdownItem(value: 'bag', child: Text('Bag')),
-                          DropdownItem(value: 'packet', child: Text('Packet')),
-                          DropdownItem(value: 'crate', child: Text('Crate')),
-                          DropdownItem(value: 'box', child: Text('Box')),
-                          DropdownItem(value: 'custom', child: Text('Custom')),
+                        items: [
+                          for (final t in packingTypes)
+                            DropdownItem(
+                              value: t.key,
+                              child: Text(
+                                t.label,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
                         ],
                         onChanged: (v) {
-                          setState(() => _entries[i]['unit_type'] = v ?? 'bag');
+                          setState(() {
+                            _entries[i]['unit_type'] = v ?? 'bag_5';
+                            _entries[i]['unit_label'] =
+                                packingTypeByKey(v ?? 'bag_5').label;
+                          });
                           _emit();
                         },
                       ),
@@ -130,14 +228,13 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
                     ),
                   ],
                 ),
-                if ((_entries[i]['unit_count'] as int) > 0 &&
-                    (_entries[i]['cost_per_unit'] as double) > 0)
+                if ((_entries[i]['unit_count'] as int) > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                        'Subtotal: PKR ${((_entries[i]['unit_count'] as int) * (_entries[i]['cost_per_unit'] as double)).toStringAsFixed(0)}',
+                        _entrySummary(i),
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.primary,
                         ),
@@ -161,4 +258,33 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
       ],
     );
   }
+
+  String _entrySummary(int i) {
+    final count = (_entries[i]['unit_count'] as num?)?.toDouble() ?? 0;
+    final cost = (_entries[i]['cost_per_unit'] as num?)?.toDouble() ?? 0;
+    final size = _sizeKg(_entries[i]['unit_type'] as String);
+    final weight = size * count;
+    final subtotal = cost * count;
+    final parts = <String>[];
+    if (weight > 0) parts.add('${weight.toStringAsFixed(1)} kg');
+    if (subtotal > 0) parts.add('PKR ${subtotal.toStringAsFixed(0)}');
+    return parts.join(' · ');
+  }
+
+  Widget _summaryRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        Text(
+          value,
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ],
+    ),
+  );
 }

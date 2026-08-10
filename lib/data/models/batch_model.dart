@@ -105,6 +105,7 @@ class BatchCreateRequest {
   final List<PackingRecordCreate>? packingRecords;
   final List<ExpenseCreate>? expenses;
   final List<VehicleLoadCreate>? vehicleLoads;
+  final List<BatchPurchaseCreate>? purchases;
 
   BatchCreateRequest({
     required this.businessId,
@@ -125,6 +126,7 @@ class BatchCreateRequest {
     this.packingRecords,
     this.expenses,
     this.vehicleLoads,
+    this.purchases,
   });
 
   Map<String, dynamic> toJson() => {
@@ -147,6 +149,7 @@ class BatchCreateRequest {
     'packing_records': packingRecords?.map((e) => e.toJson()).toList(),
     'expenses': expenses?.map((e) => e.toJson()).toList(),
     'vehicle_loads': vehicleLoads?.map((e) => e.toJson()).toList(),
+    'purchases': purchases?.map((e) => e.toJson()).toList(),
   };
 }
 
@@ -258,5 +261,42 @@ class VehicleLoadCreate {
     'transport_cost': transportCost,
     'load_date': loadDate,
     'notes': notes,
+  };
+}
+
+class BatchPurchaseCreate {
+  final String? marketId;
+  final String supplierName;
+  final String unitLabel;
+  final double unitKg;
+  final double quantity;
+  final double pricePerUnit;
+  final String? paymentMode;
+  final double amountPaid;
+
+  BatchPurchaseCreate({
+    this.marketId,
+    required this.supplierName,
+    required this.unitLabel,
+    required this.unitKg,
+    required this.quantity,
+    required this.pricePerUnit,
+    this.paymentMode,
+    this.amountPaid = 0,
+  });
+
+  double get kgTotal => quantity * unitKg;
+
+  double get lineCost => quantity * pricePerUnit;
+
+  Map<String, dynamic> toJson() => {
+    'market_id': marketId,
+    'supplier_name': supplierName,
+    'unit_label': unitLabel,
+    'unit_kg': unitKg,
+    'quantity': quantity,
+    'price_per_unit': pricePerUnit,
+    'payment_mode': paymentMode,
+    'amount_paid': amountPaid,
   };
 }
