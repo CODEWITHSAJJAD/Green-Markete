@@ -4,16 +4,19 @@ import 'package:flutter/material.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/unit_converter.dart';
 import '../../data/models/market_model.dart';
+import 'supplier_dropdown_field.dart';
 
 class PurchaseEntryForm extends StatefulWidget {
   final List<Map<String, dynamic>> entries;
   final List<MarketModel>? markets;
+  final List<String> suppliers;
   final ValueChanged<List<Map<String, dynamic>>> onChanged;
 
   const PurchaseEntryForm({
     super.key,
     required this.entries,
     this.markets,
+    this.suppliers = const [],
     required this.onChanged,
   });
 
@@ -44,8 +47,7 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
     'batchGroup': 1,
   };
 
-  void _emit() =>
-      widget.onChanged(List<Map<String, dynamic>>.from(_entries));
+  void _emit() => widget.onChanged(List<Map<String, dynamic>>.from(_entries));
 
   double _entryKg(Map<String, dynamic> e) {
     final qty = (e['quantity'] as num?)?.toDouble() ?? 0;
@@ -66,7 +68,9 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
     final totalKg = _entries.fold<double>(0, (s, e) => s + _entryKg(e));
     final totalCost = _entries.fold<double>(0, (s, e) => s + _entryCost(e));
     final totalPaid = _entries.fold<double>(
-        0, (s, e) => s + ((e['amountPaid'] as num?)?.toDouble() ?? 0));
+      0,
+      (s, e) => s + ((e['amountPaid'] as num?)?.toDouble() ?? 0),
+    );
     final remaining = totalCost - totalPaid;
 
     return Column(
@@ -78,6 +82,7 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
             index: i,
             entry: _entries[i],
             markets: widget.markets,
+            suppliers: widget.suppliers,
             deletable: _entries.length > 1,
             onChanged: (entry) {
               setState(() => _entries[i] = entry);
@@ -104,18 +109,20 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Purchase Summary',
-                  style: theme.textTheme.titleMedium),
+              Text('Purchase Summary', style: theme.textTheme.titleMedium),
               const SizedBox(height: 12),
-              _summaryRow('Total Weight',
-                  '${_fmt(totalKg)} kg (${_entries.length} ${_entries.length == 1 ? 'supplier' : 'suppliers'})'),
+              _summaryRow(
+                'Total Weight',
+                '${_fmt(totalKg)} kg (${_entries.length} ${_entries.length == 1 ? 'supplier' : 'suppliers'})',
+              ),
               _summaryRow('Total Cost', CurrencyFormatter.format(totalCost)),
               _summaryRow('Total Paid', CurrencyFormatter.format(totalPaid)),
               _summaryRow('Remaining', CurrencyFormatter.format(remaining)),
@@ -148,12 +155,27 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
   Widget _summaryRow(String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 2),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        Text(value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600)),
+        Flexible(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     ),
   );
@@ -165,6 +187,7 @@ class _EntryCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> entry;
   final List<MarketModel>? markets;
+  final List<String> suppliers;
   final bool deletable;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
@@ -174,6 +197,7 @@ class _EntryCard extends StatefulWidget {
     required this.index,
     required this.entry,
     this.markets,
+    this.suppliers = const [],
     required this.deletable,
     required this.onChanged,
     required this.onDelete,
@@ -184,7 +208,6 @@ class _EntryCard extends StatefulWidget {
 }
 
 class _EntryCardState extends State<_EntryCard> {
-  late final TextEditingController _supplierCtrl;
   late final TextEditingController _customKgCtrl;
   late final TextEditingController _qtyCtrl;
   late final TextEditingController _priceCtrl;
@@ -198,14 +221,16 @@ class _EntryCardState extends State<_EntryCard> {
   void initState() {
     super.initState();
     final e = widget.entry;
-    _supplierCtrl = TextEditingController(text: e['supplierName']?.toString());
-    _customKgCtrl =
-        TextEditingController(text: e['customKg']?.toString() ?? '');
+    _customKgCtrl = TextEditingController(
+      text: e['customKg']?.toString() ?? '',
+    );
     _qtyCtrl = TextEditingController(text: (e['quantity'] as num?)?.toString());
-    _priceCtrl =
-        TextEditingController(text: (e['pricePerUnit'] as num?)?.toString());
-    _paidCtrl =
-        TextEditingController(text: (e['amountPaid'] as num?)?.toString());
+    _priceCtrl = TextEditingController(
+      text: (e['pricePerUnit'] as num?)?.toString(),
+    );
+    _paidCtrl = TextEditingController(
+      text: (e['amountPaid'] as num?)?.toString(),
+    );
     _unitKey = e['unitKey'] as String? ?? 'kg';
     _marketId = e['marketId'] as String?;
     _paymentMode = e['paymentMode'] as String? ?? 'cash';
@@ -214,7 +239,6 @@ class _EntryCardState extends State<_EntryCard> {
 
   @override
   void dispose() {
-    _supplierCtrl.dispose();
     _customKgCtrl.dispose();
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
@@ -231,7 +255,7 @@ class _EntryCardState extends State<_EntryCard> {
     final price = double.tryParse(_priceCtrl.text) ?? 0;
     return {
       'uid': widget.entry['uid'] ?? 0,
-      'supplierName': _supplierCtrl.text.trim(),
+      'supplierName': (widget.entry['supplierName'] as String? ?? '').trim(),
       'marketId': _marketId,
       'unitKey': unitKey,
       'unitLabel': unitKey == 'custom'
@@ -281,8 +305,10 @@ class _EntryCardState extends State<_EntryCard> {
           Row(
             children: [
               Expanded(
-                child: Text('Supplier ${widget.index + 1}',
-                    style: theme.textTheme.titleSmall),
+                child: Text(
+                  'Supplier ${widget.index + 1}',
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
               SizedBox(
                 width: 110,
@@ -297,8 +323,7 @@ class _EntryCardState extends State<_EntryCard> {
                     for (var g = 1; g <= 6; g++)
                       DropdownItem(value: g, child: Text('Batch $g')),
                   ],
-                  onChanged: (v) =>
-                      _update(() => _batchGroup = v ?? 1),
+                  onChanged: (v) => _update(() => _batchGroup = v ?? 1),
                 ),
               ),
               if (widget.deletable)
@@ -309,12 +334,12 @@ class _EntryCardState extends State<_EntryCard> {
             ],
           ),
           const SizedBox(height: 8),
-          TextFormField(
-            controller: _supplierCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Supplier / shop name *',
-            ),
-            onChanged: (_) => _update(() {}),
+          SupplierDropdownField(
+            value: (widget.entry['supplierName'] as String?) ?? '',
+            suppliers: widget.suppliers,
+            onChanged: (v) => _update(() {
+              widget.entry['supplierName'] = v;
+            }),
           ),
           const SizedBox(height: 12),
           if (widget.markets != null && widget.markets!.isNotEmpty)
@@ -343,8 +368,7 @@ class _EntryCardState extends State<_EntryCard> {
                   items: [
                     for (final u in purchaseUnits)
                       DropdownItem(value: u.key, child: Text(u.label)),
-                    const DropdownItem(
-                        value: 'custom', child: Text('Custom')),
+                    const DropdownItem(value: 'custom', child: Text('Custom')),
                   ],
                   onChanged: (v) => _update(() => _unitKey = v ?? 'kg'),
                 ),
@@ -356,7 +380,8 @@ class _EntryCardState extends State<_EntryCard> {
             TextFormField(
               controller: _customKgCtrl,
               keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true),
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Custom weight per unit (kg) *',
               ),
@@ -370,7 +395,8 @@ class _EntryCardState extends State<_EntryCard> {
                 child: TextFormField(
                   controller: _qtyCtrl,
                   keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Quantity (${kgPerUnit == 1 ? 'kg' : 'units'})',
                   ),
@@ -382,7 +408,8 @@ class _EntryCardState extends State<_EntryCard> {
                 child: TextFormField(
                   controller: _priceCtrl,
                   keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Price per unit',
                   ),
@@ -401,6 +428,9 @@ class _EntryCardState extends State<_EntryCard> {
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: theme.colorScheme.primary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                 ),
               ),
             ),
@@ -411,15 +441,15 @@ class _EntryCardState extends State<_EntryCard> {
                 child: DropdownButtonFormField2<String>(
                   isExpanded: true,
                   valueListenable: ValueNotifier(_paymentMode),
-                  decoration: const InputDecoration(
-                    labelText: 'Payment mode',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Payment mode'),
                   items: [
                     for (final m in _paymentModes)
-                      DropdownItem(value: m, child: Text(m.replaceAll('_', ' '))),
+                      DropdownItem(
+                        value: m,
+                        child: Text(m.replaceAll('_', ' ')),
+                      ),
                   ],
-                  onChanged: (v) =>
-                      _update(() => _paymentMode = v ?? 'cash'),
+                  onChanged: (v) => _update(() => _paymentMode = v ?? 'cash'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -427,7 +457,8 @@ class _EntryCardState extends State<_EntryCard> {
                 child: TextFormField(
                   controller: _paidCtrl,
                   keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Amount paid'),
                   onChanged: (_) => _update(() {}),
                 ),

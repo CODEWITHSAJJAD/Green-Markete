@@ -24,13 +24,25 @@ class SupplierPaymentModel {
   factory SupplierPaymentModel.fromJson(Map<String, dynamic> json) {
     return SupplierPaymentModel(
       id: json['id'] as String? ?? '',
-      businessId: json['business_id'] as String? ?? json['businessId'] as String? ?? '',
-      supplierName: json['supplier_name'] as String? ?? json['supplierName'] as String? ?? '',
+      businessId:
+          json['business_id'] as String? ?? json['businessId'] as String? ?? '',
+      supplierName:
+          json['supplier_name'] as String? ??
+          json['supplierName'] as String? ??
+          '',
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
-      paymentMode: json['payment_mode'] as String? ?? json['paymentMode'] as String? ?? 'cash',
-      bankReference: json['bank_reference'] as String? ?? json['bankReference'] as String?,
-      paymentDate: json['payment_date'] as String? ?? json['paymentDate'] as String? ?? '',
-      receivedBy: json['received_by'] as String? ?? json['receivedBy'] as String?,
+      paymentMode:
+          json['payment_mode'] as String? ??
+          json['paymentMode'] as String? ??
+          'cash',
+      bankReference:
+          json['bank_reference'] as String? ?? json['bankReference'] as String?,
+      paymentDate:
+          json['payment_date'] as String? ??
+          json['paymentDate'] as String? ??
+          '',
+      receivedBy:
+          json['received_by'] as String? ?? json['receivedBy'] as String?,
       notes: json['notes'] as String?,
     );
   }
@@ -93,6 +105,8 @@ class SupplierLedgerEntry {
   final double amount;
   final double runningBalance;
   final String type;
+  final String? batchCode;
+  final double paidAtPurchase;
 
   SupplierLedgerEntry({
     required this.date,
@@ -100,5 +114,29 @@ class SupplierLedgerEntry {
     required this.amount,
     required this.runningBalance,
     required this.type,
+    this.batchCode,
+    this.paidAtPurchase = 0,
   });
+}
+
+/// Debt/paid/remaining for one supplier in one batch — used by the per-batch
+/// view in supplier settlements. Aggregated from `batch_purchases` only
+/// (later `supplier_payments` are not tied to a batch, so `paidAfter` is
+/// tracked at supplier level, not per batch).
+class SupplierBatchSummary {
+  final String supplierName;
+  final String batchCode;
+  final String purchaseDate;
+  final double debt;
+  final double paidAtPurchase;
+
+  SupplierBatchSummary({
+    required this.supplierName,
+    required this.batchCode,
+    required this.purchaseDate,
+    required this.debt,
+    required this.paidAtPurchase,
+  });
+
+  double get remaining => (debt - paidAtPurchase).clamp(0, double.infinity);
 }

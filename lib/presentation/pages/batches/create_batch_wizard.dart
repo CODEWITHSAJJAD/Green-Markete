@@ -18,6 +18,7 @@ import '../../providers/data_refresh.dart';
 import '../../providers/market_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../providers/supplier_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../widgets/partner_selector.dart';
@@ -73,6 +74,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
         context.read<MarketProvider>().load(businessId);
         context.read<PartnerProvider>().load(businessId);
         context.read<VehicleProvider>().load(businessId);
+        context.read<SupplierProvider>().loadSuppliers(businessId);
       }
     });
   }
@@ -113,10 +115,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
         return _productId != null &&
             _sourceMarketId != null &&
             _purchases.isNotEmpty &&
-            _purchases.every((p) =>
-                (p['supplierName'] as String? ?? '').trim().isNotEmpty &&
-                ((p['quantity'] as num?)?.toDouble() ?? 0) > 0 &&
-                ((p['pricePerUnit'] as num?)?.toDouble() ?? 0) > 0);
+            _purchases.every(
+              (p) =>
+                  (p['supplierName'] as String? ?? '').trim().isNotEmpty &&
+                  ((p['quantity'] as num?)?.toDouble() ?? 0) > 0 &&
+                  ((p['pricePerUnit'] as num?)?.toDouble() ?? 0) > 0,
+            );
       case 1:
         final usedGroups = [
           for (var g = 1; g <= _groupCount; g++)
@@ -164,18 +168,23 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     return max;
   }
 
-  List<Map<String, dynamic>> _purchasesFor(int g) => _purchases
-      .where((p) => ((p['batchGroup'] as int?) ?? 1) == g)
-      .toList();
+  List<Map<String, dynamic>> _purchasesFor(int g) =>
+      _purchases.where((p) => ((p['batchGroup'] as int?) ?? 1) == g).toList();
 
   double _groupQuantityKg(int g) => _purchasesFor(g).fold<double>(
-      0, (acc, p) => acc + (((p['kgTotal'] as num?)?.toDouble() ?? 0)));
+    0,
+    (acc, p) => acc + (((p['kgTotal'] as num?)?.toDouble() ?? 0)),
+  );
 
   double _groupPurchaseCost(int g) => _purchasesFor(g).fold<double>(
-      0, (acc, p) => acc + (((p['lineCost'] as num?)?.toDouble() ?? 0)));
+    0,
+    (acc, p) => acc + (((p['lineCost'] as num?)?.toDouble() ?? 0)),
+  );
 
   double _groupPaidAmount(int g) => _purchasesFor(g).fold<double>(
-      0, (acc, p) => acc + (((p['amountPaid'] as num?)?.toDouble() ?? 0)));
+    0,
+    (acc, p) => acc + (((p['amountPaid'] as num?)?.toDouble() ?? 0)),
+  );
 
   List<String> _groupSuppliers(int g) => _purchasesFor(g)
       .map((p) => (p['supplierName'] as String? ?? '').trim())
@@ -212,8 +221,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     return acc + count * cost;
   });
 
-  double _groupExpenseCost(int g) => _expensesFor(g).fold<double>(
-      0, (acc, e) => acc + ((e['amount'] as num?)?.toDouble() ?? 0));
+  double _groupExpenseCost(int g) => _expensesFor(
+    g,
+  ).fold<double>(0, (acc, e) => acc + ((e['amount'] as num?)?.toDouble() ?? 0));
 
   double _groupDailyCharges(int g) => _partnersFor(g).fold<double>(0, (acc, p) {
     final rate = (p['daily_charge_rate'] as num?)?.toDouble() ?? 0;
@@ -233,16 +243,22 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     setState(() => _submitting = true);
     try {
       for (final g in groups) {
-        final lines = _purchasesFor(g)
-            .where((p) => ((p['kgTotal'] as num?)?.toDouble() ?? 0) > 0)
-            .toList();
+        final lines = _purchasesFor(
+          g,
+        ).where((p) => ((p['kgTotal'] as num?)?.toDouble() ?? 0) > 0).toList();
         if (lines.isEmpty) continue;
         final totalQty = lines.fold<double>(
-            0, (acc, p) => acc + ((p['kgTotal'] as num?)?.toDouble() ?? 0));
+          0,
+          (acc, p) => acc + ((p['kgTotal'] as num?)?.toDouble() ?? 0),
+        );
         final totalCost = lines.fold<double>(
-            0, (acc, p) => acc + ((p['lineCost'] as num?)?.toDouble() ?? 0));
+          0,
+          (acc, p) => acc + ((p['lineCost'] as num?)?.toDouble() ?? 0),
+        );
         final paidAmount = lines.fold<double>(
-            0, (acc, p) => acc + ((p['amountPaid'] as num?)?.toDouble() ?? 0));
+          0,
+          (acc, p) => acc + ((p['amountPaid'] as num?)?.toDouble() ?? 0),
+        );
         final suppliers = lines
             .map((p) => (p['supplierName'] as String? ?? '').trim())
             .where((s) => s.isNotEmpty)
@@ -379,8 +395,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           content: Text(
             createdCodes.length == groups.length
                 ? (groups.length > 1
-                    ? 'Created ${groups.length} batches'
-                    : 'Batch created')
+                      ? 'Created ${groups.length} batches'
+                      : 'Batch created')
                 : 'Created ${createdCodes.length} of ${groups.length} batches — check the wizard for details',
           ),
           duration: const Duration(seconds: 4),
@@ -632,6 +648,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           PurchaseEntryForm(
             entries: _purchases,
             markets: marketsProvider.markets,
+            suppliers: context.watch<SupplierProvider>().suppliers,
             onChanged: (entries) => setState(() => _purchases = entries),
           ),
           const SizedBox(height: 16),
@@ -723,16 +740,15 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           _groupSelector(),
           const SizedBox(height: 12),
           const Text(
-            'Add at least one purchasing partner. Daily charge Ã— days will be added to cost automatically.',
+            'Add at least one purchasing partner. Daily charge × days will be added to cost automatically.',
           ),
           const SizedBox(height: 16),
           PartnerSelector(
             key: ValueKey('partners-$_activeGroup'),
             selectedPartners: const <PartnerModel>[],
             businessId: context.read<AuthProvider>().businessId ?? '',
-            onChanged: (selected) => setState(
-              () => _partnersByGroup[_activeGroup] = selected,
-            ),
+            onChanged: (selected) =>
+                setState(() => _partnersByGroup[_activeGroup] = selected),
           ),
           const SizedBox(height: 24),
           Text(
@@ -763,9 +779,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                         ),
                       )
                       .toList(),
-                  onChanged: (v) => setState(
-                    () => _sellerByGroup[_activeGroup] = v,
-                  ),
+                  onChanged: (v) =>
+                      setState(() => _sellerByGroup[_activeGroup] = v),
                 ),
         ],
       ),
@@ -813,9 +828,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             key: ValueKey('packing-$_activeGroup'),
             entries: _packingFor(_activeGroup),
             totalKg: _groupQuantityKg(_activeGroup),
-            onChanged: (records) => setState(
-              () => _packingByGroup[_activeGroup] = records,
-            ),
+            onChanged: (records) =>
+                setState(() => _packingByGroup[_activeGroup] = records),
           ),
         ],
       ),
@@ -1211,7 +1225,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                   DropdownItem(
                     value: i,
                     child: Text(
-                      '${i + 1}. ${packing[i]['unit_type']} Ã— ${packing[i]['unit_count']}',
+                      '${i + 1}. ${packing[i]['unit_type']} × ${packing[i]['unit_count']}',
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1347,8 +1361,9 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
         expenseCost +
         dailyCharges +
         transportLoadCost;
-    final partnerCount =
-        _partnersFor(g).where((p) => p['partner_id'] != null).length;
+    final partnerCount = _partnersFor(
+      g,
+    ).where((p) => p['partner_id'] != null).length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1370,7 +1385,10 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           const SizedBox(height: 12),
           _summaryRow('Product', _productName ?? '-'),
           _summaryRow('Quantity', '${totalQty.toStringAsFixed(1)} kg'),
-          _summaryRow('Supplier', suppliers.isEmpty ? '-' : suppliers.join(', ')),
+          _summaryRow(
+            'Supplier',
+            suppliers.isEmpty ? '-' : suppliers.join(', '),
+          ),
           if (groupPurchases.isNotEmpty) ...[
             const SizedBox(height: 8),
             const Divider(height: 1),
@@ -1418,7 +1436,10 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             'Vehicle loads',
             '${_loadsFor(g).where((v) => v['vehicle_id'] != null).length}',
           ),
-          _summaryRow('Transport loads', CurrencyFormatter.format(transportLoadCost)),
+          _summaryRow(
+            'Transport loads',
+            CurrencyFormatter.format(transportLoadCost),
+          ),
           const Divider(height: 24),
           _summaryRow(
             'Total estimated cost',

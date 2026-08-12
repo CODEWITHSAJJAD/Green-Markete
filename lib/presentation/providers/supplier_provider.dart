@@ -8,11 +8,17 @@ class SupplierProvider extends ChangeNotifier {
 
   final BatchRepository _repo;
 
+  List<String> _suppliers = const [];
+  List<String> get suppliers => _suppliers;
+
   List<SupplierOutstanding> _outstanding = const [];
   List<SupplierOutstanding> get outstanding => _outstanding;
 
   List<SupplierLedgerEntry> _ledger = const [];
   List<SupplierLedgerEntry> get ledger => _ledger;
+
+  List<SupplierBatchSummary> _batchSummaries = const [];
+  List<SupplierBatchSummary> get batchSummaries => _batchSummaries;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -20,13 +26,13 @@ class SupplierProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  Future<void> loadOutstanding(String businessId) async {
+  Future<void> loadSuppliers(String businessId) async {
     _isLoading = true;
     await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
-      _outstanding = await _repo.getSupplierOutstanding(businessId);
+      _suppliers = await _repo.getDistinctSupplierNames(businessId);
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
@@ -35,14 +41,64 @@ class SupplierProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadLedger(String businessId, String supplierName) async {
+  Future<void> loadOutstanding(
+    String businessId, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
     _isLoading = true;
     await Future<void>.value();
     _error = null;
     notifyListeners();
     try {
-      _ledger =
-          await _repo.getSupplierLedger(businessId, supplierName);
+      _outstanding = await _repo.getSupplierOutstanding(
+        businessId,
+        from: from,
+        to: to,
+      );
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadBatchSummaries(
+    String businessId, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    try {
+      _batchSummaries = await _repo.getSupplierBatchSummaries(
+        businessId,
+        from: from,
+        to: to,
+      );
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadLedger(
+    String businessId,
+    String supplierName, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    _isLoading = true;
+    await Future<void>.value();
+    _error = null;
+    notifyListeners();
+    try {
+      _ledger = await _repo.getSupplierLedger(
+        businessId,
+        supplierName,
+        from: from,
+        to: to,
+      );
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
