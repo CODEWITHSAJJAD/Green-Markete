@@ -155,7 +155,7 @@ class _QuickSalePageState extends State<QuickSalePage> {
                     (batch) => DropdownItem(
                       value: batch,
                       child: Text(
-                        '${batch.batchCode} â€¢ ${batch.productName ?? 'Batch'}',
+                        '${batch.batchCode} • ${batch.productName ?? 'Batch'}',
                       ),
                     ),
                   )

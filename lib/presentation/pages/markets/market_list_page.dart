@@ -61,7 +61,11 @@ class _MarketListPageState extends State<MarketListPage> {
     final deleted = await provider.delete(market.id);
     if (!context.mounted) return deleted;
     messenger.showSnackBar(
-      SnackBar(content: Text(deleted ? 'Market deleted' : 'Failed to delete market')),
+      SnackBar(
+        content: Text(
+          deleted ? 'Market deleted' : (provider.error ?? 'Failed to delete market'),
+        ),
+      ),
     );
     return deleted;
   }
@@ -76,12 +80,6 @@ class _MarketListPageState extends State<MarketListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Markets'),
-        actions: [
-          IconButton(
-            icon: const Icon(MingCuteIcons.mgc_store_line),
-            onPressed: _openCreate,
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),

@@ -659,14 +659,55 @@ CREATE TABLE audit_logs (
 -- Append-only: no UPDATE or DELETE allowed on this table (via RLS)
 ```
 
-### 5.15 Live vs Planned Tables (V2.1)
+### 5.15 `supplier_payments` (V2.1 — daily-61)
+```sql
+CREATE TABLE supplier_payments (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id     UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    supplier_name   TEXT NOT NULL,
+    amount          NUMERIC NOT NULL CHECK (amount > 0),
+    payment_mode    TEXT NOT NULL CHECK (payment_mode IN ('cash','bank_transfer')),
+    bank_reference  TEXT,
+    payment_date    DATE NOT NULL DEFAULT CURRENT_DATE,
+    received_by     UUID REFERENCES business_partners(id),
+    notes           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX supplier_payments_business_name_idx
+    ON supplier_payments (business_id, supplier_name);
+CREATE INDEX supplier_payments_business_date_idx
+    ON supplier_payments (business_id, payment_date DESC);
+```
+**[LIVE]** (pending migration 15 deployment). The customer-credit analog of `customer_payments` — stores payments made **after** a multi-supplier batch purchase to settle the running per-supplier balance. Per-supplier outstanding is computed from `batch_purchases` (Σ quantity × price_per_unit − amount_paid, grouped by `supplier_name` joined to `product_batches` for `business_id`); the wizard's purchase-time `amount_paid` is the initial payment against the purchase line, and `supplier_payments` rows are subsequent settlements. Mirrors `customer_payments` shape exactly (free-text `supplier_name` instead of `customer_id` because the `suppliers` registry is still Phase 9 — PLANNED). The Flutter app probes the table defensively (`_safeSelect` catches `PGRST205`/`42P01`/`42703`) and degrades to an empty settlements list when the table is absent. See `03_Security_Access.md` §3.15 for the RLS policies.
+
+### 5.16 `batch_purchases` (V2.1 — daily-59/61)
+```sql
+CREATE TABLE batch_purchases (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_id        UUID NOT NULL REFERENCES product_batches(id) ON DELETE CASCADE,
+    market_id       UUID REFERENCES markets(id),
+    supplier_name   TEXT NOT NULL,
+    unit_label      TEXT,
+    unit_kg         NUMERIC NOT NULL,
+    quantity        NUMERIC NOT NULL,
+    price_per_unit  NUMERIC NOT NULL,
+    payment_mode    TEXT,
+    amount_paid     NUMERIC NOT NULL DEFAULT 0,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+**[LIVE]** (table itself) but **RLS missing** — the daily-59 wizard inserts per-line purchase records but no RLS policy was published. The Supplier Settlements ledger (daily-61) reads this table joined to `product_batches` for `business_id`; until RLS is added, the row-level gateway is open. Migration 15 publishes the full policy set (see `03_Security_Access.md` §3.15). The Flutter app wraps each access in a defensive `_safeSelect` so the visible symptoms of missing RLS are: anon SELECT returns 0 rows (no settlement list), and INSERTs are silently dropped.
+
+### 5.17 Live vs Planned Tables (V2.1)
 
 | Table | Status | Notes |
 |---|---|---|
 | `user_profiles`, `businesses`, `business_partners`, `markets`, `products`, `product_batches`, `batch_partners`, `packing_records`, `expenses`, `customers`, `sales`, `customer_payments`, `partner_transactions`, `audit_logs` | **[LIVE]** | 2.0 baseline, with the live column drift noted above (`sales.bank_transfer`, `customer_payments.batch_id`). `product_batches` live columns also include `supplier_name`, `purchase_payment_mode` (`cash`/`debt`), `purchase_amount_paid` (used for supplier payables — Section 4.5 of the PRD). |
-| `batch_vehicles` + `vehicle_loads` | **[PLANNED]** (Phase 7) | Vehicle registry and per-vehicle load splits. Backend prerequisite for FR-V-01/02. Until added, vehicles/loads are keyed off `product_batches` transport fields and `packing_returns` notes. |
-| `packing_returns` | **[PLANNED]** (Phase 7) | Empty-bag returns to purchaser parts, including `vehicle_id` and `returned_to_partner_id`. |
-| `suppliers` | **[PLANNED]** (Phase 9) | Supplier registry + payments. Until added, supplier payables are computed **client-side** from `product_batches` (`purchase_price − purchase_amount_paid` where `purchase_payment_mode='debt'`) — no stored balance. |
+| `batch_purchases` | **[LIVE]** (RLS pending) | Per-line purchase records (daily-59 wizard). Backend gap: row-level policies missing — migration 15 adds them. The Supplier Settlements ledger (daily-61) reads from this table joined to `product_batches`. |
+| `supplier_payments` | **[LIVE]** (pending migration 15) | Post-purchase payments to a supplier (daily-61). Customer-credit analog of `customer_payments`. Without this table, the Supplier Settlements UI shows an empty list and "Record Payment" returns a `PostgrestException` — the app degrades gracefully. |
+| `suppliers` | **[PLANNED]** (Phase 9) | Supplier registry. Migration 15 ships the DDL + RLS as a forward-compatible placeholder so the defense can be reused later. The Frontend currently does NOT depend on it — it accepts free-text supplier names and groups by `supplier_name`. |
+| `batch_vehicles` + `vehicle_loads` | **[LIVE]** | Vehicle registry and per-vehicle load splits (Phase 3). |
+| `packing_returns` | **[LIVE]** | Empty-bag returns to purchaser parts (Phase 4). |
 | `packing_materials` | **[PLANNED]** (Phase 10) | Reusable material inventory (name, cost, expected reuses) + per-batch usage. |
 | `customer_shares` | **[PLANNED]** (Phase 11) | Cross-business customer sharing. The app already probes this table defensively (`listSharedCustomerIds`) and degrades to "no shared customers" when it 404s. |
 | `vehicle_shares` | **[PLANNED]** (Phase 11) | Cross-business vehicle sharing. |

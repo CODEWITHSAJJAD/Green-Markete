@@ -31,6 +31,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,

@@ -538,7 +538,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
-        '${record.unitCount} Ã— ${record.unitType} @ ${CurrencyFormatter.format(record.costPerUnit)}',
+        '${record.unitCount} × ${record.unitType} @ ${CurrencyFormatter.format(record.costPerUnit)}',
       ),
       trailing: Text(
         CurrencyFormatter.format(record.totalPackingCost),
@@ -720,7 +720,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                       DropdownItem(
                         value: '$i',
                         child: Text(
-                          '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} Ã— ${packing[i].unitCount}',
+                          '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} × ${packing[i].unitCount}',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -1327,7 +1327,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                             DropdownItem(
                               value: i,
                               child: Text(
-                                '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} Ã— ${packing[i].unitCount}',
+                                '${i + 1}. ${packing[i].unitLabel ?? packing[i].unitType} × ${packing[i].unitCount}',
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),

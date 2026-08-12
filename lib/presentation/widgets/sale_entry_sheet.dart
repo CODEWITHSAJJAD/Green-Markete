@@ -156,7 +156,7 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
               Text('Record Sale', style: theme.textTheme.titleLarge),
               const SizedBox(height: 4),
               Text(
-                '${widget.batch.batchCode} â€¢ ${widget.batch.productName ?? ''}',
+                '${widget.batch.batchCode} • ${widget.batch.productName ?? ''}',
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
@@ -385,7 +385,7 @@ class _CustomerPickerState extends State<_CustomerPicker> {
                                     c.shopName,
                                 ]
                                 .where((e) => e != null && e.isNotEmpty)
-                                .join(' â€¢ '),
+                                .join(' • '),
                           ),
                           selected: widget.initial?.id == c.id,
                           onTap: () => Navigator.pop(context, c),

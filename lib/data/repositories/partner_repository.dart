@@ -68,7 +68,17 @@ class PartnerRepository {
   }
 
   Future<void> remove(String id) async {
-    await _client.from('business_partners').delete().eq('id', id);
+    final deleted = await _client
+        .from('business_partners')
+        .delete()
+        .eq('id', id)
+        .select();
+    if (deleted.isEmpty) {
+      throw Exception(
+        'Delete rejected by the server (0 rows affected). '
+        'A Supabase RLS DELETE policy is likely missing on the business_partners table.',
+      );
+    }
   }
 
   Future<Map<String, Map<String, dynamic>>> _fetchProfiles(

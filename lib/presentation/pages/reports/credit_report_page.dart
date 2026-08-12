@@ -164,7 +164,7 @@ class _CreditReportPageState extends State<CreditReportPage> {
                           [c.city, c.phone]
                               .whereType<String>()
                               .where((e) => e.isNotEmpty)
-                              .join('  â€¢  '),
+                              .join('  •  '),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -240,7 +240,7 @@ class _CreditReportPageState extends State<CreditReportPage> {
       context,
       bill: bill,
       fileName: 'credit_report',
-      subject: 'Green Market â€” Credit Report',
+      subject: 'Green Market — Credit Report',
     );
   }
 
@@ -278,7 +278,7 @@ class _CreditReportPageState extends State<CreditReportPage> {
       context,
       bill: bill,
       fileName: 'credit_statement_${c.fullName.replaceAll(' ', '_')}',
-      subject: 'Green Market â€” Credit Statement',
+      subject: 'Green Market — Credit Statement',
     );
   }
 }

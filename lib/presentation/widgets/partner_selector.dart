@@ -151,7 +151,7 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                                               e != null &&
                                               e.toString().isNotEmpty,
                                         )
-                                        .join(' â€¢ '),
+                                        .join(' • '),
                                   ),
                                   onTap: () => Navigator.pop(ctx, p),
                                 );

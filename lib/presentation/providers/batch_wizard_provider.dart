@@ -38,7 +38,7 @@ class BatchWizardProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get expenses => _expenses;
 
   void nextStep() {
-    if (_currentStep < 4) {
+    if (_currentStep < 5) {
       _currentStep += 1;
       notifyListeners();
     }

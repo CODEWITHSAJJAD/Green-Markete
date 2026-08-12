@@ -127,12 +127,12 @@ class _ProductListPageState extends State<ProductListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Products'),
-        actions: [
-          IconButton(
-            icon: const Icon(MingCuteIcons.mgc_add_line),
-            onPressed: () => _showCreateDialog(context, businessId),
-          ),
-        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
+        onPressed:()=> _showCreateDialog(context, businessId),
+        icon: const Icon(MingCuteIcons.mgc_package_line),
+        label: const Text('New Product'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -283,7 +283,11 @@ class _ProductListPageState extends State<ProductListPage> {
       DataRefreshNotifier.instance.refresh(businessId);
     }
     messenger.showSnackBar(
-      SnackBar(content: Text(deleted ? 'Product deleted' : 'Failed to delete product')),
+      SnackBar(
+        content: Text(
+          deleted ? 'Product deleted' : (provider.error ?? 'Failed to delete product'),
+        ),
+      ),
     );
     return deleted;
   }

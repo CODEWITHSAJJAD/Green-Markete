@@ -50,6 +50,16 @@ class VehicleRepository {
   }
 
   Future<void> delete(String id) async {
-    await _client.from('vehicles').delete().eq('id', id);
+    final deleted = await _client
+        .from('vehicles')
+        .delete()
+        .eq('id', id)
+        .select();
+    if (deleted.isEmpty) {
+      throw Exception(
+        'Delete rejected by the server (0 rows affected). '
+        'A Supabase RLS DELETE policy is likely missing on the vehicles table.',
+      );
+    }
   }
 }

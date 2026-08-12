@@ -56,12 +56,6 @@ class _PartnerListPageState extends State<PartnerListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Partners'),
-        actions: [
-          IconButton(
-            icon: const Icon(MingCuteIcons.mgc_add_line),
-            onPressed: _openCreate,
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),

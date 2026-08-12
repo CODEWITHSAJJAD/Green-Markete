@@ -61,7 +61,11 @@ class _VehicleListPageState extends State<VehicleListPage> {
     final deleted = await provider.delete(vehicle.id);
     if (!context.mounted) return deleted;
     messenger.showSnackBar(
-      SnackBar(content: Text(deleted ? 'Vehicle deleted' : 'Failed to delete vehicle')),
+      SnackBar(
+        content: Text(
+          deleted ? 'Vehicle deleted' : (provider.error ?? 'Failed to delete vehicle'),
+        ),
+      ),
     );
     return deleted;
   }
@@ -76,12 +80,6 @@ class _VehicleListPageState extends State<VehicleListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vehicles'),
-        actions: [
-          IconButton(
-            icon: const Icon(MingCuteIcons.mgc_truck_line),
-            onPressed: _openCreate,
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),

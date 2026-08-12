@@ -185,7 +185,7 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
               valueListenable: ValueNotifier(_paidBy),
               decoration: const InputDecoration(labelText: 'Paid by (partner)'),
               items: [
-                const DropdownItem<String?>(value: null, child: Text('â€”')),
+                const DropdownItem<String?>(value: null, child: Text('—')),
                 ...partners.map(
                   (p) => DropdownItem<String?>(
                     value: p.id,
