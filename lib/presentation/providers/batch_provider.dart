@@ -109,6 +109,19 @@ class BatchListProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> delete(String id) async {
+    try {
+      await _repo.delete(id);
+      _batches = _batches.where((b) => b.id != id).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }
 
 class BatchDetailProvider extends ChangeNotifier {

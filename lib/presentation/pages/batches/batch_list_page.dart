@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/batch_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/data_refresh.dart';
+import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
 import '../../widgets/status_pill.dart';
@@ -91,6 +93,73 @@ class _BatchListPageState extends State<BatchListPage> {
     }
   }
 
+  Future<bool> _confirmDeleteBatch(BatchModel batch) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final provider = context.read<BatchListProvider>();
+    final businessId = context.read<AuthProvider>().businessId;
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Delete ${batch.productName ?? batch.batchCode}?',
+      message:
+          'Permanently deletes this batch and all its packing, expenses, sales, transport and purchase records. This cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (ok != true) return false;
+    final deleted = await provider.delete(batch.id);
+    if (!mounted) return deleted;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          deleted ? 'Batch deleted' : (provider.error ?? 'Failed to delete batch'),
+        ),
+      ),
+    );
+    if (deleted && businessId != null && businessId.isNotEmpty) {
+      DataRefreshNotifier.instance.refresh(businessId);
+    }
+    return deleted;
+  }
+
+  Future<void> _bulkDelete() async {
+    final ids = _selectedIds.toList();
+    final provider = context.read<BatchListProvider>();
+    final businessId = context.read<AuthProvider>().businessId;
+    final ok = await showConfirmDialog(
+      context,
+      title: ids.length == 1 ? 'Delete this batch?' : 'Delete ${ids.length} batches?',
+      message:
+          'Permanently deletes the selected batch(es) and all their packing, expenses, sales, transport and purchase records. This cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (ok != true) return;
+    int deleted = 0;
+    String? firstError;
+    for (final id in ids) {
+      if (await provider.delete(id)) {
+        deleted++;
+      } else {
+        firstError ??= provider.error;
+      }
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          deleted == ids.length
+              ? 'Deleted $deleted of ${ids.length} batches'
+              : 'Deleted $deleted of ${ids.length} batches — ${firstError ?? 'some failed'}',
+        ),
+      ),
+    );
+    _exitSelect();
+    _load();
+    if (businessId != null && businessId.isNotEmpty) {
+      DataRefreshNotifier.instance.refresh(businessId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -109,6 +178,11 @@ class _BatchListPageState extends State<BatchListPage> {
               ),
               title: Text('${_selectedIds.length} selected'),
               actions: [
+                IconButton(
+                  tooltip: 'Delete selected',
+                  onPressed: _selectedIds.isEmpty ? null : _bulkDelete,
+                  icon: const Icon(MingCuteIcons.mgc_delete_2_line),
+                ),
                 IconButton(
                   tooltip: 'Mark as closed',
                   onPressed: _selectedIds.isEmpty ? null : _bulkClose,
@@ -242,9 +316,29 @@ class _BatchListPageState extends State<BatchListPage> {
                       ],
                     ),
                   );
-                  if (!_selecting) return card;
-                  return GestureDetector(
-                    onLongPress: () => _toggleSelect(batch.id),
+                  if (_selecting) {
+                    return GestureDetector(
+                      onLongPress: () => _toggleSelect(batch.id),
+                      child: card,
+                    );
+                  }
+                  return Dismissible(
+                    key: ValueKey('batch-${batch.id}'),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Icon(
+                        MingCuteIcons.mgc_delete_2_line,
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                    confirmDismiss: (_) => _confirmDeleteBatch(batch),
                     child: card,
                   );
                 }),

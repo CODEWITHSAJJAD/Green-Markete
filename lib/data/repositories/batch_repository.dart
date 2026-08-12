@@ -342,6 +342,43 @@ class BatchRepository {
     await _client.from('packing_returns').delete().eq('id', returnId);
   }
 
+  /// Permanently deletes a batch and its dependent rows.
+  ///
+  /// Child tables are removed first (FK order) so the batch delete is not
+  /// blocked by a foreign-key constraint. A missing RLS DELETE policy on any
+  /// table surfaces as a descriptive exception (see daily-56 hardening).
+  Future<void> delete(String id) async {
+    for (final table in const [
+      'sales',
+      'expenses',
+      'packing_returns',
+      'batch_vehicles',
+      'packing_records',
+      'batch_purchases',
+      'batch_partners',
+    ]) {
+      try {
+        await _client.from(table).delete().eq('batch_id', id);
+      } on PostgrestException catch (e) {
+        throw Exception(
+          'Delete blocked on the $table table (${e.code} ${e.message}). '
+          'A Supabase RLS DELETE policy may be missing there.',
+        );
+      }
+    }
+    final deleted = await _client
+        .from('product_batches')
+        .delete()
+        .eq('id', id)
+        .select();
+    if (deleted.isEmpty) {
+      throw Exception(
+        'Delete rejected by the server (0 rows affected). '
+        'A Supabase RLS DELETE policy is likely missing on the product_batches table.',
+      );
+    }
+  }
+
   Future<List<Map<String, dynamic>>> listBatchPartners(String batchId) async {
     final rows = await _client
         .from('batch_partners')

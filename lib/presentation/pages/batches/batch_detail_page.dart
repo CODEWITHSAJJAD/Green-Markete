@@ -424,9 +424,12 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                   children: [
                     const Icon(MingCuteIcons.mgc_store_line, size: 16),
                     const SizedBox(width: 8),
-                    Text(
-                      'Supplier: ${batch.supplierName}',
-                      style: theme.textTheme.bodyMedium,
+                    Expanded(
+                      child: Text(
+                        'Supplier: ${batch.supplierName}',
+                        style: theme.textTheme.bodyMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
