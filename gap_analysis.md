@@ -1,6 +1,6 @@
 # Green Market — Frontend Gap Analysis
 
-**Repo:** `C:\Users\SUQOON\OneDrive\Desktop\GreenMarket\frontend\green_market\` (Flutter 3.44.8 / Dart ^3.12.0, `provider` 6.x + `supabase_flutter` 2.16)
+**Repo:** `C:\Users\SUQOON\Downloads\frontend\green_market\` (Flutter 3.44.8 / Dart ^3.12.0, `provider` 6.x + `supabase_flutter` 2.16)
 **Branch:** `master`
 **Status:** V2.0 Supabase migration executed; live schema on `hvtgzyucgymuixfbdece`. `flutter analyze` clean, `flutter test` passes.
 

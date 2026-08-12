@@ -1,6 +1,6 @@
 # Green Market — Operations Features: Requirements Map & Implementation Plan
 
-**Repo:** `C:\Users\SUQOON\OneDrive\Desktop\GreenMarket\frontend\green_market\`
+**Repo:** `C:\Users\SUQOON\Downloads\frontend\green_market\`
 **Scope:** Frontend only (`green_market/`). Backend (FastAPI/Supabase) is a separate repo — any schema work needed is listed as a **backend prerequisite** for that repo only.
 **Guardrails:** The app must never stop working. Every access to a possibly-absent table is defensive (probe → graceful degradation), matching the pattern proven in Phases 3–6. `flutter analyze` must stay clean and `flutter test` green after every phase. Commit per phase with a `project_state.md` update.
 
