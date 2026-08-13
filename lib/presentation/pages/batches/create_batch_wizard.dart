@@ -192,6 +192,20 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       .toSet()
       .toList();
 
+  /// Suppliers known to the business (from the provider) plus any name typed
+  /// or created in this wizard session, so new entries immediately suggest
+  /// suppliers already entered in earlier lines.
+  List<String> _mergedSuppliers(BuildContext context) {
+    final names = <String>{
+      ...context.watch<SupplierProvider>().suppliers,
+      for (final p in _purchases)
+        if (((p['supplierName'] as String?) ?? '').trim().isNotEmpty)
+          (p['supplierName'] as String).trim(),
+    };
+    return names.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  }
+
   String _groupPaymentMode(int g) {
     final modes = _purchasesFor(g)
         .map((p) => (p['paymentMode'] as String? ?? 'cash'))
@@ -648,7 +662,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           PurchaseEntryForm(
             entries: _purchases,
             markets: marketsProvider.markets,
-            suppliers: context.watch<SupplierProvider>().suppliers,
+            suppliers: _mergedSuppliers(context),
             onChanged: (entries) => setState(() => _purchases = entries),
           ),
           const SizedBox(height: 16),
