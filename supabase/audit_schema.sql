@@ -91,13 +91,13 @@ SELECT
   rc.delete_rule
 FROM information_schema.table_constraints tc
 JOIN information_schema.key_column_usage kcu
-  ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  ON tc.constraint_name = kcu.constraint_name AND tc.constraint_schema = kcu.constraint_schema
 JOIN information_schema.constraint_column_usage ccu
-  ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+  ON tc.constraint_name = ccu.constraint_name AND tc.constraint_schema = ccu.constraint_schema
 JOIN information_schema.referential_constraints rc
-  ON tc.constraint_name = rc.constraint_name AND tc.table_schema = rc.table_schema
+  ON tc.constraint_name = rc.constraint_name AND tc.constraint_schema = rc.constraint_schema
 WHERE tc.constraint_type = 'FOREIGN KEY'
-  AND tc.table_schema = 'public'
+  AND tc.constraint_schema = 'public'
 ORDER BY tc.table_name, kcu.column_name;
 
 -- -----------------------------------------------------------------------------
