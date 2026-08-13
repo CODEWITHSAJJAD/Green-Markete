@@ -47,7 +47,9 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
     if (!_focus.hasFocus && widget.value != _ctrl.text) {
       _ctrl.text = widget.value;
     }
-    if (_focus.hasFocus) _updateOverlay();
+    // NOTE: no overlay show/hide here — didUpdateWidget runs during the
+    // build phase, where OverlayPortalController.show() is forbidden.
+    // The panel content refreshes automatically on rebuild.
   }
 
   @override
@@ -57,13 +59,7 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
     super.dispose();
   }
 
-  void _onFocusChanged() {
-    if (_focus.hasFocus) {
-      _updateOverlay();
-    } else if (_overlay.isShowing) {
-      _overlay.hide();
-    }
-  }
+  void _onFocusChanged() => _updateOverlay();
 
   String get _query => _ctrl.text.trim();
 
@@ -81,11 +77,17 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
   }
 
   void _updateOverlay() {
-    if (_matches.isNotEmpty || _showCreateOption) {
-      if (!_overlay.isShowing) _overlay.show();
-    } else if (_overlay.isShowing) {
-      _overlay.hide();
-    }
+    if (!mounted) return;
+    final shouldShow = _focus.hasFocus && (_matches.isNotEmpty || _showCreateOption);
+    if (shouldShow == _overlay.isShowing) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (shouldShow) {
+        if (!_overlay.isShowing) _overlay.show();
+      } else if (_overlay.isShowing) {
+        _overlay.hide();
+      }
+    });
   }
 
   void _pick(String name) {
