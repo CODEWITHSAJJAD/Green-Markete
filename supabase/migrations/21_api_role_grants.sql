@@ -32,7 +32,10 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT ALL ON FUNCTIONS TO anon, authenticated;
 
-RAISE NOTICE 'Grants applied — authenticated and anon now have ALL on schema public (tables, sequences, functions)';
+DO $mig$
+BEGIN
+    RAISE NOTICE 'Grants applied — authenticated and anon now have ALL on schema public (tables, sequences, functions)';
+END $mig$;
 
 
 -- -----------------------------------------------------------------------------
