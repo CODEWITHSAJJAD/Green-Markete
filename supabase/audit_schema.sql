@@ -127,19 +127,19 @@ ORDER BY schemaname, tablename;
 --    Each check prints `CHECK <name> => <n>` or `skipped (SQLSTATE: msg)`.
 --    Read the messages in the Results/Notifications panel.
 -- -----------------------------------------------------------------------------
-DO $$
+DO $audit$
 DECLARE chk record; cnt BIGINT;
 BEGIN
   FOR chk IN
     SELECT name, q FROM (VALUES
       ('batches_total',            'SELECT count(*) FROM product_batches'),
       ('purchase_lines_total',     'SELECT count(*) FROM batch_purchases'),
-      ('batches_with_zero_purchase_lines', $$
+      ('batches_with_zero_purchase_lines', $q$
         SELECT count(*) FROM (
           SELECT b.id FROM product_batches b
           LEFT JOIN batch_purchases p ON p.batch_id = b.id
           GROUP BY b.id HAVING count(p.id) = 0
-        ) x $$),
+        ) x $q$),
       ('orphan_purchase_lines',    'SELECT count(*) FROM batch_purchases p WHERE NOT EXISTS (SELECT 1 FROM product_batches b WHERE b.id = p.batch_id)'),
       ('orphan_sales',             'SELECT count(*) FROM sales s WHERE NOT EXISTS (SELECT 1 FROM product_batches b WHERE b.id = s.batch_id)'),
       ('orphan_expenses',          'SELECT count(*) FROM expenses e WHERE NOT EXISTS (SELECT 1 FROM product_batches b WHERE b.id = e.batch_id)'),
@@ -149,17 +149,17 @@ BEGIN
       ('orphan_batch_partners',    'SELECT count(*) FROM batch_partners bp WHERE NOT EXISTS (SELECT 1 FROM product_batches b WHERE b.id = bp.batch_id)'),
       ('batches_cost_mismatch',    'SELECT count(*) FROM product_batches b WHERE b.total_purchase_cost <> round(b.total_quantity * b.purchase_price_per_unit, 2)'),
       ('batches_paid_exceeds_cost','SELECT count(*) FROM product_batches b WHERE b.purchase_amount_paid > b.total_purchase_cost'),
-      ('batches_past_packed_no_packing', $$
+      ('batches_past_packed_no_packing', $q$
         SELECT count(*) FROM product_batches b
         WHERE b.status IN ('in_transit','delivered','selling','closed')
-          AND NOT EXISTS (SELECT 1 FROM packing_records pr WHERE pr.batch_id = b.id) $$),
-      ('batches_sold_over_total',  $$
+          AND NOT EXISTS (SELECT 1 FROM packing_records pr WHERE pr.batch_id = b.id) $q$),
+      ('batches_sold_over_total',  $q$
         SELECT count(*) FROM (
           SELECT b.id FROM product_batches b
           JOIN sales s ON s.batch_id = b.id
           GROUP BY b.id, b.total_quantity
           HAVING sum(s.quantity_sold) > b.total_quantity
-        ) x $$),
+        ) x $q$),
       ('customers_negative_balance', 'SELECT count(*) FROM customers c WHERE c.outstanding_balance < 0')
     ) AS t(name text, q text)
   LOOP
@@ -170,5 +170,5 @@ BEGIN
       RAISE NOTICE 'CHECK % => skipped (%: %)', chk.name, SQLSTATE, SQLERRM;
     END;
   END LOOP;
-END $$;
+END $audit$;
 -- =============================================================================
