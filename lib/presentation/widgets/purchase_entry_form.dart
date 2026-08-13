@@ -12,12 +12,17 @@ class PurchaseEntryForm extends StatefulWidget {
   final List<String> suppliers;
   final ValueChanged<List<Map<String, dynamic>>> onChanged;
 
+  /// Fired when the user creates a brand-new supplier name (via the dropdown's
+  /// "Add … as new supplier" row) so it can be persisted to the registry.
+  final ValueChanged<String>? onCreateSupplier;
+
   const PurchaseEntryForm({
     super.key,
     required this.entries,
     this.markets,
     this.suppliers = const [],
     required this.onChanged,
+    this.onCreateSupplier,
   });
 
   @override
@@ -83,6 +88,7 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
             entry: _entries[i],
             markets: widget.markets,
             suppliers: widget.suppliers,
+            onCreateSupplier: widget.onCreateSupplier,
             deletable: _entries.length > 1,
             onChanged: (entry) {
               setState(() => _entries[i] = entry);
@@ -191,6 +197,7 @@ class _EntryCard extends StatefulWidget {
   final bool deletable;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
+  final ValueChanged<String>? onCreateSupplier;
 
   const _EntryCard({
     super.key,
@@ -201,6 +208,7 @@ class _EntryCard extends StatefulWidget {
     required this.deletable,
     required this.onChanged,
     required this.onDelete,
+    this.onCreateSupplier,
   });
 
   @override
@@ -340,6 +348,7 @@ class _EntryCardState extends State<_EntryCard> {
             onChanged: (v) => _update(() {
               widget.entry['supplierName'] = v;
             }),
+            onCreateSupplier: widget.onCreateSupplier,
           ),
           const SizedBox(height: 12),
           if (widget.markets != null && widget.markets!.isNotEmpty)

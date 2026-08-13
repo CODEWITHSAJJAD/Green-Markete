@@ -12,6 +12,11 @@ class SupplierDropdownField extends StatefulWidget {
   final String labelText;
   final bool required;
 
+  /// Called when the user creates a NEW supplier name via the
+  /// "Add … as new supplier" row — used to persist it (e.g. into the
+  /// `suppliers` registry) so it survives the session.
+  final ValueChanged<String>? onCreateSupplier;
+
   const SupplierDropdownField({
     super.key,
     required this.value,
@@ -19,6 +24,7 @@ class SupplierDropdownField extends StatefulWidget {
     required this.suppliers,
     this.labelText = 'Supplier / shop name *',
     this.required = true,
+    this.onCreateSupplier,
   });
 
   @override
@@ -94,7 +100,11 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
     _ctrl.text = name;
     setState(() => _showCreateOption = false);
     if (_overlay.isShowing) _overlay.hide();
+    final isNew = !widget.suppliers.any(
+      (s) => s.toLowerCase() == name.toLowerCase(),
+    );
     widget.onChanged(name);
+    if (isNew) widget.onCreateSupplier?.call(name);
   }
 
   @override

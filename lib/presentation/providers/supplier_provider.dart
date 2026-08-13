@@ -41,6 +41,18 @@ class SupplierProvider extends ChangeNotifier {
     }
   }
 
+  /// Persists a newly-created supplier name to the registry and refreshes the
+  /// suggestion list so it is immediately available in future sessions.
+  Future<void> createSupplier(String businessId, String name) async {
+    try {
+      await _repo.createSupplier(businessId, name);
+      await loadSuppliers(businessId);
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
   Future<void> loadOutstanding(
     String businessId, {
     DateTime? from,

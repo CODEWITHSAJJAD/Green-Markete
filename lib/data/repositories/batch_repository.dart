@@ -746,7 +746,9 @@ class BatchRepository {
   ///   1. `batch_purchases` lines joined to the business's batches (current),
   ///   2. `product_batches.supplier_name` — the comma-joined fallback column
   ///      used by batches created before `batch_purchases` existed, so
-  ///      historical suppliers still show up as suggestions.
+  ///      historical suppliers still show up as suggestions,
+  ///   3. the `suppliers` registry (names created via the dropdown's
+  ///      "Add … as new supplier" row, persisted by `createSupplier`).
   /// Defensive on missing tables/columns.
   Future<List<String>> getDistinctSupplierNames(String businessId) async {
     final names = <String>{};
@@ -783,9 +785,44 @@ class BatchRepository {
       );
     }
 
+    try {
+      final registry = await _client
+          .from('suppliers')
+          .select('name')
+          .eq('business_id', businessId);
+      for (final r in registry) {
+        final n = (r['name'] as String?)?.trim();
+        if (n != null && n.isNotEmpty) names.add(n);
+      }
+    } on PostgrestException catch (e) {
+      if (e.code != 'PGRST205' && e.code != '42P01' && e.code != '42703') {
+        rethrow;
+      }
+      debugPrint('suppliers registry skipped: ${e.code} ${e.message}');
+    }
+
     final list = names.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return list;
+  }
+
+  /// Persists a supplier name into the `suppliers` registry so it appears in
+  /// the dropdown in future sessions. Idempotent per (business_id, name).
+  /// Failures are logged, never thrown — the dropdown must keep working even
+  /// on DBs without the registry table.
+  Future<void> createSupplier(String businessId, String name) async {
+    try {
+      await _client
+          .from('suppliers')
+          .upsert(
+            {'business_id': businessId, 'name': name},
+            onConflict: 'business_id,name',
+          )
+          .select()
+          .single();
+    } on PostgrestException catch (e) {
+      debugPrint('supplier registry upsert skipped: ${e.code} ${e.message}');
+    }
   }
 
   Map<String, dynamic> _withProductName(Map<String, dynamic> row) {

@@ -664,6 +664,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             markets: marketsProvider.markets,
             suppliers: _mergedSuppliers(context),
             onChanged: (entries) => setState(() => _purchases = entries),
+            onCreateSupplier: (name) {
+              final id = context.read<AuthProvider>().businessId;
+              if (id != null && id.isNotEmpty) {
+                context.read<SupplierProvider>().createSupplier(id, name);
+              }
+            },
           ),
           const SizedBox(height: 16),
           Text('Transport Paid By', style: theme.textTheme.titleMedium),
