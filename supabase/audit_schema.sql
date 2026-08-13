@@ -161,7 +161,7 @@ BEGIN
           HAVING sum(s.quantity_sold) > b.total_quantity
         ) x $q$),
       ('customers_negative_balance', 'SELECT count(*) FROM customers c WHERE c.outstanding_balance < 0')
-    ) AS t(name text, q text)
+    ) AS t(name, q)
   LOOP
     BEGIN
       EXECUTE chk.q INTO cnt;
