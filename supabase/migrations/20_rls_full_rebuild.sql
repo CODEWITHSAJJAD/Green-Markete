@@ -89,7 +89,7 @@ BEGIN
         -- Root: businesses ------------------------------------------------
         IF grp = 'root' THEN
             BEGIN
-                EXECUTE format('CREATE POLICY businesses_select ON %I FOR SELECT USING (id = my_business_id())', t.tablename);
+                EXECUTE format('CREATE POLICY businesses_select ON %I FOR SELECT USING (id = my_business_id() OR owner_id = auth.uid())', t.tablename);
                 EXECUTE format('CREATE POLICY businesses_insert ON %I FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid())', t.tablename);
                 EXECUTE format('CREATE POLICY businesses_update ON %I FOR UPDATE USING (id = my_business_id()) WITH CHECK (i_am_owner())', t.tablename);
                 EXECUTE format('CREATE POLICY businesses_delete ON %I FOR DELETE USING (i_am_owner())', t.tablename);
@@ -101,7 +101,7 @@ BEGIN
         -- Partners (self-registration + owner/editor) ----------------------
         ELSIF grp = 'partners' THEN
             BEGIN
-                EXECUTE format('CREATE POLICY partners_select ON %I FOR SELECT USING (business_id = my_business_id())', t.tablename);
+                EXECUTE format('CREATE POLICY partners_select ON %I FOR SELECT USING (business_id = my_business_id() OR user_id = auth.uid())', t.tablename);
                 EXECUTE format('CREATE POLICY partners_insert ON %I FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid() OR (business_id = my_business_id() AND (i_am_owner() OR i_am_editor())))', t.tablename);
                 EXECUTE format('CREATE POLICY partners_update ON %I FOR UPDATE USING (business_id = my_business_id() OR user_id = auth.uid()) WITH CHECK (user_id = auth.uid() OR (business_id = my_business_id() AND (i_am_owner() OR i_am_editor())))', t.tablename);
                 EXECUTE format('CREATE POLICY partners_delete ON %I FOR DELETE USING (business_id = my_business_id() AND i_am_owner())', t.tablename);
