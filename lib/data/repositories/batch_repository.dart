@@ -347,6 +347,7 @@ class BatchRepository {
   /// Child tables are removed first (FK order) so the batch delete is not
   /// blocked by a foreign-key constraint. A missing RLS DELETE policy on any
   /// table surfaces as a descriptive exception (see daily-56 hardening).
+  /// Tables that do not exist yet are skipped (see [_safeDelete]).
   Future<void> delete(String id) async {
     for (final table in const [
       'sales',
@@ -357,14 +358,7 @@ class BatchRepository {
       'batch_purchases',
       'batch_partners',
     ]) {
-      try {
-        await _client.from(table).delete().eq('batch_id', id);
-      } on PostgrestException catch (e) {
-        throw Exception(
-          'Delete blocked on the $table table (${e.code} ${e.message}). '
-          'A Supabase RLS DELETE policy may be missing there.',
-        );
-      }
+      await _safeDelete(table, 'batch_id', id);
     }
     final deleted = await _client
         .from('product_batches')
@@ -375,6 +369,27 @@ class BatchRepository {
       throw Exception(
         'Delete rejected by the server (0 rows affected). '
         'A Supabase RLS DELETE policy is likely missing on the product_batches table.',
+      );
+    }
+  }
+
+  /// Deletes rows in a child table for a batch.
+  ///
+  /// Mirrors [_safeSelect]'s tolerance for missing tables/columns
+  /// (`PGRST205` / `42P01` / `42703` → skip) so a batch can still be deleted on
+  /// databases that predate the table. Any other error (e.g. RLS `42501`) is
+  /// surfaced as a descriptive exception naming the table.
+  Future<void> _safeDelete(String table, String column, String value) async {
+    try {
+      await _client.from(table).delete().eq(column, value);
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST205' || e.code == '42P01' || e.code == '42703') {
+        debugPrint('$table not available for batch delete (${e.code}); skipping');
+        return;
+      }
+      throw Exception(
+        'Delete blocked on the $table table (${e.code} ${e.message}). '
+        'A Supabase RLS DELETE policy may be missing there.',
       );
     }
   }

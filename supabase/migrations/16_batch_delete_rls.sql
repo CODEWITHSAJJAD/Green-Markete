@@ -19,23 +19,28 @@
 -- in migration 15) and the daily-56 delete-hardening SQL for
 -- markets/vehicles/products.
 --
--- Idempotent: DROP IF EXISTS + CREATE on every table, safe to re-run.
+-- Robust/idempotent: every statement is guarded by `to_regclass`, so the
+-- migration also runs on databases that predate some child tables (e.g.
+-- `batch_purchases`, created by the daily-59 migration in the backend repo).
+-- Safe to re-run at any time; policies are created for whichever tables exist.
+--
 -- Apply via the Supabase SQL editor (or `supabase db push`).
 -- =============================================================================
 
-DROP POLICY IF EXISTS "batch_purchases_delete" ON batch_purchases;
+-- Drop the old owner-only batch_purchases policy if the table exists.
+DO $$
+BEGIN
+  IF to_regclass('public.batch_purchases') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "batch_purchases_delete" ON batch_purchases';
+  END IF;
+END $$;
 
-DROP POLICY IF EXISTS "batch_delete" ON product_batches;
-CREATE POLICY "batch_delete" ON product_batches
-    FOR DELETE USING (
-        (i_am_owner() OR i_am_editor())
-        AND business_id = my_business_id()
-    );
-
+-- Owner-or-editor DELETE policy on the batch and its child tables.
 DO $$
 DECLARE t TEXT;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
+      'product_batches',
       'sales',
       'expenses',
       'packing_records',
@@ -45,12 +50,21 @@ BEGIN
       'batch_partners'
   ]
   LOOP
-    EXECUTE format('DROP POLICY IF EXISTS "batch_delete" ON %I', t);
-    EXECUTE format(
-      'CREATE POLICY "batch_delete" ON %I FOR DELETE USING '
-      || '((i_am_owner() OR i_am_editor()) AND batch_id IN ('
-      || 'SELECT id FROM product_batches WHERE business_id = my_business_id()))',
-      t);
+    IF to_regclass(format('public.%I', t)) IS NOT NULL THEN
+      EXECUTE format('DROP POLICY IF EXISTS "batch_delete" ON %I', t);
+      IF t = 'product_batches' THEN
+        EXECUTE format(
+          'CREATE POLICY "batch_delete" ON %I FOR DELETE USING '
+          || '((i_am_owner() OR i_am_editor()) AND business_id = my_business_id())',
+          t);
+      ELSE
+        EXECUTE format(
+          'CREATE POLICY "batch_delete" ON %I FOR DELETE USING '
+          || '((i_am_owner() OR i_am_editor()) AND batch_id IN ('
+          || 'SELECT id FROM product_batches WHERE business_id = my_business_id()))',
+          t);
+      END IF;
+    END IF;
   END LOOP;
 END $$;
 
