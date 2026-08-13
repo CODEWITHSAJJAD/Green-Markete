@@ -1426,10 +1426,14 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      '${(p['kgTotal'] as num?)?.toStringAsFixed(1) ?? '0'} kg \u00d7 ${CurrencyFormatter.format((p['lineCost'] as num?)?.toDouble())}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '${(p['kgTotal'] as num?)?.toStringAsFixed(1) ?? '0'} kg \u00d7 ${CurrencyFormatter.format((p['lineCost'] as num?)?.toDouble())}',
+                        textAlign: TextAlign.end,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -1477,16 +1481,22 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
           ),
         ],
