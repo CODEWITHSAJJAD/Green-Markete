@@ -741,20 +741,48 @@ class BatchRepository {
     }
   }
 
-  /// Distinct supplier names from `batch_purchases` joined to `product_batches`
-  /// for the business, used to populate the searchable supplier dropdown in the
-  /// purchase wizard. Defensive on missing table.
+  /// Distinct supplier names for the searchable supplier dropdown in the
+  /// purchase wizard. Sources:
+  ///   1. `batch_purchases` lines joined to the business's batches (current),
+  ///   2. `product_batches.supplier_name` — the comma-joined fallback column
+  ///      used by batches created before `batch_purchases` existed, so
+  ///      historical suppliers still show up as suggestions.
+  /// Defensive on missing tables/columns.
   Future<List<String>> getDistinctSupplierNames(String businessId) async {
+    final names = <String>{};
+
     final rows = await _safeSelect(
       table: 'batch_purchases',
       select: 'supplier_name, product_batches!inner(business_id)',
       filter: (q) => q.eq('product_batches.business_id', businessId),
     );
-    final names = <String>{};
     for (final r in rows) {
       final n = (r['supplier_name'] as String?)?.trim();
       if (n != null && n.isNotEmpty) names.add(n);
     }
+
+    try {
+      final history = await _client
+          .from('product_batches')
+          .select('supplier_name')
+          .eq('business_id', businessId)
+          .or('supplier_name.not.is.null');
+      for (final r in history) {
+        final raw = (r['supplier_name'] as String?) ?? '';
+        for (final part in raw.split(',')) {
+          final n = part.trim();
+          if (n.isNotEmpty) names.add(n);
+        }
+      }
+    } on PostgrestException catch (e) {
+      if (e.code != 'PGRST205' && e.code != '42P01' && e.code != '42703') {
+        rethrow;
+      }
+      debugPrint(
+        'product_batches.supplier_name fallback skipped: ${e.code} ${e.message}',
+      );
+    }
+
     final list = names.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return list;

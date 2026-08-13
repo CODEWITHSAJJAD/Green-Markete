@@ -26,6 +26,7 @@ class SupplierDropdownField extends StatefulWidget {
 
 class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
   late final TextEditingController _ctrl;
+  final FocusNode _focus = FocusNode();
   bool _showCreateOption = false;
 
   @override
@@ -37,7 +38,9 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
   @override
   void didUpdateWidget(covariant SupplierDropdownField old) {
     super.didUpdateWidget(old);
-    if (widget.value != _ctrl.text) {
+    // Never clobber text while the user is typing; only sync external
+    // changes (e.g. a freshly loaded supplier list) when unfocused.
+    if (!_focus.hasFocus && widget.value != _ctrl.text) {
       _ctrl.text = widget.value;
     }
   }
@@ -45,6 +48,7 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
   @override
   void dispose() {
     _ctrl.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -69,6 +73,7 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
       children: [
         TextField(
           controller: _ctrl,
+          focusNode: _focus,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
             labelText: widget.labelText,
