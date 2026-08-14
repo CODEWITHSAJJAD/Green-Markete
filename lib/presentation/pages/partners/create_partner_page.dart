@@ -18,6 +18,7 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
   final _phoneCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
   String _role = 'partner';
+  String _accessLevel = 'viewer';
   bool _saving = false;
 
   @override
@@ -39,6 +40,7 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
       'phone': _phoneCtrl.text.trim(),
       'city': _cityCtrl.text.trim(),
       'role': _role,
+      'access_level': _accessLevel,
       'business_id': businessId,
     });
     if (!mounted) return;
@@ -104,6 +106,22 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
                 ],
                 onChanged: (value) =>
                     setState(() => _role = value ?? 'partner'),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField2<String>(
+                isExpanded: true,
+                valueListenable: ValueNotifier(_accessLevel),
+                decoration: const InputDecoration(
+                  labelText: 'Access level',
+                  helperText:
+                      'Editor can change batch status; Viewer writes their own side only',
+                ),
+                items: const [
+                  DropdownItem(value: 'viewer', child: Text('Viewer')),
+                  DropdownItem(value: 'editor', child: Text('Editor')),
+                ],
+                onChanged: (value) =>
+                    setState(() => _accessLevel = value ?? 'viewer'),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/capability.dart';
 import '../../providers/partner_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
@@ -37,6 +38,9 @@ class _PartnerListPageState extends State<PartnerListPage> {
   }
 
   Future<void> _openCreate() async {
+    if (!context.read<AuthProvider>().capabilities.can(Capability.createPartner)) {
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const CreatePartnerPage()),
     );
@@ -159,27 +163,20 @@ class _PartnerListPageState extends State<PartnerListPage> {
                                     Text(partner.fullName, style: theme.textTheme.titleMedium),
                                     const SizedBox(height: 4),
                                     Text(
-                                      [partner.role, partner.city, partner.phone]
-                                          .where((item) => item != null && item.isNotEmpty)
+                                      [describeSide(partner.role), partner.city ?? '', partner.phone ?? '']
+                                          .where((item) => item.isNotEmpty)
                                           .join('  •  '),
                                       style: theme.textTheme.bodySmall,
                                     ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        _accessBadge(theme, partner.accessLevel ?? 'viewer'),
+                                        const SizedBox(width: 6),
+                                        _claimedBadge(theme, partner.isClaimed),
+                                      ],
+                                    ),
                                   ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: partner.isClaimed
-                                      ? theme.colorScheme.primary.withValues(alpha: 0.10)
-                                      : theme.colorScheme.secondary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  partner.isClaimed ? 'Claimed' : 'Pending',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: partner.isClaimed ? theme.colorScheme.primary : theme.colorScheme.secondary,
-                                  ),
                                 ),
                               ),
                             ],
@@ -190,11 +187,58 @@ class _PartnerListPageState extends State<PartnerListPage> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: _openCreate,
-        icon: const Icon(MingCuteIcons.mgc_user_4_line),
-        label: const Text('New Partner'),
+      floatingActionButton: context
+              .watch<AuthProvider>()
+              .capabilities
+              .can(Capability.createPartner)
+          ? FloatingActionButton.extended(
+              heroTag: null,
+              onPressed: _openCreate,
+              icon: const Icon(MingCuteIcons.mgc_user_4_line),
+              label: const Text('New Partner'),
+            )
+          : null,
+    );
+  }
+
+  Widget _accessBadge(ThemeData theme, String accessLevel) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: accessLevel == 'editor'
+            ? theme.colorScheme.secondary.withValues(alpha: 0.12)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        describeAccess(accessLevel),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: accessLevel == 'editor'
+              ? theme.colorScheme.secondary
+              : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _claimedBadge(ThemeData theme, bool isClaimed) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isClaimed
+            ? theme.colorScheme.primary.withValues(alpha: 0.10)
+            : theme.colorScheme.tertiary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        isClaimed ? 'Claimed' : 'Pending',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: isClaimed
+              ? theme.colorScheme.primary
+              : theme.colorScheme.tertiary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
