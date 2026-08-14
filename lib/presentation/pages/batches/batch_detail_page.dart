@@ -1169,6 +1169,9 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     for (final l in loads) {
       grouped.putIfAbsent(l.vehicleId, () => []).add(l);
     }
+    final packingById = {
+      for (final p in detailProvider.packingRecords) p.id: p,
+    };
     final totalCost = loads.fold<double>(0, (acc, l) => acc + l.totalCost);
     final transportPaidBy = batch.transportPaidBy ?? 'purchaser';
     final transportPartnerId = detailProvider.batchPartners
@@ -1220,7 +1223,9 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           ),
           const SizedBox(height: 8),
         ],
-        ...grouped.entries.map((entry) => _vehicleGroup(context, batch, entry.value)),
+        ...grouped.entries.map(
+          (entry) => _vehicleGroup(context, batch, entry.value, packingById),
+        ),
       ],
     );
   }
@@ -1231,6 +1236,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     BuildContext context,
     BatchModel batch,
     List<BatchVehicleModel> loads,
+    Map<String, PackingRecordModel> packingById,
   ) {
     final theme = Theme.of(context);
     final first = loads.first;
@@ -1290,7 +1296,14 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             ],
           ),
           const Divider(height: 20),
-          ...loads.map((l) => _loadRow(context, batch, l)),
+          ...loads.map(
+            (l) => _loadRow(
+              context,
+              batch,
+              l,
+              _transportLoadLabel(l, packingById),
+            ),
+          ),
           if (combinedUnits > 0) ...[
             const Divider(height: 16),
             Row(
@@ -1317,7 +1330,12 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     );
   }
 
-  Widget _loadRow(BuildContext context, BatchModel batch, BatchVehicleModel load) {
+  Widget _loadRow(
+    BuildContext context,
+    BatchModel batch,
+    BatchVehicleModel load,
+    String label,
+  ) {
     final theme = Theme.of(context);
     final tile = Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1328,7 +1346,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  load.packingLabel ?? 'Load',
+                  label,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -1407,6 +1425,28 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     );
   }
 
+  /// Resolves the packing label shown for a transport load. Loads store only a
+  /// packing_record_id, so the label comes from the batch's packing records.
+  String _transportLoadLabel(
+    BatchVehicleModel load,
+    Map<String, PackingRecordModel> packingById,
+  ) {
+    final id = load.packingRecordId;
+    final packing = id == null ? null : packingById[id];
+    if (packing != null) {
+      final type = packing.unitType.toLowerCase();
+      if (type.isEmpty || type.contains('custom') || type.contains('loose')) {
+        final name =
+            packing.unitLabel == null || packing.unitLabel!.isEmpty
+                ? 'Loose'
+                : packing.unitLabel!;
+        return name;
+      }
+      return '${packing.unitType} × ${packing.unitCount}';
+    }
+    return load.packingLabel ?? 'Load';
+  }
+
   Future<void> _showPayTransportDialog(
     BuildContext context, {
     required BatchModel batch,
@@ -1415,7 +1455,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
   }) async {
     final theme = Theme.of(context);
     final businessId = context.read<AuthProvider>().businessId ?? '';
-    final batchPartners = context.read<BatchDetailProvider>().batchPartners;
+    final side = batch.transportPaidBy ?? 'purchaser';
     final partners = context.read<PartnerProvider>().partners;
 
     String partnerName(String id) {
@@ -1426,28 +1466,13 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           id;
     }
 
-    final otherPartnerIds = batchPartners
-        .where((p) => (p['partner_id'] as String?) != transportPartnerId)
-        .map((p) => p['partner_id'] as String?)
-        .whereType<String>()
-        .toList();
-    if (otherPartnerIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Add another partner to the batch to record a transport payment',
-          ),
-        ),
-      );
-      return;
-    }
-    String? fromPartnerId = otherPartnerIds.first;
     final amountCtrl = TextEditingController(
       text: totalCost > 0 ? totalCost.toStringAsFixed(2) : '',
     );
     final notesCtrl = TextEditingController(
       text: 'Transport payment for batch ${batch.batchCode}',
     );
+    final refCtrl = TextEditingController();
     String paymentMode = 'cash';
 
     await showDialog<void>(
@@ -1461,38 +1486,20 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
+                    'The ${side == 'seller' ? 'seller' : 'purchaser'} side pays the vehicle fares directly. This is recorded as a ${side == 'seller' ? 'seller' : 'purchaser'}-side transport expense.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Paid by: ${partnerName(transportPartnerId)} (${side == 'seller' ? 'Seller' : 'Purchaser'})',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     'Total transport fare: ${CurrencyFormatter.format(totalCost)}',
                     style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(fromPartnerId),
-                    decoration: const InputDecoration(labelText: 'Paid by'),
-                    items: [
-                      for (final p in otherPartnerIds)
-                        DropdownItem(
-                          value: p,
-                          child: Text(
-                            partnerName(p),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                    ],
-                    onChanged: (v) => setSt(() => fromPartnerId = v),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(transportPartnerId),
-                    decoration: const InputDecoration(labelText: 'Paid to'),
-                    items: [
-                      DropdownItem(
-                        value: transportPartnerId,
-                        child: Text(partnerName(transportPartnerId)),
-                      ),
-                    ],
-                    onChanged: (_) {},
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -1519,6 +1526,15 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                     ],
                     onChanged: (v) => setSt(() => paymentMode = v ?? 'cash'),
                   ),
+                  if (paymentMode == 'bank_transfer') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: refCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Bank reference',
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   TextField(
                     controller: notesCtrl,
@@ -1542,56 +1558,47 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                     );
                     return;
                   }
-                  if (fromPartnerId == null || fromPartnerId!.isEmpty) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(content: Text('Select who is paying')),
-                    );
-                    return;
-                  }
-                  final txProvider = context.read<TransactionProvider>();
-                  try {
-                    final created = await txProvider.create(
-                      TransactionCreateRequest(
-                        businessId: businessId,
-                        fromPartnerId: fromPartnerId!,
-                        toPartnerId: transportPartnerId,
-                        amount: amount,
-                        transactionType: 'transport',
-                        paymentMode: paymentMode,
-                        transactionDate: DateTime.now()
-                            .toIso8601String()
-                            .split('T')
-                            .first,
-                        notes: notesCtrl.text.trim().isEmpty
-                            ? null
-                            : notesCtrl.text.trim(),
+                  final expenseProvider = context.read<ExpenseProvider>();
+                  final ok = await expenseProvider.add(
+                    batch.id,
+                    ExpenseCreate(
+                      expenseSide: side,
+                      expenseType: 'transport',
+                      amount: amount,
+                      description: notesCtrl.text.trim().isEmpty
+                          ? null
+                          : notesCtrl.text.trim(),
+                      paidBy: transportPartnerId,
+                      paymentMode: paymentMode,
+                      paymentReference: refCtrl.text.trim().isEmpty
+                          ? null
+                          : refCtrl.text.trim(),
+                      expenseDate: DateTime.now()
+                          .toIso8601String()
+                          .split('T')
+                          .first,
+                    ),
+                  );
+                  if (!ctx.mounted) return;
+                  if (ok) {
+                    context.read<BatchPLProvider>().load(batch.id);
+                    if (businessId.isNotEmpty) {
+                      DataRefreshNotifier.instance.refresh(businessId);
+                    }
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Transport payment recorded'),
                       ),
                     );
-                    if (created != null) {
-                      txProvider.loadLedger(transportPartnerId);
-                      if (businessId.isNotEmpty) {
-                        DataRefreshNotifier.instance.refresh(businessId);
-                      }
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    } else if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Failed: ${txProvider.error ?? 'Unknown error'}',
-                          ),
+                  } else {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Failed: ${expenseProvider.error ?? 'Unknown error'}',
                         ),
-                      );
-                    }
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().replaceAll('Exception: ', ''),
-                          ),
-                        ),
-                      );
-                    }
+                      ),
+                    );
                   }
                 },
                 child: const Text('Save Payment'),
