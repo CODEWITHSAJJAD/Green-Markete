@@ -248,8 +248,12 @@ class _BatchDetailPageState extends State<BatchDetailPage>
   }
 
   Widget _buildFab(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final canPurchaser = auth.canEditPurchaserSide;
+    final canSeller = auth.canEditSellerSide;
     final tabIndex = _tabCtrl.index;
     if (tabIndex == 1) {
+      if (!canPurchaser) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () => _showAddPackingDialog(context),
@@ -258,6 +262,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       );
     }
     if (tabIndex == 2) {
+      if (!canPurchaser) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () => _showAddReturnDialog(context),
@@ -266,10 +271,19 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       );
     }
     if (tabIndex == 3) {
+      final allowed = [
+        if (canPurchaser) 'purchaser',
+        if (canSeller) 'seller',
+      ];
+      if (allowed.isEmpty) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () async {
-          await showExpenseEntrySheet(context, batchId: batchId);
+          await showExpenseEntrySheet(
+            context,
+            batchId: batchId,
+            allowedSides: allowed,
+          );
           if (!context.mounted) return;
           context.read<ExpenseProvider>().load(batchId);
           context.read<BatchPLProvider>().load(batchId);
@@ -280,6 +294,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       );
     }
     if (tabIndex == 4) {
+      if (!canPurchaser) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
         onPressed: () => _showAddTransportDialog(context),
@@ -288,6 +303,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       );
     }
     if (tabIndex == 5) {
+      if (!canSeller) return const SizedBox.shrink();
       final batch = context.read<BatchDetailProvider>().batch;
       if (batch == null) return const SizedBox.shrink();
       final soldQuantity = context.read<SaleProvider>().sales.fold<double>(
@@ -450,7 +466,10 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                 ),
               ],
               const SizedBox(height: 18),
-              if (batch.status != 'closed')
+              if (batch.status != 'closed' &&
+                  context.read<AuthProvider>().capabilities.can(
+                        Capability.editBatch,
+                      ))
                 Align(
                   alignment: Alignment.centerRight,
                   child: FilledButton.tonalIcon(
@@ -642,8 +661,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             )
           : null,
     );
-    final canDelete =
-        (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
+    final canDelete = context.read<AuthProvider>().canEditPurchaserSide;
     if (!canDelete) return tile;
     return Dismissible(
       key: ValueKey('return-${item.id}'),
@@ -1122,8 +1140,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     final theme = Theme.of(context);
     final walkInCredit = sale.customerId == null && sale.creditAmount > 0;
     final canCollect =
-        walkInCredit &&
-        (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
+        walkInCredit && context.read<AuthProvider>().canEditSellerSide;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: CircleAvatar(
@@ -1359,7 +1376,8 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             ],
           ),
         ),
-        if (transportPartnerId != null) ...[
+        if (transportPartnerId != null &&
+            context.read<AuthProvider>().canEditPurchaserSide) ...[
           const SizedBox(height: 4),
           FilledButton.icon(
             onPressed: () => _showPayTransportDialog(
@@ -1528,8 +1546,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         ],
       ),
     );
-    final canDelete =
-        (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
+    final canDelete = context.read<AuthProvider>().canEditPurchaserSide;
     if (!canDelete) return tile;
     return Dismissible(
       key: ValueKey('vehicle-load-${load.id}'),
@@ -2040,7 +2057,10 @@ class _BatchDetailPageState extends State<BatchDetailPage>
               _costLine(theme, 'Bill owed to seller', owed, bold: true),
               _costLine(theme, 'Settled for this batch', settledForBatch),
               _costLine(theme, 'Remaining', remaining, bold: true),
-              if (remaining > 0) ...[
+              if (remaining > 0 &&
+                  context.read<AuthProvider>().capabilities.can(
+                        Capability.createSettlement,
+                      )) ...[
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   onPressed: () => _settleSellerDialog(

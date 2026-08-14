@@ -10,6 +10,7 @@ import '../../../core/supabase/supabase_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/models/customer_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/credit_indicator.dart';
@@ -207,10 +208,11 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
             onPressed: _shareStatement,
             icon: const Icon(MingCuteIcons.mgc_share_2_line),
           ),
-          IconButton(
-            onPressed: _openRecordPayment,
-            icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
-          ),
+          if (context.watch<AuthProvider>().canEditSellerSide)
+            IconButton(
+              onPressed: _openRecordPayment,
+              icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
+            ),
         ],
       ),
       body: ListView(
@@ -266,12 +268,14 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
           ledgerSection,
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: _openRecordPayment,
-        icon: const Icon(MingCuteIcons.mgc_add_line),
-        label: const Text('Record Payment'),
-      ),
+      floatingActionButton: context.watch<AuthProvider>().canEditSellerSide
+          ? FloatingActionButton.extended(
+              heroTag: null,
+              onPressed: _openRecordPayment,
+              icon: const Icon(MingCuteIcons.mgc_add_line),
+              label: const Text('Record Payment'),
+            )
+          : null,
     );
   }
 

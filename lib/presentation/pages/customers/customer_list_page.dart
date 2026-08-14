@@ -7,6 +7,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/capability.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
 import '../../widgets/confirm_dialog.dart';
@@ -392,12 +393,17 @@ class _CustomerListPageState extends State<CustomerListPage> {
           customersSection,
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: _openCreateCustomer,
-        icon: const Icon(MingCuteIcons.mgc_user_4_line),
-        label: const Text('New Customer'),
-      ),
+      floatingActionButton: context
+              .watch<AuthProvider>()
+              .capabilities
+              .can(Capability.createCustomer)
+          ? FloatingActionButton.extended(
+              heroTag: null,
+              onPressed: _openCreateCustomer,
+              icon: const Icon(MingCuteIcons.mgc_user_4_line),
+              label: const Text('New Customer'),
+            )
+          : null,
     );
   }
 }

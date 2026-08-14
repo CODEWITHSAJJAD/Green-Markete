@@ -10,6 +10,7 @@ import '../../../core/utils/breakpoints.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/capability.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../widgets/dashboard_card.dart';
@@ -340,6 +341,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _quickActionsRow(BuildContext context) {
     final theme = Theme.of(context);
+    final auth = context.watch<AuthProvider>();
+    final canCreate = auth.capabilities.can(Capability.createBatch);
+    final canSell = auth.canEditSellerSide;
 
     Widget tile(IconData icon, String label, VoidCallback onTap, Color color) {
       return GreenCard(
@@ -376,11 +380,14 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: tile(MingCuteIcons.mgc_add_line, 'New Batch', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateBatchWizard())), theme.colorScheme.primary)),
-            const SizedBox(width: 8),
-            Expanded(child: tile(MingCuteIcons.mgc_bill_line, 'New Sale', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuickSalePage())), theme.colorScheme.secondary)),
-            const SizedBox(width: 8),
-            Expanded(child: tile(MingCuteIcons.mgc_exchange_dollar_line, 'Record Payment', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomerListPage())), Colors.deepPurple)),
+            if (canCreate)
+              Expanded(child: tile(MingCuteIcons.mgc_add_line, 'New Batch', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateBatchWizard())), theme.colorScheme.primary)),
+            if (canSell) ...[
+              const SizedBox(width: 8),
+              Expanded(child: tile(MingCuteIcons.mgc_bill_line, 'New Sale', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuickSalePage())), theme.colorScheme.secondary)),
+              const SizedBox(width: 8),
+              Expanded(child: tile(MingCuteIcons.mgc_exchange_dollar_line, 'Record Payment', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomerListPage())), Colors.deepPurple)),
+            ],
             const SizedBox(width: 8),
             Expanded(child: tile(MingCuteIcons.mgc_chart_bar_line, 'Reports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportsPage())), const Color(0xFF0EA5E9))),
           ],

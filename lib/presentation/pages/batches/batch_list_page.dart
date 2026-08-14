@@ -8,6 +8,7 @@ import '../../../data/models/batch_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
+import '../../providers/capability.dart';
 import '../../providers/data_refresh.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
@@ -50,7 +51,11 @@ class _BatchListPageState extends State<BatchListPage> {
     _load();
   }
 
+  bool _canManage() =>
+      context.read<AuthProvider>().capabilities.can(Capability.closeBatch);
+
   void _toggleSelect(String id) {
+    if (!_selecting && !_canManage()) return;
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
@@ -362,12 +367,17 @@ class _BatchListPageState extends State<BatchListPage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: _openCreate,
-        icon: const Icon(MingCuteIcons.mgc_add_line),
-        label: const Text('New Batch'),
-      ),
+      floatingActionButton: context
+              .watch<AuthProvider>()
+              .capabilities
+              .can(Capability.createBatch)
+          ? FloatingActionButton.extended(
+              heroTag: null,
+              onPressed: _openCreate,
+              icon: const Icon(MingCuteIcons.mgc_add_line),
+              label: const Text('New Batch'),
+            )
+          : null,
     );
   }
 

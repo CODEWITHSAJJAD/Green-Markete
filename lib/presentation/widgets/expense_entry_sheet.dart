@@ -10,13 +10,18 @@ Future<void> showExpenseEntrySheet(
   BuildContext context, {
   required String batchId,
   String defaultSide = 'purchaser',
+  List<String> allowedSides = const ['purchaser', 'seller'],
 }) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-      child: _ExpenseEntrySheet(batchId: batchId, defaultSide: defaultSide),
+      child: _ExpenseEntrySheet(
+        batchId: batchId,
+        defaultSide: defaultSide,
+        allowedSides: allowedSides,
+      ),
     ),
   );
 }
@@ -24,8 +29,13 @@ Future<void> showExpenseEntrySheet(
 class _ExpenseEntrySheet extends StatefulWidget {
   final String batchId;
   final String defaultSide;
+  final List<String> allowedSides;
 
-  const _ExpenseEntrySheet({required this.batchId, required this.defaultSide});
+  const _ExpenseEntrySheet({
+    required this.batchId,
+    required this.defaultSide,
+    this.allowedSides = const ['purchaser', 'seller'],
+  });
 
   @override
   State<_ExpenseEntrySheet> createState() => _ExpenseEntrySheetState();
@@ -35,7 +45,7 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _refCtrl = TextEditingController();
-  String _side = 'purchaser';
+  late String _side;
   String _type = 'misc';
   String _paymentMode = 'cash';
   String? _paidBy;
@@ -44,7 +54,12 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
   @override
   void initState() {
     super.initState();
-    _side = widget.defaultSide;
+    final sides = widget.allowedSides.isEmpty
+        ? const ['purchaser']
+        : widget.allowedSides;
+    _side = sides.contains(widget.defaultSide)
+        ? widget.defaultSide
+        : sides.first;
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
       context.read<PartnerProvider>().load(businessId);
@@ -99,6 +114,9 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final partners = context.watch<PartnerProvider>().partners;
+    final sides = widget.allowedSides.isEmpty
+        ? const ['purchaser']
+        : widget.allowedSides;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       child: SingleChildScrollView(
@@ -107,6 +125,20 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('Add Expense', style: theme.textTheme.titleLarge),
+            if (sides.length > 1) ...[
+              const SizedBox(height: 16),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'purchaser',
+                    label: Text('Purchaser side'),
+                  ),
+                  ButtonSegment(value: 'seller', label: Text('Seller side')),
+                ],
+                selected: {_side},
+                onSelectionChanged: (v) => setState(() => _side = v.first),
+              ),
+            ],
             const SizedBox(height: 16),
             DropdownButtonFormField2<String>(
               isExpanded: true,

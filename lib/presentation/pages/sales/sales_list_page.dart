@@ -44,6 +44,7 @@ class _SalesListPageState extends State<SalesListPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final canSell = context.watch<AuthProvider>().canEditSellerSide;
     final batchesProvider = context.watch<SellingBatchesProvider>();
     final sellingBatches = batchesProvider.batches;
     final isLoading = batchesProvider.isLoading;
@@ -93,8 +94,8 @@ class _SalesListPageState extends State<SalesListPage> {
                 icon: MingCuteIcons.mgc_bill_line,
                 title: 'No batches on sale yet',
                 subtitle: 'Move a batch to \'selling\' status to start recording revenue against it.',
-                actionLabel: 'Record Sale',
-                onAction: _openCreate,
+                actionLabel: canSell ? 'Record Sale' : null,
+                onAction: canSell ? _openCreate : null,
               ),
             )
           else
@@ -103,7 +104,7 @@ class _SalesListPageState extends State<SalesListPage> {
                 return GreenCard(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  onTap: _openCreate,
+                  onTap: canSell ? _openCreate : null,
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Container(
@@ -117,27 +118,31 @@ class _SalesListPageState extends State<SalesListPage> {
                     ),
                     title: Text(batch.productName ?? batch.batchCode),
                     subtitle: Text(batch.batchCode),
-                    trailing: FilledButton(
-                      onPressed: _openCreate,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 44),
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('Sell'),
-                    ),
+                    trailing: canSell
+                        ? FilledButton(
+                            onPressed: _openCreate,
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('Sell'),
+                          )
+                        : null,
                   ),
                 );
               }).toList(),
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: _openCreate,
-        icon: const Icon(MingCuteIcons.mgc_add_line),
-        label: const Text('Record Sale'),
-      ),
+      floatingActionButton: context.watch<AuthProvider>().canEditSellerSide
+          ? FloatingActionButton.extended(
+              heroTag: null,
+              onPressed: _openCreate,
+              icon: const Icon(MingCuteIcons.mgc_add_line),
+              label: const Text('Record Sale'),
+            )
+          : null,
     );
   }
 
