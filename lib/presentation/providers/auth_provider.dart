@@ -177,6 +177,14 @@ class AuthProvider extends ChangeNotifier {
           phone: _repo.currentUserPhone,
         );
       }
+      final phone = profile?.phone ?? _repo.currentUserPhone;
+      if (phone != null && phone.isNotEmpty) {
+        try {
+          await _repo.claimBusinessByPhone(userId: userId, phone: phone);
+        } catch (_) {
+          // A failed claim must never block session restore.
+        }
+      }
       _memberships = await _repo.listMyMemberships(userId);
       _businesses = await _repo.listMyBusinesses(userId);
       final prefs = await SharedPreferences.getInstance();
