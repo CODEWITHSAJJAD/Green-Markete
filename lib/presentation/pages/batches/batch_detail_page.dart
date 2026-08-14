@@ -541,7 +541,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
-        '${record.unitCount} × ${record.unitType} @ ${CurrencyFormatter.format(record.costPerUnit)}',
+        '${record.unitCount} × ${record.unitType} — ${CurrencyFormatter.format(record.costPerUnit)}/unit',
       ),
       trailing: Text(
         CurrencyFormatter.format(record.totalPackingCost),
@@ -1113,13 +1113,17 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             ],
           ),
         ),
-        ...sales.map((s) => _saleTile(context, s)),
+        ...sales.map((s) => _saleTile(context, s, batch.unit)),
       ],
     );
   }
 
-  Widget _saleTile(BuildContext context, SaleModel sale) {
+  Widget _saleTile(BuildContext context, SaleModel sale, String unit) {
     final theme = Theme.of(context);
+    final walkInCredit = sale.customerId == null && sale.creditAmount > 0;
+    final canCollect =
+        walkInCredit &&
+        (context.read<AuthProvider>().user?.role ?? '').canEditBatch;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: CircleAvatar(
@@ -1134,12 +1138,158 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         ),
       ),
       title: Text(
-        '${sale.quantitySold.toStringAsFixed(0)} @ ${CurrencyFormatter.format(sale.pricePerUnit)}',
+        '${sale.quantitySold.toStringAsFixed(0)} $unit × ${CurrencyFormatter.format(sale.pricePerUnit)}',
       ),
-      subtitle: Text('${sale.saleDate} • ${sale.paymentMode}'),
-      trailing: Text(
-        CurrencyFormatter.format(sale.totalAmount),
-        style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
+      subtitle: Text(
+        [
+          '${sale.saleDate} • ${sale.paymentMode}',
+          if (walkInCredit)
+            'Walk-in credit left: ${CurrencyFormatter.format(sale.creditAmount)}',
+        ].join('\n'),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            CurrencyFormatter.format(sale.totalAmount),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontFamily: 'Roboto Mono',
+            ),
+          ),
+          if (canCollect) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Collect walk-in credit',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _collectWalkInCreditDialog(context, sale),
+              icon: const Icon(MingCuteIcons.mgc_cash_line, size: 18),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _collectWalkInCreditDialog(
+    BuildContext context,
+    SaleModel sale,
+  ) async {
+    final theme = Theme.of(context);
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    final remaining = sale.creditAmount;
+    final amountCtrl = TextEditingController(
+      text: remaining > 0 ? remaining.toStringAsFixed(2) : '',
+    );
+    final bankRefCtrl = TextEditingController();
+    String paymentMode = 'cash';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          return AlertDialog(
+            title: const Text('Collect Walk-in Credit'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Outstanding credit: ${CurrencyFormatter.format(remaining)}',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Amount'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(paymentMode),
+                    decoration: const InputDecoration(
+                      labelText: 'Payment mode',
+                    ),
+                    items: const [
+                      DropdownItem(value: 'cash', child: Text('Cash')),
+                      DropdownItem(
+                        value: 'bank_transfer',
+                        child: Text('Bank Transfer'),
+                      ),
+                    ],
+                    onChanged: (v) => setSt(() => paymentMode = v ?? 'cash'),
+                  ),
+                  if (paymentMode == 'bank_transfer') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: bankRefCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Bank reference',
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountCtrl.text.trim());
+                  if (amount == null || amount <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Enter a valid amount')),
+                    );
+                    return;
+                  }
+                  if (amount > remaining + 0.01) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text('Amount exceeds outstanding credit'),
+                      ),
+                    );
+                    return;
+                  }
+                  final saleProvider = context.read<SaleProvider>();
+                  final ok = await saleProvider.collectCredit(
+                    sale.id,
+                    amount: amount,
+                    paymentMode: paymentMode,
+                    bankReference: bankRefCtrl.text.trim().isEmpty
+                        ? null
+                        : bankRefCtrl.text.trim(),
+                  );
+                  if (!ctx.mounted) return;
+                  if (ok) {
+                    Navigator.pop(ctx);
+                    context.read<BatchPLProvider>().load(sale.batchId);
+                    if (businessId.isNotEmpty) {
+                      DataRefreshNotifier.instance.refresh(businessId);
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Credit collected')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Failed: ${saleProvider.error ?? 'Unknown error'}',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Collect'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1355,7 +1505,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                 Text(
                   [
                     if (load.costType == 'per_packing' && load.unitCount > 0)
-                      '${load.unitCount.toStringAsFixed(load.unitCount % 1 == 0 ? 0 : 1)} units @ ${CurrencyFormatter.format(load.transportCost)}/unit'
+                      '${load.unitCount.toStringAsFixed(load.unitCount % 1 == 0 ? 0 : 1)} units × ${CurrencyFormatter.format(load.transportCost)}/unit'
                     else if (load.costType == 'per_packing')
                       '${CurrencyFormatter.format(load.transportCost)}/unit'
                     else if (load.costType == 'lump_sum')

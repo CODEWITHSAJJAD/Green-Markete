@@ -686,7 +686,7 @@ class BatchRepository {
         entry: SupplierLedgerEntry(
           date: purchaseDate,
           description: unitKg != null && unitLabel.isNotEmpty
-              ? 'Purchase${batchCode != null ? ' — $batchCode' : ''} ($qtyLabel @ ${unitKg}kg)'
+              ? 'Purchase${batchCode != null ? ' — $batchCode' : ''} ($qtyLabel — ${unitKg}kg)'
               : 'Purchase${batchCode != null ? ' — $batchCode' : ''}',
           amount: due,
           runningBalance: 0,

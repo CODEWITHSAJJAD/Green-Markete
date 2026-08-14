@@ -50,4 +50,38 @@ class SaleRepository {
         .order('sale_date', ascending: false);
     return rows.map(SaleModel.fromJson).toList();
   }
+
+  /// Collects part or all of a sale's credit, moving the collected amount from
+  /// `credit_amount` into `cash_received` so the sale total stays intact.
+  /// Returns the updated sale, or `null` if the sale no longer exists.
+  Future<SaleModel?> collectCredit(
+    String saleId,
+    double amount, {
+    String paymentMode = 'cash',
+    String? bankReference,
+  }) async {
+    final rows = await _client
+        .from('sales')
+        .select()
+        .eq('id', saleId)
+        .limit(1);
+    if (rows.isEmpty) return null;
+    final sale = SaleModel.fromJson(rows.first);
+    final toCollect = amount.clamp(0, sale.creditAmount).toDouble();
+    if (toCollect <= 0) return sale;
+    final remaining = sale.creditAmount - toCollect;
+    final row = await _client
+        .from('sales')
+        .update({
+          'credit_amount': remaining,
+          'cash_received': sale.cashReceived + toCollect,
+          if (remaining <= 0.001) 'payment_mode': paymentMode,
+          if (bankReference != null && bankReference.isNotEmpty)
+            'bank_reference': bankReference,
+        })
+        .eq('id', saleId)
+        .select()
+        .single();
+    return SaleModel.fromJson(row);
+  }
 }

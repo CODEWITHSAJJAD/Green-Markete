@@ -427,4 +427,28 @@ class SaleProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> collectCredit(
+    String saleId, {
+    required double amount,
+    String paymentMode = 'cash',
+    String? bankReference,
+  }) async {
+    try {
+      final updated = await _repo.collectCredit(
+        saleId,
+        amount,
+        paymentMode: paymentMode,
+        bankReference: bankReference,
+      );
+      if (updated != null) {
+        await loadByBatch(updated.batchId);
+      }
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }
