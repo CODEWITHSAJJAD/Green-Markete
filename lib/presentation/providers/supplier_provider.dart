@@ -43,13 +43,17 @@ class SupplierProvider extends ChangeNotifier {
 
   /// Persists a newly-created supplier name to the registry and refreshes the
   /// suggestion list so it is immediately available in future sessions.
-  Future<void> createSupplier(String businessId, String name) async {
+  /// Returns a human-readable error message on failure, or null on success.
+  Future<String?> createSupplier(String businessId, String name) async {
     try {
       await _repo.createSupplier(businessId, name);
       await loadSuppliers(businessId);
+      return null;
     } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
+      final msg = e.toString().replaceAll('Exception: ', '');
+      _error = msg;
       notifyListeners();
+      return msg;
     }
   }
 

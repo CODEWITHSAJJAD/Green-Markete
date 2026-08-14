@@ -664,10 +664,21 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             markets: marketsProvider.markets,
             suppliers: _mergedSuppliers(context),
             onChanged: (entries) => setState(() => _purchases = entries),
-            onCreateSupplier: (name) {
-              final id = context.read<AuthProvider>().businessId;
-              if (id != null && id.isNotEmpty) {
-                context.read<SupplierProvider>().createSupplier(id, name);
+            onCreateSupplier: (name) async {
+              final auth = context.read<AuthProvider>();
+              final id = auth.businessId;
+              if (id == null || id.isEmpty) return;
+              final suppliers = context.read<SupplierProvider>();
+              final messenger = ScaffoldMessenger.of(context);
+              final theme = Theme.of(context);
+              final err = await suppliers.createSupplier(id, name);
+              if (err != null && context.mounted) {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Could not save supplier: $err'),
+                    backgroundColor: theme.colorScheme.error,
+                  ),
+                );
               }
             },
           ),

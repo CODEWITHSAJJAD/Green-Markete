@@ -808,21 +808,16 @@ class BatchRepository {
 
   /// Persists a supplier name into the `suppliers` registry so it appears in
   /// the dropdown in future sessions. Idempotent per (business_id, name).
-  /// Failures are logged, never thrown — the dropdown must keep working even
-  /// on DBs without the registry table.
+  /// Throws on failure so callers can surface the reason (RLS, missing table).
   Future<void> createSupplier(String businessId, String name) async {
-    try {
-      await _client
-          .from('suppliers')
-          .upsert(
-            {'business_id': businessId, 'name': name},
-            onConflict: 'business_id,name',
-          )
-          .select()
-          .single();
-    } on PostgrestException catch (e) {
-      debugPrint('supplier registry upsert skipped: ${e.code} ${e.message}');
-    }
+    await _client
+        .from('suppliers')
+        .upsert(
+          {'business_id': businessId, 'name': name},
+          onConflict: 'business_id,name',
+        )
+        .select()
+        .single();
   }
 
   Map<String, dynamic> _withProductName(Map<String, dynamic> row) {

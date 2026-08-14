@@ -28,7 +28,7 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
     _entries = widget.entries.isEmpty ? [_empty()] : List.from(widget.entries);
   }
 
-  Map<String, dynamic> _empty() => {
+  Map<String, dynamic> _empty() => <String, dynamic>{
     'unit_type': 'bag_5',
     'unit_label': null,
     'unit_count': 0,
@@ -44,7 +44,7 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
     if (suggestions.isEmpty) return;
     setState(() {
       _entries = suggestions
-          .map((s) => {
+          .map((s) => <String, dynamic>{
             'unit_type': s.type.key,
             'unit_label': s.type.label,
             'unit_count': s.count,
@@ -135,7 +135,7 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
             entry: _entries[i],
             deletable: _entries.length > 1,
             onChanged: (next) {
-              _entries[i] = next;
+              _entries[i] = Map<String, dynamic>.from(next);
               _emit();
             },
             onDelete: () {
@@ -229,7 +229,7 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
     final size = packingTypeByKey(_unitType).kgCapacity;
     final count = int.tryParse(_countCtrl.text) ?? 0;
     final cost = double.tryParse(_costCtrl.text) ?? 0.0;
-    return {
+    return <String, dynamic>{
       'unit_type': _unitType,
       'unit_label': _labelCtrl.text.isEmpty ? null : _labelCtrl.text,
       'unit_count': count,
