@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/models/business_model.dart';
+import '../../data/models/membership_model.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
+import 'capability.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider(this._repo) {
@@ -31,14 +34,60 @@ class AuthProvider extends ChangeNotifier {
   List<BusinessModel> _businesses = [];
   List<BusinessModel> get businesses => _businesses;
 
+  List<MembershipModel> _memberships = [];
+  List<MembershipModel> get memberships => _memberships;
+
+  String? _accessLevel;
+  String get accessLevel => _accessLevel ?? '';
+
+  String? _sideRole;
+  String get sideRole => _sideRole ?? '';
+
+  bool _manageOtherSide = false;
+  bool get manageOtherSide => _manageOtherSide;
+
+  static const _lastBusinessKey = 'gm_last_active_business';
+
+  CapabilityService get capabilities =>
+      CapabilityService(_accessLevel ?? '', sideRole: _sideRole ?? 'both', manageOtherSide: _manageOtherSide);
+
+  bool canEditSide(String side) => capabilities.canEditSide(side);
+  bool get canEditPurchaserSide => capabilities.canEditPurchaserSide;
+  bool get canEditSellerSide => capabilities.canEditSellerSide;
+
+  String? _businessNameFor(String businessId) {
+    for (final b in _businesses) {
+      if (b.id == businessId) return b.name;
+    }
+    return null;
+  }
+
+  String describeMembership(MembershipModel m) {
+    final name = _businessNameFor(m.businessId) ?? 'Business';
+    final role = m.isOwner
+        ? 'Owner'
+        : m.role == 'accountant'
+            ? 'Accountant'
+            : '${describeAccess(m.accessLevel)} · ${describeSide(m.sideRole)}';
+    return '$name — $role';
+  }
+
   Future<void> loadBusinesses() async {
     final uid = _repo.currentUserId;
     if (uid == null) return;
     try {
+      _memberships = await _repo.listMyMemberships(uid);
       _businesses = await _repo.listMyBusinesses(uid);
+      final active = businessId;
+      if (active != null && !_memberships.any((m) => m.businessId == active)) {
+        _activateBusiness(
+          _memberships.isNotEmpty ? _memberships.first.businessId : null,
+        );
+      }
       notifyListeners();
     } catch (_) {
       _businesses = [];
+      _memberships = [];
       notifyListeners();
     }
   }
@@ -46,18 +95,63 @@ class AuthProvider extends ChangeNotifier {
   Future<void> switchBusiness(String businessId) async {
     final current = _user;
     if (current == null) return;
+    _activateBusiness(businessId);
+    notifyListeners();
+  }
+
+  void _activateBusiness(String? businessId) {
+    final current = _user;
+    if (current == null) return;
+    if (businessId == null) {
+      _user = UserModel(
+        id: current.id,
+        fullName: current.fullName,
+        phone: current.phone,
+        email: current.email,
+        city: current.city,
+        role: 'viewer',
+        businessId: null,
+        isActive: current.isActive,
+      );
+      _accessLevel = null;
+      _sideRole = null;
+      _manageOtherSide = false;
+      _needsOnboarding = true;
+      return;
+    }
+    final membership = _memberships.where((m) => m.businessId == businessId).firstOrNull;
+    final isOwnerOf = _businesses.any((b) => b.id == businessId && b.ownerId == current.id);
+    String role;
+    if (isOwnerOf) {
+      role = 'owner';
+      _accessLevel = 'owner';
+      _sideRole = 'both';
+      _manageOtherSide = true;
+    } else if (membership != null) {
+      role = membership.effectiveAccessRole;
+      _accessLevel = membership.accessLevel;
+      _sideRole = membership.sideRole;
+      _manageOtherSide = false;
+    } else {
+      role = current.role ?? 'viewer';
+      _accessLevel = current.role;
+      _sideRole = 'both';
+      _manageOtherSide = false;
+    }
     _user = UserModel(
       id: current.id,
       fullName: current.fullName,
       phone: current.phone,
       email: current.email,
       city: current.city,
-      role: current.role,
+      role: role,
       businessId: businessId,
       isActive: current.isActive,
     );
     _needsOnboarding = false;
-    notifyListeners();
+    SharedPreferences.getInstance().then(
+      (p) => p.setString(_lastBusinessKey, businessId),
+    );
   }
 
   Future<void> restoreSession() async {
@@ -69,6 +163,8 @@ class AuthProvider extends ChangeNotifier {
       final userId = _repo.currentUserId;
       if (userId == null) {
         _user = null;
+        _memberships = [];
+        _businesses = [];
         _needsOnboarding = false;
         _isLoading = false;
         notifyListeners();
@@ -81,22 +177,35 @@ class AuthProvider extends ChangeNotifier {
           phone: _repo.currentUserPhone,
         );
       }
-      final businessId = await _repo.getMyBusinessId(userId);
-      var role = profile?.role;
-      if (role == null || role.isEmpty) {
-        role = businessId == null ? null : await _repo.getMyRole(userId, businessId);
+      _memberships = await _repo.listMyMemberships(userId);
+      _businesses = await _repo.listMyBusinesses(userId);
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_lastBusinessKey);
+      String? businessId;
+      if (saved != null && _memberships.any((m) => m.businessId == saved)) {
+        businessId = saved;
+      } else if (_memberships.isNotEmpty) {
+        businessId = _memberships.first.businessId;
       }
+      final membership = businessId == null
+          ? null
+          : _memberships.where((m) => m.businessId == businessId).firstOrNull;
+      var role = membership?.effectiveAccessRole;
+      if (role == null || role.isEmpty) role = profile?.role;
+      _accessLevel = membership?.accessLevel;
+      _sideRole = membership?.sideRole;
+      _manageOtherSide = false;
       _user = UserModel(
         id: userId,
         fullName: profile?.fullName,
         phone: profile?.phone ?? _repo.currentUserPhone,
         email: profile?.email ?? _repo.currentUserEmail,
         city: profile?.city,
-        role: role,
+        role: role ?? 'viewer',
         businessId: businessId,
         isActive: profile?.isActive ?? true,
       );
-      _needsOnboarding = businessId == null;
+      _needsOnboarding = _memberships.isEmpty;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
@@ -213,17 +322,7 @@ class AuthProvider extends ChangeNotifier {
   void setBusinessId(String businessId) {
     final current = _user;
     if (current == null) return;
-    _user = UserModel(
-      id: current.id,
-      fullName: current.fullName,
-      phone: current.phone,
-      email: current.email,
-      city: current.city,
-      role: current.role,
-      businessId: businessId,
-      isActive: current.isActive,
-    );
-    _needsOnboarding = false;
+    _activateBusiness(businessId);
     notifyListeners();
   }
 
@@ -267,6 +366,11 @@ class AuthProvider extends ChangeNotifier {
       await _repo.signOut();
     } catch (_) {}
     _user = null;
+    _memberships = [];
+    _businesses = [];
+    _accessLevel = null;
+    _sideRole = null;
+    _manageOtherSide = false;
     _needsOnboarding = false;
     _error = null;
     notifyListeners();

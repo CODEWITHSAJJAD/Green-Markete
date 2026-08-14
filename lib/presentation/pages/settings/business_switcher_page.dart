@@ -7,7 +7,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../widgets/green_card.dart';
 import '../../widgets/section_header.dart';
-
 class BusinessSwitcherPage extends StatefulWidget {
   const BusinessSwitcherPage({super.key});
 
@@ -144,31 +143,43 @@ class _BusinessSwitcherPageState extends State<BusinessSwitcherPage> {
             )
           else
             for (final b in businesses)
-              GreenCard(
-                margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-                padding: EdgeInsets.zero,
-                color: b.id == activeId ? AppColors.primary.withValues(alpha: 0.06) : null,
-                borderColor: b.id == activeId ? AppColors.primary : null,
-                onTap: _switching
-                    ? null
-                    : () => _switchTo(b.id, b.name),
-                child: ListTile(
-                  leading: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
+              Builder(
+                builder: (ctx) {
+                  final membership = auth.memberships
+                      .where((m) => m.businessId == b.id)
+                      .firstOrNull;
+                  final roleLabel = membership == null
+                      ? (b.businessType == 'single'
+                          ? 'Single owner'
+                          : 'Multi partner')
+                      : auth.describeMembership(membership).split(' — ').last;
+                  return GreenCard(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    padding: EdgeInsets.zero,
+                    color: b.id == activeId ? AppColors.primary.withValues(alpha: 0.06) : null,
+                    borderColor: b.id == activeId ? AppColors.primary : null,
+                    onTap: _switching
+                        ? null
+                        : () => _switchTo(b.id, b.name),
+                    child: ListTile(
+                      leading: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(MingCuteIcons.mgc_store_2_line, size: 20, color: AppColors.primary),
+                      ),
+                      title: Text(b.name, style: theme.textTheme.bodyLarge),
+                      subtitle: Text(roleLabel),
+                      trailing: b.id == activeId
+                          ? const Icon(MingCuteIcons.mgc_check_circle_fill, color: AppColors.primary, size: 22)
+                          : const Icon(MingCuteIcons.mgc_arrow_right_line, color: AppColors.textTertiary),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Icon(MingCuteIcons.mgc_store_2_line, size: 20, color: AppColors.primary),
-                  ),
-                  title: Text(b.name, style: theme.textTheme.bodyLarge),
-                  subtitle: Text(b.businessType == 'single' ? 'Single owner' : 'Multi partner'),
-                  trailing: b.id == activeId
-                      ? const Icon(MingCuteIcons.mgc_check_circle_fill, color: AppColors.primary, size: 22)
-                      : const Icon(MingCuteIcons.mgc_arrow_right_line, color: AppColors.textTertiary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+                  );
+                },
               ),
           const SizedBox(height: 20),
           ElevatedButton.icon(

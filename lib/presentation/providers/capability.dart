@@ -7,6 +7,10 @@ enum Capability {
   voidExpense,
   recordSale,
   recordPayment,
+  recordPurchase,
+  manageTransport,
+  addPurchaserExpense,
+  addSellerExpense,
   createCustomer,
   archiveCustomer,
   createPartner,
@@ -17,46 +21,93 @@ enum Capability {
   viewAuditLog,
 }
 
+/// Side-scoped capability service (multi-user RBAC).
+///
+/// [accessLevel] is `owner` | `editor` | `viewer` | `accountant`.
+/// [sideRole] is `purchaser` | `seller` | `both` | `accountant`.
+///
+/// Rules (see `05_MultiUser_RBAC_Plan.md` §3.3):
+/// - Owner: everything, both sides.
+/// - Editor + side role: write own-side domains, read the other side.
+/// - Viewer + side role: same own-side domain writes as editor, but no
+///   cross-cutting writes (create batch, close, void, partner management).
+/// - Accountant: read-only (D5 keeps current behaviour).
+/// - Cross-side write requires [manageOtherSide] (owner-set grant).
 class CapabilityService {
-  CapabilityService(this.role);
+  CapabilityService(
+    this.accessLevel, {
+    this.sideRole = 'both',
+    this.manageOtherSide = false,
+  });
 
-  final String role;
+  final String accessLevel;
+  final String sideRole;
+  final bool manageOtherSide;
 
-  bool _isOwner() => role == 'owner';
-  bool _isEditor() => role == 'editor' || _isOwner();
+  bool get isOwner => accessLevel == 'owner' || sideRole == 'owner';
+  bool get isEditor => accessLevel == 'editor' || isOwner;
+  bool get isViewer => accessLevel == 'viewer';
+  bool get isAccountant => accessLevel == 'accountant' || sideRole == 'accountant';
+
+  bool get canEditPurchaserSide =>
+      isOwner || manageOtherSide || sideRole == 'purchaser' || sideRole == 'both';
+
+  bool get canEditSellerSide =>
+      isOwner || manageOtherSide || sideRole == 'seller' || sideRole == 'both';
+
+  bool canEditSide(String side) {
+    if (isOwner) return true;
+    if (side == 'purchaser') return canEditPurchaserSide;
+    if (side == 'seller') return canEditSellerSide;
+    return false;
+  }
 
   bool can(Capability c) {
     switch (c) {
       case Capability.createBatch:
       case Capability.editBatch:
-      case Capability.addPacking:
-      case Capability.addExpense:
-      case Capability.recordSale:
-      case Capability.recordPayment:
-      case Capability.createPartner:
-      case Capability.createMarket:
       case Capability.createProduct:
-      case Capability.createSettlement:
-      case Capability.createCustomer:
-        return _isEditor();
-      case Capability.archiveCustomer:
-      case Capability.voidExpense:
+        return isEditor && !isAccountant;
       case Capability.closeBatch:
+      case Capability.voidExpense:
+      case Capability.archiveCustomer:
       case Capability.manageAccess:
       case Capability.viewAuditLog:
-        return _isOwner();
+        return isOwner;
+      case Capability.createPartner:
+      case Capability.createMarket:
+        return isOwner;
+      case Capability.addPacking:
+      case Capability.recordPurchase:
+      case Capability.manageTransport:
+      case Capability.addPurchaserExpense:
+        return canEditPurchaserSide && !isAccountant;
+      case Capability.recordSale:
+      case Capability.recordPayment:
+      case Capability.addSellerExpense:
+        return canEditSellerSide && !isAccountant;
+      case Capability.addExpense:
+        return (canEditPurchaserSide || canEditSellerSide) && !isAccountant;
+      case Capability.createCustomer:
+        return isEditor && !isAccountant;
+      case Capability.createSettlement:
+        return canEditSellerSide && isEditor && !isAccountant;
     }
   }
 }
 
+/// Backward-compatible role-string API. A bare role string assumes access to
+/// both sides, preserving the behaviour of existing call sites.
 extension RoleCapability on String {
-  bool get canCreateBatch => CapabilityService(this).can(Capability.createBatch);
-  bool get canEditBatch => CapabilityService(this).can(Capability.editBatch);
-  bool get canCloseBatch => CapabilityService(this).can(Capability.closeBatch);
+  CapabilityService _svc() => CapabilityService(this, sideRole: 'both');
+
+  bool get canCreateBatch => _svc().can(Capability.createBatch);
+  bool get canEditBatch => _svc().can(Capability.editBatch);
+  bool get canCloseBatch => _svc().can(Capability.closeBatch);
   bool get canArchiveCustomer =>
-      CapabilityService(this).can(Capability.archiveCustomer);
-  bool get canVoidExpense => CapabilityService(this).can(Capability.voidExpense);
-  bool get canManageAccess => CapabilityService(this).can(Capability.manageAccess);
+      _svc().can(Capability.archiveCustomer);
+  bool get canVoidExpense => _svc().can(Capability.voidExpense);
+  bool get canManageAccess => _svc().can(Capability.manageAccess);
   bool get isReadOnlyRole => this == 'viewer' || this == 'accountant';
 }
 
@@ -68,6 +119,36 @@ String describeRole(String role) {
       return 'Editor';
     case 'viewer':
       return 'Viewer';
+    case 'accountant':
+      return 'Accountant';
+    default:
+      return 'Member';
+  }
+}
+
+String describeAccess(String? accessLevel) {
+  switch (accessLevel) {
+    case 'owner':
+      return 'Owner';
+    case 'editor':
+      return 'Editor';
+    case 'viewer':
+      return 'Viewer';
+    case 'accountant':
+      return 'Accountant';
+    default:
+      return 'Viewer';
+  }
+}
+
+String describeSide(String sideRole) {
+  switch (sideRole) {
+    case 'purchaser':
+      return 'Purchaser';
+    case 'seller':
+      return 'Seller';
+    case 'both':
+      return 'Both sides';
     case 'accountant':
       return 'Accountant';
     default:

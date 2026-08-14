@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase/supabase_service.dart';
 import '../models/business_model.dart';
+import '../models/membership_model.dart';
 import '../models/user_model.dart';
 
 class AuthRepository {
@@ -155,16 +156,38 @@ class AuthRepository {
   }
 
   Future<void> claimBusinessByPhone({required String userId, required String phone}) async {
-    final match = await _client
+    final matches = await _client
         .from('business_partners')
-        .select('id, business_id')
+        .select('id')
         .eq('phone', phone)
-        .isFilter('user_id', null)
-        .maybeSingle();
-    if (match == null) return;
+        .isFilter('user_id', null);
+    if (matches.isEmpty) return;
+    final ids = matches
+        .map((r) => r['id'] as String?)
+        .whereType<String>()
+        .toList();
+    if (ids.isEmpty) return;
     await _client
         .from('business_partners')
         .update({'user_id': userId, 'is_claimed': true})
-        .eq('id', match['id'] as String);
+        .inFilter('id', ids);
+  }
+
+  /// All businesses the user belongs to (owner row + claimed partnerships),
+  /// each with its own role/access level.
+  Future<List<MembershipModel>> listMyMemberships(String userId) async {
+    final rows = await _client
+        .from('business_partners')
+        .select('business_id, role, access_level, is_claimed')
+        .eq('user_id', userId);
+    return [
+      for (final r in rows)
+        MembershipModel(
+          businessId: r['business_id'] as String? ?? '',
+          role: r['role'] as String? ?? 'partner',
+          accessLevel: r['access_level'] as String?,
+          isClaimed: r['is_claimed'] as bool? ?? true,
+        ),
+    ];
   }
 }
