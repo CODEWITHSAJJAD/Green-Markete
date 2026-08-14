@@ -46,9 +46,12 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
       _entries = suggestions
           .map((s) => <String, dynamic>{
             'unit_type': s.type.key,
-            'unit_label': s.type.label,
+            'unit_label': s.customKg != null
+                ? 'Loose / ${s.customKg!.toStringAsFixed(1)} kg'
+                : s.type.label,
             'unit_count': s.count,
             'cost_per_unit': 0.0,
+            if (s.customKg != null) 'packed_kg': s.customKg,
           })
           .toList();
     });
@@ -56,6 +59,8 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
   }
 
   double get _packedKg => _entries.fold<double>(0, (acc, e) {
+    final stored = (e['packed_kg'] as num?)?.toDouble() ?? 0;
+    if (stored > 0) return acc + stored;
     final size = _sizeKg(e['unit_type'] as String);
     final count = (e['unit_count'] as num?)?.toDouble() ?? 0;
     return acc + size * count;
@@ -204,6 +209,7 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
   late final TextEditingController _labelCtrl;
   late final TextEditingController _countCtrl;
   late final TextEditingController _costCtrl;
+  late final TextEditingController _customKgCtrl;
 
   @override
   void initState() {
@@ -214,6 +220,9 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
     _labelCtrl = TextEditingController(text: e['unit_label']?.toString() ?? '');
     _countCtrl = TextEditingController(text: (e['unit_count'] as num?)?.toString() ?? '0');
     _costCtrl = TextEditingController(text: (e['cost_per_unit'] as num?)?.toString() ?? '0');
+    _customKgCtrl = TextEditingController(
+      text: (e['packed_kg'] as num?)?.toString() ?? '',
+    );
   }
 
   @override
@@ -222,19 +231,29 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
     _labelCtrl.dispose();
     _countCtrl.dispose();
     _costCtrl.dispose();
+    _customKgCtrl.dispose();
     super.dispose();
   }
 
+  bool get _isCustom => _unitType == 'custom';
+
   Map<String, dynamic> _buildPayload() {
-    final size = packingTypeByKey(_unitType).kgCapacity;
+    final type = packingTypeByKey(_unitType);
     final count = int.tryParse(_countCtrl.text) ?? 0;
     final cost = double.tryParse(_costCtrl.text) ?? 0.0;
+    final weight = _isCustom
+        ? double.tryParse(_customKgCtrl.text) ?? 0.0
+        : type.kgCapacity * count;
     return <String, dynamic>{
       'unit_type': _unitType,
-      'unit_label': _labelCtrl.text.isEmpty ? null : _labelCtrl.text,
+      'unit_label': _isCustom
+          ? (_labelCtrl.text.isEmpty
+              ? 'Loose / ${weight.toStringAsFixed(1)} kg'
+              : _labelCtrl.text)
+          : (_labelCtrl.text.isEmpty ? null : _labelCtrl.text),
       'unit_count': count,
       'cost_per_unit': cost,
-      'packed_kg': size * count,
+      'packed_kg': weight,
       'subtotal': cost * count,
     };
   }
@@ -246,8 +265,9 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
     final theme = Theme.of(context);
     final count = int.tryParse(_countCtrl.text) ?? 0;
     final cost = double.tryParse(_costCtrl.text) ?? 0.0;
-    final size = packingTypeByKey(_unitType).kgCapacity;
-    final weight = size * count;
+    final weight = _isCustom
+        ? double.tryParse(_customKgCtrl.text) ?? 0.0
+        : packingTypeByKey(_unitType).kgCapacity * count;
     final subtotal = cost * count;
 
     return Container(
@@ -286,6 +306,7 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
                     if (v == null) return;
                     _unitType = v;
                     _unitTypeNotifier.value = v;
+                    setState(() {});
                     _emit();
                   },
                 ),
@@ -297,11 +318,30 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
                 ),
             ],
           ),
+          if (_isCustom) ...[
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _customKgCtrl,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Loose weight (kg)',
+                hintText: 'Enter the remaining weight',
+              ),
+              onChanged: (_) {
+                setState(() {});
+                _emit();
+              },
+            ),
+          ],
           const SizedBox(height: 8),
           TextFormField(
             controller: _labelCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Unit label (optional)',
+            decoration: InputDecoration(
+              labelText: _isCustom
+                  ? 'Unit label (optional)'
+                  : 'Unit label (optional)',
             ),
             onChanged: (_) => _emit(),
           ),
@@ -312,7 +352,9 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
                 child: TextFormField(
                   controller: _countCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Count'),
+                  decoration: InputDecoration(
+                    labelText: _isCustom ? 'Count (lots)' : 'Count',
+                  ),
                   onChanged: (_) {
                     setState(() {});
                     _emit();
@@ -337,7 +379,7 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
               ),
             ],
           ),
-          if (count > 0)
+          if (count > 0 || weight > 0)
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Align(

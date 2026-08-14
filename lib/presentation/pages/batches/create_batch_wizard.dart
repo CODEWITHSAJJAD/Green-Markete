@@ -337,14 +337,23 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               ),
           ],
           packingRecords: _packingFor(g)
-              .where((p) => (p['unit_count'] as int) > 0)
+              .where(
+                (p) =>
+                    ((p['unit_count'] as num?)?.toInt() ?? 0) > 0 ||
+                    ((p['packed_kg'] as num?)?.toDouble() ?? 0) > 0,
+              )
               .map(
-                (p) => PackingRecordCreate(
-                  unitType: p['unit_type'] as String,
-                  unitLabel: p['unit_label'] as String?,
-                  unitCount: p['unit_count'] as int,
-                  costPerUnit: (p['cost_per_unit'] as num).toDouble(),
-                ),
+                (p) {
+                  final isCustom = p['unit_type'] == 'custom';
+                  final count = (p['unit_count'] as num?)?.toInt() ?? 0;
+                  return PackingRecordCreate(
+                    unitType: p['unit_type'] as String,
+                    unitLabel: p['unit_label'] as String?,
+                    unitCount: isCustom && count <= 0 ? 1 : count,
+                    costPerUnit:
+                        (p['cost_per_unit'] as num?)?.toDouble() ?? 0,
+                  );
+                },
               )
               .toList(),
           expenses: _expensesFor(g)
@@ -1130,6 +1139,13 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   Widget _stepTransport(ThemeData theme) {
     final vehicles = context.watch<VehicleProvider>().vehicles;
     final loads = _loadsFor(_activeGroup);
+    final packing = _packingFor(_activeGroup);
+    final totalPackedUnits = packing.fold<int>(
+      0,
+      (a, p) => a + ((p['unit_count'] as num?)?.toInt() ?? 0),
+    );
+    final totalLoadedUnits =
+        loads.fold<double>(0, (a, l) => a + (double.tryParse(l['unit_count'].toString()) ?? 0));
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -1140,6 +1156,19 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             'Split the batch across vehicles. Linked loads split shared transport fairly between packing records.',
             style: theme.textTheme.bodyMedium,
           ),
+          if (totalPackedUnits > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              totalLoadedUnits <= 0
+                  ? '$totalPackedUnits units packed — nothing loaded yet.'
+                  : '${totalLoadedUnits.toStringAsFixed(0)} of $totalPackedUnits units loaded — ${(totalPackedUnits - totalLoadedUnits).toStringAsFixed(0)} remaining.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: totalLoadedUnits > totalPackedUnits
+                    ? Colors.orange
+                    : theme.colorScheme.primary,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           if (vehicles.isEmpty)
             Container(
@@ -1253,13 +1282,16 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               ),
               items: [
                 for (var i = 0; i < packing.length; i++)
-                  DropdownItem(
-                    value: i,
-                    child: Text(
-                      '${i + 1}. ${packing[i]['unit_type']} × ${packing[i]['unit_count']}',
-                      overflow: TextOverflow.ellipsis,
+                  if (_packingRemaining(i) > 0 ||
+                      load['packing_index'] == i)
+                    DropdownItem(
+                      value: i,
+                      child: Text(
+                        '${_packingLabel(i)}'
+                        '${_packingRemaining(i) > 0 ? ' — ${_packingRemaining(i).toStringAsFixed(0)} left' : ''}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
               ],
               onChanged: (v) => setState(() => load['packing_index'] = v),
             ),
@@ -1271,6 +1303,22 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
             decoration: const InputDecoration(labelText: 'Units loaded'),
             onChanged: (v) => setState(() => load['unit_count'] = v),
           ),
+          if (load['packing_index'] is int) ...[
+            const SizedBox(height: 6),
+            Builder(builder: (context) {
+              final remaining = _packingRemaining(
+                load['packing_index'] as int,
+              );
+              return Text(
+                remaining < 0
+                    ? 'Overloaded by ${remaining.abs().toStringAsFixed(0)} — exceeds available units'
+                    : 'Remaining after this load: ${remaining.toStringAsFixed(0)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: remaining < 0 ? Colors.orange : Colors.grey,
+                ),
+              );
+            }),
+          ],
           const SizedBox(height: 12),
           DropdownButtonFormField2<String>(
             isExpanded: true,
@@ -1315,6 +1363,42 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     final cost = double.tryParse(load['transport_cost'].toString()) ?? 0;
     final units = double.tryParse(load['unit_count'].toString()) ?? 0;
     return load['cost_type'] == 'per_packing' ? units * cost : cost;
+  }
+
+  /// Total units already loaded across all loads linked to a packing record.
+  double _loadedUnitsFor(int packingIndex) {
+    var total = 0.0;
+    for (final load in _loadsFor(_activeGroup)) {
+      if (load['packing_index'] == packingIndex) {
+        total += double.tryParse(load['unit_count'].toString()) ?? 0;
+      }
+    }
+    return total;
+  }
+
+  /// Units left to load for a packing record (packed - loaded across all loads).
+  double _packingRemaining(int packingIndex) {
+    final packing = _packingFor(_activeGroup);
+    if (packingIndex < 0 || packingIndex >= packing.length) return 0;
+    final packed =
+        (packing[packingIndex]['unit_count'] as num?)?.toDouble() ?? 0;
+    return packed - _loadedUnitsFor(packingIndex);
+  }
+
+  String _packingLabel(int index) {
+    final packing = _packingFor(_activeGroup);
+    if (index < 0 || index >= packing.length) return '—';
+    final p = packing[index];
+    final unitType = p['unit_type'] as String? ?? '';
+    final count = (p['unit_count'] as num?)?.toInt() ?? 0;
+    final label = p['unit_label'] as String?;
+    if (unitType == 'custom') {
+      final weight = (p['packed_kg'] as num?)?.toDouble() ?? 0;
+      final name = label == null || label.isEmpty ? 'Loose' : label;
+      return '${index + 1}. $name'
+          '${weight > 0 ? ' (${weight.toStringAsFixed(1)} kg)' : ''}';
+    }
+    return '${index + 1}. $unitType × $count';
   }
 
   Widget _step5(ThemeData theme) {

@@ -32,13 +32,15 @@ class PackingType {
   const PackingType(this.key, this.label, this.kgCapacity);
 }
 
+const customPackingType = PackingType('custom', 'Custom packing (loose)', 0);
+
 const packingTypes = <PackingType>[
   PackingType('bag_5', 'Plastic bag (5 kg)', 5),
   PackingType('bag_60', '60 kg bag', 60),
   PackingType('bag_100', '100 kg bag', 100),
   PackingType('crate_15', 'Plastic crate (15 kg)', 15),
   PackingType('crate_20', 'Plastic crate (20 kg)', 20),
-  PackingType('custom', 'Custom packing', 0),
+  customPackingType,
 ];
 
 PackingType packingTypeByKey(String key) {
@@ -51,7 +53,10 @@ class PackingSuggestion {
   final PackingType type;
   final int count;
 
-  const PackingSuggestion(this.type, this.count);
+  /// Exact kg for a `custom` packing suggestion (the leftover weight).
+  final double? customKg;
+
+  const PackingSuggestion(this.type, this.count, {this.customKg});
 }
 
 List<PackingSuggestion> suggestPackingBreakdown(double totalKg) {
@@ -72,21 +77,9 @@ List<PackingSuggestion> suggestPackingBreakdown(double totalKg) {
     }
   }
   if (remaining > 0.01) {
-    final smallest = packingTypes
-        .where((p) => p.kgCapacity > 0)
-        .reduce((a, b) => a.kgCapacity < b.kgCapacity ? a : b);
-    final count = (remaining / smallest.kgCapacity).ceil();
-    final existing =
-        suggestions.where((s) => s.type.key == smallest.key).toList();
-    if (existing.isNotEmpty) {
-      final idx = suggestions.indexWhere((s) => s.type.key == smallest.key);
-      suggestions[idx] = PackingSuggestion(
-        smallest,
-        existing.first.count + count,
-      );
-    } else {
-      suggestions.add(PackingSuggestion(smallest, count));
-    }
+    suggestions.add(
+      PackingSuggestion(customPackingType, 1, customKg: remaining),
+    );
   }
   return suggestions;
 }
