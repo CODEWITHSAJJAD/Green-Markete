@@ -171,6 +171,20 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                     ),
                   ],
                 ),
+                if (partner.role != 'owner') ...[
+                  const Divider(height: 28),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Allow editing the other side'),
+                    subtitle: const Text(
+                      'Grants this partner write access on both sides '
+                      '(e.g. a purchaser can also manage sales).',
+                    ),
+                    value: partner.manageOtherSide,
+                    onChanged: (value) =>
+                        _toggleManageOtherSide(context, partner, businessId, value),
+                  ),
+                ],
               ],
             ),
           ),
@@ -259,6 +273,25 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Access updated to $accessLevel')),
+      );
+    }
+  }
+
+  Future<void> _toggleManageOtherSide(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    bool value,
+  ) async {
+    final ok =
+        await context.read<PartnerProvider>().updateManageOtherSide(partner.id, value, businessId);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok ? 'Other-side access ${value ? 'granted' : 'revoked'}' : 'Update failed',
+          ),
+        ),
       );
     }
   }

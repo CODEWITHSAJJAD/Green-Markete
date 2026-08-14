@@ -19,6 +19,7 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
   final _cityCtrl = TextEditingController();
   String _role = 'partner';
   String _accessLevel = 'viewer';
+  bool _manageOtherSide = false;
   bool _saving = false;
 
   @override
@@ -41,6 +42,7 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
       'city': _cityCtrl.text.trim(),
       'role': _role,
       'access_level': _accessLevel,
+      'manage_other_side': _manageOtherSide,
       'business_id': businessId,
     });
     if (!mounted) return;
@@ -122,6 +124,18 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
                 ],
                 onChanged: (value) =>
                     setState(() => _accessLevel = value ?? 'viewer'),
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Allow editing the other side'),
+                subtitle: const Text(
+                  'Grant write access on both sides '
+                  '(e.g. a purchaser can also manage sales).',
+                ),
+                value: _manageOtherSide,
+                onChanged: (value) =>
+                    setState(() => _manageOtherSide = value),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

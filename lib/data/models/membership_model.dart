@@ -3,12 +3,14 @@ class MembershipModel {
   final String role;
   final String? accessLevel;
   final bool isClaimed;
+  final bool manageOtherSide;
 
   MembershipModel({
     required this.businessId,
     this.role = 'partner',
     this.accessLevel,
     this.isClaimed = false,
+    this.manageOtherSide = false,
   });
 
   factory MembershipModel.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class MembershipModel {
       role: json['role'] as String? ?? 'partner',
       accessLevel: json['access_level'] as String?,
       isClaimed: json['is_claimed'] as bool? ?? json['user_id'] != null,
+      manageOtherSide: json['manage_other_side'] as bool? ?? false,
     );
   }
 

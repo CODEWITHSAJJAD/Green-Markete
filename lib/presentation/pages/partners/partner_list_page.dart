@@ -174,6 +174,10 @@ class _PartnerListPageState extends State<PartnerListPage> {
                                         _accessBadge(theme, partner.accessLevel ?? 'viewer'),
                                         const SizedBox(width: 6),
                                         _claimedBadge(theme, partner.isClaimed),
+                                        if (partner.manageOtherSide) ...[
+                                          const SizedBox(width: 6),
+                                          _crossSideBadge(theme),
+                                        ],
                                       ],
                                     ),
                                   ],
@@ -222,8 +226,24 @@ class _PartnerListPageState extends State<PartnerListPage> {
     );
   }
 
-  Widget _claimedBadge(ThemeData theme, bool isClaimed) {
+  Widget _crossSideBadge(ThemeData theme) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.inversePrimary.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Both sides',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSecondaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _claimedBadge(ThemeData theme, bool isClaimed) {    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isClaimed

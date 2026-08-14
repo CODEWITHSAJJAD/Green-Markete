@@ -131,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
       role = membership.effectiveAccessRole;
       _accessLevel = membership.accessLevel;
       _sideRole = membership.sideRole;
-      _manageOtherSide = false;
+      _manageOtherSide = membership.manageOtherSide;
     } else {
       role = current.role ?? 'viewer';
       _accessLevel = current.role;
@@ -194,7 +194,7 @@ class AuthProvider extends ChangeNotifier {
       if (role == null || role.isEmpty) role = profile?.role;
       _accessLevel = membership?.accessLevel;
       _sideRole = membership?.sideRole;
-      _manageOtherSide = false;
+      _manageOtherSide = membership?.manageOtherSide ?? false;
       _user = UserModel(
         id: userId,
         fullName: profile?.fullName,

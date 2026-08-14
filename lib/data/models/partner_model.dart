@@ -6,6 +6,7 @@ class PartnerModel {
   final String role;
   final String? accessLevel;
   final bool isClaimed;
+  final bool manageOtherSide;
   final String? businessId;
   final String? userId;
 
@@ -17,6 +18,7 @@ class PartnerModel {
     this.role = 'partner',
     this.accessLevel,
     this.isClaimed = false,
+    this.manageOtherSide = false,
     this.businessId,
     this.userId,
   });
@@ -30,6 +32,7 @@ class PartnerModel {
       role: json['role'] as String? ?? 'partner',
       accessLevel: json['access_level'] as String?,
       isClaimed: json['is_claimed'] as bool? ?? json['user_id'] != null,
+      manageOtherSide: json['manage_other_side'] as bool? ?? false,
       businessId: json['business_id'] as String?,
       userId: json['user_id'] as String?,
     );

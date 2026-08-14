@@ -36,6 +36,7 @@ class PartnerRepository {
           'phone': data['phone'],
           'role': data['role'] ?? 'partner',
           'access_level': data['access_level'] ?? 'viewer',
+          'manage_other_side': data['manage_other_side'] ?? false,
           'is_claimed': false,
         })
         .select()
@@ -55,6 +56,18 @@ class PartnerRepository {
     await _client
         .from('business_partners')
         .update({'access_level': accessLevel})
+        .eq('id', partnerId)
+        .eq('business_id', businessId);
+  }
+
+  Future<void> updateManageOtherSide(
+    String partnerId,
+    bool manageOtherSide,
+    String businessId,
+  ) async {
+    await _client
+        .from('business_partners')
+        .update({'manage_other_side': manageOtherSide})
         .eq('id', partnerId)
         .eq('business_id', businessId);
   }
