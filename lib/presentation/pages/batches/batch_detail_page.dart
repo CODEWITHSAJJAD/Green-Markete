@@ -274,6 +274,8 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       final allowed = [
         if (canPurchaser) 'purchaser',
         if (canSeller) 'seller',
+        if (auth.capabilities.can(Capability.addExpense) &&
+            auth.capabilities.isAccountant) ...['purchaser', 'seller'],
       ];
       if (allowed.isEmpty) return const SizedBox.shrink();
       return FloatingActionButton.extended(

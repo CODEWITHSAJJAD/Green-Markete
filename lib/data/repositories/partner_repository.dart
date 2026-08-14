@@ -72,6 +72,14 @@ class PartnerRepository {
         .eq('business_id', businessId);
   }
 
+  Future<void> updateRole(String partnerId, String role, String businessId) async {
+    await _client
+        .from('business_partners')
+        .update({'role': role})
+        .eq('id', partnerId)
+        .eq('business_id', businessId);
+  }
+
   Future<void> update(String id, Map<String, dynamic> data) async {
     await _client.from('business_partners').update({
       if (data['full_name'] != null) 'full_name': data['full_name'],

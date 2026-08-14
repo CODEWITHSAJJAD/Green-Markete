@@ -17,6 +17,7 @@ enum Capability {
   createMarket,
   createProduct,
   createSettlement,
+  manageSupplier,
   manageAccess,
   viewAuditLog,
 }
@@ -31,7 +32,9 @@ enum Capability {
 /// - Editor + side role: write own-side domains, read the other side.
 /// - Viewer + side role: same own-side domain writes as editor, but no
 ///   cross-cutting writes (create batch, close, void, partner management).
-/// - Accountant: read-only (D5 keeps current behaviour).
+/// - Accountant: read-only except financial management — expenses on both
+///   sides and supplier/bill management (manageSupplier); no purchases,
+///   sales, packing, transport, batch or partner operations.
 /// - Cross-side write requires [manageOtherSide] (owner-set grant).
 class CapabilityService {
   CapabilityService(
@@ -80,18 +83,22 @@ class CapabilityService {
       case Capability.addPacking:
       case Capability.recordPurchase:
       case Capability.manageTransport:
-      case Capability.addPurchaserExpense:
         return canEditPurchaserSide && !isAccountant;
+      case Capability.addPurchaserExpense:
+        return canEditPurchaserSide || isAccountant;
       case Capability.recordSale:
       case Capability.recordPayment:
-      case Capability.addSellerExpense:
         return canEditSellerSide && !isAccountant;
+      case Capability.addSellerExpense:
+        return canEditSellerSide || isAccountant;
       case Capability.addExpense:
-        return (canEditPurchaserSide || canEditSellerSide) && !isAccountant;
+        return canEditPurchaserSide || canEditSellerSide || isAccountant;
       case Capability.createCustomer:
         return isEditor && !isAccountant;
       case Capability.createSettlement:
         return canEditSellerSide && isEditor && !isAccountant;
+      case Capability.manageSupplier:
+        return isOwner || isEditor || isAccountant;
     }
   }
 }

@@ -92,4 +92,16 @@ class PartnerProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> updateRole(String partnerId, String role, String businessId) async {
+    try {
+      await _repo.updateRole(partnerId, role, businessId);
+      await load(businessId);
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

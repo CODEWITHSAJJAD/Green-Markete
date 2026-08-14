@@ -173,6 +173,20 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                 ),
                 if (partner.role != 'owner') ...[
                   const Divider(height: 28),
+                  Text('Role', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _roleChip(context, partner, businessId, 'purchaser', 'Purchaser'),
+                      _roleChip(context, partner, businessId, 'seller', 'Seller'),
+                      _roleChip(context, partner, businessId, 'both', 'Both'),
+                      _roleChip(context, partner, businessId, 'accountant', 'Accountant'),
+                      _roleChip(context, partner, businessId, 'partner', 'Partner'),
+                    ],
+                  ),
+                  const Divider(height: 28),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Allow editing the other side'),
@@ -292,6 +306,37 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
             ok ? 'Other-side access ${value ? 'granted' : 'revoked'}' : 'Update failed',
           ),
         ),
+      );
+    }
+  }
+
+  Widget _roleChip(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    String role,
+    String label,
+  ) {
+    final theme = Theme.of(context);
+    return ChoiceChip(
+      label: Text(label),
+      selected: partner.role == role,
+      onSelected: (_) => _updateRole(context, partner, businessId, role),
+      selectedColor: theme.colorScheme.secondary.withValues(alpha: 0.18),
+    );
+  }
+
+  Future<void> _updateRole(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    String role,
+  ) async {
+    if (partner.role == role) return;
+    final ok = await context.read<PartnerProvider>().updateRole(partner.id, role, businessId);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ok ? 'Role updated to $role' : 'Role update failed')),
       );
     }
   }

@@ -9,6 +9,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/models/supplier_payment_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/capability.dart';
 import '../../providers/data_refresh.dart';
 import '../../providers/supplier_provider.dart';
 import '../../widgets/green_card.dart';
@@ -191,7 +192,8 @@ class _SupplierLedgerPageState extends State<SupplierLedgerPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(_supplierName)),
-      floatingActionButton: outstanding > 0
+      floatingActionButton: outstanding > 0 &&
+              context.read<AuthProvider>().capabilities.can(Capability.manageSupplier)
           ? FloatingActionButton.extended(
               heroTag: null,
               onPressed: _openRecordPayment,
