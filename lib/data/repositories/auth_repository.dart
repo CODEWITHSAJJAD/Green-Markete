@@ -155,22 +155,16 @@ class AuthRepository {
     return BusinessModel.fromJson(row);
   }
 
-  Future<void> claimBusinessByPhone({required String userId, required String phone}) async {
-    final matches = await _client
-        .from('business_partners')
-        .select('id')
-        .eq('phone', phone)
-        .isFilter('user_id', null);
-    if (matches.isEmpty) return;
-    final ids = matches
-        .map((r) => r['id'] as String?)
-        .whereType<String>()
-        .toList();
-    if (ids.isEmpty) return;
-    await _client
-        .from('business_partners')
-        .update({'user_id': userId, 'is_claimed': true})
-        .inFilter('id', ids);
+  /// Claims every still-unclaimed partner row whose phone matches (any
+  /// business) by calling the SECURITY DEFINER `claim_partner_by_phone`
+  /// RPC — the client-side SELECT/UPDATE path is blocked by RLS for brand-new
+  /// users (their rows have user_id IS NULL), so the claim must run as the
+  /// table owner. Returns the number of claimed rows.
+  Future<int> claimBusinessByPhone({required String userId, required String phone}) async {
+    return _client.rpc<int>(
+      'claim_partner_by_phone',
+      params: {'p_user_id': userId, 'p_phone': phone},
+    );
   }
 
   /// All businesses the user belongs to (owner row + claimed partnerships),

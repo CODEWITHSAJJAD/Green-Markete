@@ -251,6 +251,9 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         city: city,
       );
+      if (phone != null && phone.isNotEmpty) {
+        await _repo.claimBusinessByPhone(userId: user.id, phone: phone);
+      }
       await restoreSession();
       return isAuthenticated;
     } catch (e) {
@@ -341,6 +344,10 @@ class AuthProvider extends ChangeNotifier {
         if (email != null && email.isNotEmpty) 'email': email,
         'city': ?city,
       });
+      if (phone != null && phone.isNotEmpty) {
+        await _repo.claimBusinessByPhone(userId: userId, phone: phone);
+      }
+      await restoreSession();
       final current = _user;
       _user = UserModel(
         id: current?.id ?? userId,
