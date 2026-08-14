@@ -37,4 +37,16 @@ class TransactionRepository {
       'total_out': 0,
     };
   }
+
+  /// Every partner transaction for the business, newest first. Used by the
+  /// partner dues screen to match settled amounts to batches via the batch
+  /// code stored in the notes or reference.
+  Future<List<TransactionModel>> listByBusiness(String businessId) async {
+    final rows = await _client
+        .from('partner_transactions')
+        .select()
+        .eq('business_id', businessId)
+        .order('transaction_date', ascending: false);
+    return rows.map(TransactionModel.fromJson).toList();
+  }
 }

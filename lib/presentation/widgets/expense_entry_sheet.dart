@@ -45,7 +45,6 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
   void initState() {
     super.initState();
     _side = widget.defaultSide;
-    if (_side == 'transport') _type = 'transport';
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
       context.read<PartnerProvider>().load(businessId);
@@ -109,62 +108,36 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
           children: [
             Text('Add Expense', style: theme.textTheme.titleLarge),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(_side),
-                    decoration: const InputDecoration(labelText: 'Side'),
-                    items: const [
-                      DropdownItem(
-                        value: 'purchaser',
-                        child: Text('Purchaser'),
-                      ),
-                      DropdownItem(
-                        value: 'transport',
-                        child: Text('Transport'),
-                      ),
-                      DropdownItem(value: 'seller', child: Text('Seller')),
-                    ],
-                    onChanged: (v) => setState(() => _side = v ?? 'purchaser'),
-                  ),
+            DropdownButtonFormField2<String>(
+              isExpanded: true,
+              valueListenable: ValueNotifier(_type),
+              decoration: const InputDecoration(labelText: 'Type'),
+              items: const [
+                DropdownItem(
+                  value: 'daily_charge',
+                  child: Text('Daily Charge'),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(_type),
-                    decoration: const InputDecoration(labelText: 'Type'),
-                    items: const [
-                      DropdownItem(
-                        value: 'daily_charge',
-                        child: Text('Daily Charge'),
-                      ),
-                      DropdownItem(value: 'labor', child: Text('Labor')),
-                      DropdownItem(
-                        value: 'accountant',
-                        child: Text('Accountant'),
-                      ),
-                      DropdownItem(value: 'packing', child: Text('Packing')),
-                      DropdownItem(
-                        value: 'stall_fee',
-                        child: Text('Stall Fee'),
-                      ),
-                      DropdownItem(
-                        value: 'transport',
-                        child: Text('Transport'),
-                      ),
-                      DropdownItem(
-                        value: 'local_transport',
-                        child: Text('Local Transport'),
-                      ),
-                      DropdownItem(value: 'misc', child: Text('Misc')),
-                    ],
-                    onChanged: (v) => setState(() => _type = v ?? 'misc'),
-                  ),
+                DropdownItem(value: 'labor', child: Text('Labor')),
+                DropdownItem(
+                  value: 'accountant',
+                  child: Text('Accountant'),
                 ),
+                DropdownItem(value: 'packing', child: Text('Packing')),
+                DropdownItem(
+                  value: 'stall_fee',
+                  child: Text('Stall Fee'),
+                ),
+                DropdownItem(
+                  value: 'transport',
+                  child: Text('Transport'),
+                ),
+                DropdownItem(
+                  value: 'local_transport',
+                  child: Text('Local Transport'),
+                ),
+                DropdownItem(value: 'misc', child: Text('Misc')),
               ],
+              onChanged: (v) => setState(() => _type = v ?? 'misc'),
             ),
             const SizedBox(height: 12),
             TextField(

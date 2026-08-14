@@ -402,6 +402,28 @@ class BatchRepository {
     return rows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  /// All batch-partner links (batch, partner, role) for every batch of the
+  /// business. Used by the partner dues screen to know which seller partners
+  /// are owed the purchaser-side bill on each batch. Defensive on missing
+  /// tables.
+  Future<List<Map<String, dynamic>>> listBusinessPartners(
+    String businessId,
+  ) async {
+    final rows = await _safeSelect(
+      table: 'batch_partners',
+      select:
+          'batch_id, partner_id, role, product_batches!inner(business_id)',
+      filter: (q) => q.eq('product_batches.business_id', businessId),
+    );
+    return rows.map((e) {
+      return Map<String, dynamic>.from({
+        'batch_id': e['batch_id'],
+        'partner_id': e['partner_id'],
+        'role': e['role'],
+      });
+    }).toList();
+  }
+
   Future<void> addPartner(String id, BatchPartnerCreate partner) async {
     await _client.from('batch_partners').insert({
       'batch_id': id,

@@ -1163,7 +1163,24 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         ),
       );
     }
+    // Group loads by vehicle so a vehicle loaded with multiple packing types
+    // shows once, with combined units and the total fare for that vehicle.
+    final grouped = <String, List<BatchVehicleModel>>{};
+    for (final l in loads) {
+      grouped.putIfAbsent(l.vehicleId, () => []).add(l);
+    }
     final totalCost = loads.fold<double>(0, (acc, l) => acc + l.totalCost);
+    final transportPaidBy = batch.transportPaidBy ?? 'purchaser';
+    final transportPartnerId = detailProvider.batchPartners
+        .where(
+          (p) =>
+              p['role'] == transportPaidBy ||
+              p['role'] == 'both',
+        )
+        .map((p) => p['partner_id'] as String?)
+        .whereType<String>()
+        .firstOrNull;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       children: [
@@ -1178,7 +1195,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           ),
           child: Row(
             children: [
-              Expanded(child: _metric(theme, 'Vehicles', '${loads.length}')),
+              Expanded(child: _metric(theme, 'Vehicles', '${grouped.length}')),
               Expanded(
                 child: _metric(
                   theme,
@@ -1189,40 +1206,158 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             ],
           ),
         ),
-        ...loads.map((l) => _transportTile(context, l)),
+        if (transportPartnerId != null) ...[
+          const SizedBox(height: 4),
+          FilledButton.icon(
+            onPressed: () => _showPayTransportDialog(
+              context,
+              batch: batch,
+              totalCost: totalCost,
+              transportPartnerId: transportPartnerId,
+            ),
+            icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
+            label: const Text('Pay Transport'),
+          ),
+          const SizedBox(height: 8),
+        ],
+        ...grouped.entries.map((entry) => _vehicleGroup(context, batch, entry.value)),
       ],
     );
   }
 
-  Widget _transportTile(BuildContext context, BatchVehicleModel load) {
+  /// One card per vehicle combining all loads (packing types) on that vehicle,
+  /// with the combined units and the total fare.
+  Widget _vehicleGroup(
+    BuildContext context,
+    BatchModel batch,
+    List<BatchVehicleModel> loads,
+  ) {
     final theme = Theme.of(context);
-    final tile = ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-        child: Icon(
-          MingCuteIcons.mgc_truck_line,
-          color: theme.colorScheme.primary,
-          size: 18,
-        ),
+    final first = loads.first;
+    final combinedUnits = loads.fold<double>(0, (acc, l) => acc + l.unitCount);
+    final fare = loads.fold<double>(0, (acc, l) => acc + l.totalCost);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
       ),
-      title: Text(
-        load.vehiclePlateNumber ?? 'Vehicle',
-        style: const TextStyle(fontWeight: FontWeight.w500),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.12,
+                ),
+                child: Icon(
+                  MingCuteIcons.mgc_truck_line,
+                  color: theme.colorScheme.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      first.vehiclePlateNumber ?? 'Vehicle',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (first.driverName != null && first.driverName!.isNotEmpty)
+                      Text(first.driverName!, style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    CurrencyFormatter.format(fare),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontFamily: 'Roboto Mono',
+                    ),
+                  ),
+                  Text('Fare', style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ],
+          ),
+          const Divider(height: 20),
+          ...loads.map((l) => _loadRow(context, batch, l)),
+          if (combinedUnits > 0) ...[
+            const Divider(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    loads.length > 1
+                        ? '${loads.length} loads on this vehicle'
+                        : 'Units loaded',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+                Text(
+                  '${combinedUnits.toStringAsFixed(combinedUnits % 1 == 0 ? 0 : 1)} units total',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
-      subtitle: Text(
-        [
-          load.driverName,
-          load.costType == 'per_packing'
-              ? '${load.unitCount.toStringAsFixed(0)} units @ ${CurrencyFormatter.format(load.transportCost)}'
-              : load.costType,
-          load.packingLabel,
-          load.loadDate,
-        ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
-      ),
-      trailing: Text(
-        CurrencyFormatter.format(load.totalCost),
-        style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'Roboto Mono'),
+    );
+  }
+
+  Widget _loadRow(BuildContext context, BatchModel batch, BatchVehicleModel load) {
+    final theme = Theme.of(context);
+    final tile = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  load.packingLabel ?? 'Load',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    if (load.costType == 'per_packing' && load.unitCount > 0)
+                      '${load.unitCount.toStringAsFixed(load.unitCount % 1 == 0 ? 0 : 1)} units @ ${CurrencyFormatter.format(load.transportCost)}/unit'
+                    else if (load.costType == 'per_packing')
+                      '${CurrencyFormatter.format(load.transportCost)}/unit'
+                    else if (load.costType == 'lump_sum')
+                      'Lump sum'
+                    else
+                      'Flat fare',
+                    load.loadDate,
+                  ].where((e) => e != null && e.toString().isNotEmpty).join(' • '),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Text(
+            CurrencyFormatter.format(load.totalCost),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontFamily: 'Roboto Mono',
+            ),
+          ),
+        ],
       ),
     );
     final canDelete =
@@ -1255,7 +1390,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         try {
           await batchDetailProvider.deleteVehicleLoad(load.id);
           if (!context.mounted) return false;
-          batchPLProvider.load(batchId);
+          batchPLProvider.load(batch.id);
           return true;
         } catch (e) {
           if (context.mounted) {
@@ -1269,6 +1404,202 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         }
       },
       child: tile,
+    );
+  }
+
+  Future<void> _showPayTransportDialog(
+    BuildContext context, {
+    required BatchModel batch,
+    required double totalCost,
+    required String transportPartnerId,
+  }) async {
+    final theme = Theme.of(context);
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    final batchPartners = context.read<BatchDetailProvider>().batchPartners;
+    final partners = context.read<PartnerProvider>().partners;
+
+    String partnerName(String id) {
+      return partners
+              .where((p) => p.id == id)
+              .map((p) => p.fullName)
+              .firstOrNull ??
+          id;
+    }
+
+    final otherPartnerIds = batchPartners
+        .where((p) => (p['partner_id'] as String?) != transportPartnerId)
+        .map((p) => p['partner_id'] as String?)
+        .whereType<String>()
+        .toList();
+    if (otherPartnerIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Add another partner to the batch to record a transport payment',
+          ),
+        ),
+      );
+      return;
+    }
+    String? fromPartnerId = otherPartnerIds.first;
+    final amountCtrl = TextEditingController(
+      text: totalCost > 0 ? totalCost.toStringAsFixed(2) : '',
+    );
+    final notesCtrl = TextEditingController(
+      text: 'Transport payment for batch ${batch.batchCode}',
+    );
+    String paymentMode = 'cash';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          return AlertDialog(
+            title: const Text('Pay Transport'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Total transport fare: ${CurrencyFormatter.format(totalCost)}',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(fromPartnerId),
+                    decoration: const InputDecoration(labelText: 'Paid by'),
+                    items: [
+                      for (final p in otherPartnerIds)
+                        DropdownItem(
+                          value: p,
+                          child: Text(
+                            partnerName(p),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: (v) => setSt(() => fromPartnerId = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(transportPartnerId),
+                    decoration: const InputDecoration(labelText: 'Paid to'),
+                    items: [
+                      DropdownItem(
+                        value: transportPartnerId,
+                        child: Text(partnerName(transportPartnerId)),
+                      ),
+                    ],
+                    onChanged: (_) {},
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Amount'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    valueListenable: ValueNotifier(paymentMode),
+                    decoration: const InputDecoration(
+                      labelText: 'Payment mode',
+                    ),
+                    items: const [
+                      DropdownItem(value: 'cash', child: Text('Cash')),
+                      DropdownItem(
+                        value: 'bank_transfer',
+                        child: Text('Bank Transfer'),
+                      ),
+                    ],
+                    onChanged: (v) => setSt(() => paymentMode = v ?? 'cash'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Notes'),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountCtrl.text.trim());
+                  if (amount == null || amount <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Enter a valid amount')),
+                    );
+                    return;
+                  }
+                  if (fromPartnerId == null || fromPartnerId!.isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Select who is paying')),
+                    );
+                    return;
+                  }
+                  final txProvider = context.read<TransactionProvider>();
+                  try {
+                    final created = await txProvider.create(
+                      TransactionCreateRequest(
+                        businessId: businessId,
+                        fromPartnerId: fromPartnerId!,
+                        toPartnerId: transportPartnerId,
+                        amount: amount,
+                        transactionType: 'transport',
+                        paymentMode: paymentMode,
+                        transactionDate: DateTime.now()
+                            .toIso8601String()
+                            .split('T')
+                            .first,
+                        notes: notesCtrl.text.trim().isEmpty
+                            ? null
+                            : notesCtrl.text.trim(),
+                      ),
+                    );
+                    if (created != null) {
+                      txProvider.loadLedger(transportPartnerId);
+                      if (businessId.isNotEmpty) {
+                        DataRefreshNotifier.instance.refresh(businessId);
+                      }
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    } else if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Failed: ${txProvider.error ?? 'Unknown error'}',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e.toString().replaceAll('Exception: ', ''),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Save Payment'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -1499,13 +1830,21 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         .where((t) => t.toPartnerId == sellerId)
         .fold<double>(0, (sum, t) => sum + t.amount);
 
-    final sellerDaily = pl?.costBreakdown.sellerDailyCharges ?? 0;
-    final sellerExpenses = pl?.costBreakdown.sellerExpenses ?? 0;
+    final purchaseCost = pl?.costBreakdown.purchaseCost ?? 0;
+    final purchaserDaily = pl?.costBreakdown.purchaserDailyCharges ?? 0;
+    final purchaserExpenses = pl?.costBreakdown.purchaserExpenses ?? 0;
+    final packingCost = pl?.costBreakdown.packingCost ?? 0;
     final transport = pl?.costBreakdown.transportCost ?? 0;
+    // The bill owed to the seller is the purchaser-side total: purchase cost,
+    // purchaser expenses, purchaser daily charges, packing cost and, when the
+    // purchaser bears transport, the transport cost too.
+    final transportInBill = batch.transportPaidBy == 'purchaser' ? transport : 0;
     final owed =
-        sellerDaily +
-        sellerExpenses +
-        (batch.transportPaidBy == 'seller' ? transport : 0);
+        purchaseCost +
+        purchaserDaily +
+        purchaserExpenses +
+        packingCost +
+        transportInBill;
     final remaining = (owed - settledForBatch)
         .clamp(0, double.infinity)
         .toDouble();
@@ -1534,12 +1873,14 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             children: [
               Text('Seller: $sellerName', style: theme.textTheme.titleMedium),
               const SizedBox(height: 12),
-              _costLine(theme, 'Daily charges', sellerDaily),
-              _costLine(theme, 'Seller expenses', sellerExpenses),
-              if (batch.transportPaidBy == 'seller')
-                _costLine(theme, 'Transport (seller-paid)', transport),
+              _costLine(theme, 'Purchase cost', purchaseCost),
+              _costLine(theme, 'Purchaser expenses', purchaserExpenses),
+              _costLine(theme, 'Purchaser daily charges', purchaserDaily),
+              _costLine(theme, 'Packing cost', packingCost),
+              if (batch.transportPaidBy == 'purchaser')
+                _costLine(theme, 'Transport (purchaser-paid)', transport),
               const Divider(height: 20),
-              _costLine(theme, 'Owed to seller', owed, bold: true),
+              _costLine(theme, 'Bill owed to seller', owed, bold: true),
               _costLine(theme, 'Settled for this batch', settledForBatch),
               _costLine(theme, 'Remaining', remaining, bold: true),
               if (remaining > 0) ...[
@@ -1562,7 +1903,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         ),
         const SizedBox(height: 16),
         Text(
-          'Settlements are recorded as partner transactions. They are matched to this batch via its code in the notes.',
+          'The bill owed to the seller is the purchaser-side total (purchase cost + purchaser expenses + daily charges + packing + purchaser-paid transport). Settle it fully or in partial splits — each payment is recorded as a partner transaction and matched to this batch via its code in the notes.',
           style: theme.textTheme.bodySmall,
         ),
       ],
@@ -1638,7 +1979,10 @@ class _BatchDetailPageState extends State<BatchDetailPage>
                       decimal: true,
                     ),
                     autofocus: true,
-                    decoration: const InputDecoration(labelText: 'Amount'),
+                    decoration: InputDecoration(
+                      labelText: 'Amount',
+                      helperText: 'Enter a partial amount to pay in splits',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField2<String>(

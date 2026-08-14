@@ -7,6 +7,7 @@ import '../pages/products/product_list_page.dart';
 import '../pages/reports/reports_page.dart';
 import '../pages/settings/settings_page.dart';
 import '../pages/suppliers/supplier_settlement_page.dart';
+import '../pages/transactions/partner_dues_page.dart';
 import '../pages/transactions/transaction_list_page.dart';
 import '../pages/vehicles/vehicle_list_page.dart';
 
@@ -115,6 +116,12 @@ class SidebarDrawer extends StatelessWidget {
                     activeIcon: MingCuteIcons.mgc_exchange_dollar_fill,
                     label: 'Transactions',
                     onTap: () => onOpenPage(const TransactionListPage()),
+                  ),
+                  _NavTile(
+                    icon: MingCuteIcons.mgc_wallet_3_line,
+                    activeIcon: MingCuteIcons.mgc_wallet_3_fill,
+                    label: 'Partner Dues',
+                    onTap: () => onOpenPage(const PartnerDuesPage()),
                   ),
                   const SizedBox(height: 8),
                   const _SectionHeader('Account'),

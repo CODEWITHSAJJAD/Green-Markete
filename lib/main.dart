@@ -20,6 +20,7 @@ import 'presentation/providers/connectivity_provider.dart';
 import 'presentation/providers/customer_provider.dart';
 import 'presentation/providers/dashboard_provider.dart';
 import 'presentation/providers/market_provider.dart';
+import 'presentation/providers/partner_dues_provider.dart';
 import 'presentation/providers/partner_provider.dart';
 import 'presentation/providers/product_provider.dart';
 import 'presentation/providers/report_provider.dart';
@@ -63,6 +64,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ProductProvider(ProductRepository())),
         ChangeNotifierProvider(create: (_) => ReportProvider(ReportRepository())),
         ChangeNotifierProvider(create: (_) => TransactionProvider(TransactionRepository())),
+        ChangeNotifierProvider(create: (_) => PartnerDuesProvider(BatchRepository(), TransactionRepository())),
         ChangeNotifierProvider(create: (_) => VehicleProvider(VehicleRepository())),
         ChangeNotifierProvider(create: (_) => SupplierProvider(BatchRepository())),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
