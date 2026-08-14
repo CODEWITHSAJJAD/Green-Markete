@@ -4,6 +4,8 @@
 **Version:** 2.1 (Operations Features) — Supersedes 2.0
 **Date:** August 2026
 
+> **Planned (see `05_MultiUser_RBAC_Plan.md`):** this document still assumes one business per user (`my_business_id()` returns a single id). The multi-user RBAC plan replaces the single-business helpers with `my_business_ids()` + per-business access helpers, extends the role matrix with **side-scoped** permissions (edit own side / view other side), and adds a per-partner cross-side grant. That rework is **not implemented yet** — until it lands, this v2.1 document is the live security reference.
+
 > **Version 2.1 changes:** adds role rules for the operations features (day-end close, supplier payables, per-batch credit, packing returns, shared customers/vehicles), RLS policy templates for the **[PLANNED]** tables (`batch_vehicles`, `vehicle_loads`, `packing_returns`, `suppliers`, `packing_materials`, `customer_shares`, `vehicle_shares`), and a note on the app's defensive probing of unbacked tables. RLS template form for new tables is the same as §3 — read on.
 
 ---

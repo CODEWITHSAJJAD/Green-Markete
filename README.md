@@ -13,6 +13,7 @@ frontend/                 ← git repo root
 └── green_market/         ← the Flutter app
     ├── README.md         ← this file
     ├── OPERATIONS_FEATURES_PLAN.md  ← requirements map + phased roadmap
+    ├── 05_MultiUser_RBAC_Plan.md    ← multi-user role-based access plan (PLANNED)
     ├── gap_analysis.md   ← older gap inventory (partly stale)
     └── lib/
         ├── core/         ← config, supabase service, utils, error, export
@@ -52,6 +53,7 @@ frontend/                 ← git repo root
 | Partners, products, markets, customers (list/create/ledger/payments) | Done |
 | Reports (P&L, credit, overdue, market perf, partner P&L) + CSV export | Done |
 | Settlements (Phase 5) + shared-customers indicator (Phase 6) | Done |
+| **Multi-user roles & access** (partner claim by phone, per-business roles, side-scoped permissions: edit own side / view other side) | **Planned — see `05_MultiUser_RBAC_Plan.md`** |
 | **Day-end manual summary, per-batch credit, suppliers, reusable packing** | **Planned — see `OPERATIONS_FEATURES_PLAN.md` Phase 7–11** |
 
 ## Docs index
@@ -59,5 +61,6 @@ frontend/                 ← git repo root
 - `../../frontend/project_state.md` — session log + live status (read first)
 - `../../frontend/AGENTS.md` — hard rules
 - `OPERATIONS_FEATURES_PLAN.md` — requirements map (R1–R18) + phased roadmap
+- `05_MultiUser_RBAC_Plan.md` — multi-user role-based access: claim-by-phone flow, per-business roles, side-scoped permission matrix, backend prerequisites (B1–B5), frontend phases (P1–P5), open decisions (D1–D6)
 - `gap_analysis.md` — older inventory (partially stale; trust `project_state.md` + code)
 - `01_PRD.md` / `02_Technical_Architecture.md` — original spec (live DB is ahead)
