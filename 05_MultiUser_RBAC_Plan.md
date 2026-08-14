@@ -87,6 +87,8 @@ Rules:
 
 ## 4. Backend prerequisites (for the backend repo — not this repo)
 
+> **Status (daily-94):** drafted as `supabase/migrations/25_multi_business_rls.sql` in THIS repo for review. It is **additive-only** (never drops/weakens an existing policy; OR-combined SELECT widening only; B4 column; B2/B5 triggers swallow errors), so applying it cannot produce RLS/42501 regressions. Apply via the SQL editor when ready; the frontend works without it.
+
 Applied to the backend/Supabase side; listed here so the frontend plan is complete. The frontend must keep working **before** these land (defensive pattern: if a column/RPC is absent, degrade).
 
 - **B1 — Claim all by phone.** Replace/extend the signup hook so an unclaimed `business_partners` row is claimed for **every** business matching the signup phone. Security-definer; exact phone match; guarded by `is_claimed = FALSE`.
