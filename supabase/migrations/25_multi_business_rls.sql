@@ -108,112 +108,128 @@ END $b4$;
 -- B2. Auto-link a newly added partner whose phone already belongs to a
 --     registered user. AFTER INSERT + full exception swallowing means the
 --     INSERT itself can never be blocked. No-op when no profile matches.
+--     The function is created UNCONDITIONALLY so the GRANT below can never
+--     fail with 42883; only the trigger attachment is guarded.
 -- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION auto_link_business_partner()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.user_id IS NULL AND NEW.phone IS NOT NULL THEN
+    BEGIN
+      UPDATE business_partners bp
+      SET user_id = (
+        SELECT up.user_id FROM user_profiles up WHERE up.phone = NEW.phone LIMIT 1
+      ),
+      is_claimed = true
+      WHERE bp.id = NEW.id
+        AND bp.user_id IS NULL
+        AND EXISTS (SELECT 1 FROM user_profiles up WHERE up.phone = NEW.phone);
+    EXCEPTION WHEN others THEN
+      RAISE NOTICE 'auto_link skipped for phone %: %', NEW.phone, SQLERRM;
+    END;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
 DO $b2$
 BEGIN
   IF to_regclass('public.business_partners') IS NULL OR to_regclass('public.user_profiles') IS NULL THEN
-    RAISE NOTICE 'SKIP B2 �?" business_partners/user_profiles missing';
+    RAISE NOTICE 'SKIP B2 trigger - business_partners/user_profiles missing';
     RETURN;
   END IF;
-
-  CREATE OR REPLACE FUNCTION auto_link_business_partner()
-  RETURNS trigger
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path = public
-  AS $$
   BEGIN
-    IF NEW.user_id IS NULL AND NEW.phone IS NOT NULL THEN
-      BEGIN
-        UPDATE business_partners bp
-        SET user_id = (
-          SELECT up.user_id FROM user_profiles up WHERE up.phone = NEW.phone LIMIT 1
-        ),
-        is_claimed = true
-        WHERE bp.id = NEW.id
-          AND bp.user_id IS NULL
-          AND EXISTS (SELECT 1 FROM user_profiles up WHERE up.phone = NEW.phone);
-      EXCEPTION WHEN others THEN
-        RAISE NOTICE 'auto_link skipped for phone %: %', NEW.phone, SQLERRM;
-      END;
-    END IF;
-    RETURN NULL;
+    DROP TRIGGER IF EXISTS trg_auto_link_partner ON business_partners;
+    CREATE TRIGGER trg_auto_link_partner
+    AFTER INSERT ON business_partners
+    FOR EACH ROW EXECUTE FUNCTION auto_link_business_partner();
+    RAISE NOTICE 'B2 auto-link trigger ready';
+  EXCEPTION WHEN others THEN
+    RAISE NOTICE 'B2 trigger creation failed: %', SQLERRM;
   END;
-  $$;
-
-  DROP TRIGGER IF EXISTS trg_auto_link_partner ON business_partners;
-  CREATE TRIGGER trg_auto_link_partner
-  AFTER INSERT ON business_partners
-  FOR EACH ROW EXECUTE FUNCTION auto_link_business_partner();
-  RAISE NOTICE 'B2 auto-link trigger ready';
 END $b2$;
 
 -- ---------------------------------------------------------------------------
 -- B5. Audit access/role changes on business_partners. Append-only; swallows
 --     every error so UPDATEs keep working even if the audit write fails.
---     Only created when audit_logs has the columns the app reads.
+--     The function is created UNCONDITIONALLY so the GRANT below can never
+--     fail with 42883; the trigger is attached only when audit_logs has the
+--     columns the app reads.
 -- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION audit_partner_access_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.access_level IS DISTINCT FROM OLD.access_level
+     OR NEW.role IS DISTINCT FROM OLD.role
+     OR NEW.manage_other_side IS DISTINCT FROM OLD.manage_other_side THEN
+    BEGIN
+      INSERT INTO audit_logs (table_name, record_id, action, performed_by, old_values, new_values)
+      VALUES (
+        'business_partners',
+        NEW.id::text,
+        'UPDATE',
+        auth.uid()::text,
+        jsonb_build_object(
+          'access_level', OLD.access_level,
+          'role', OLD.role,
+          'manage_other_side', OLD.manage_other_side
+        ),
+        jsonb_build_object(
+          'access_level', NEW.access_level,
+          'role', NEW.role,
+          'manage_other_side', NEW.manage_other_side
+        )
+      );
+    EXCEPTION WHEN others THEN
+      RAISE NOTICE 'audit write skipped: %', SQLERRM;
+    END;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
 DO $b5$
 DECLARE
   has_cols boolean;
 BEGIN
   IF to_regclass('public.business_partners') IS NULL OR to_regclass('public.audit_logs') IS NULL THEN
-    RAISE NOTICE 'SKIP B5 �?" business_partners/audit_logs missing';
+    RAISE NOTICE 'SKIP B5 trigger - business_partners/audit_logs missing';
     RETURN;
   END IF;
 
-  SELECT
-    bool_and(c.column_name IN ('table_name','record_id','action','old_values','new_values'))
-    INTO has_cols
-  FROM information_schema.columns c
-  WHERE c.table_schema = 'public' AND c.table_name = 'audit_logs';
+  -- Require EVERY column the app reads to be present (not: every column of
+  -- the table to be one of these five).
+  SELECT bool_and(EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = 'public' AND c.table_name = 'audit_logs'
+      AND c.column_name = req.col
+  ))
+  INTO has_cols
+  FROM (VALUES ('table_name'),('record_id'),('action'),('old_values'),('new_values'))
+       AS req(col);
 
   IF has_cols IS NOT TRUE THEN
-    RAISE NOTICE 'SKIP B5 �?" audit_logs missing expected columns';
+    RAISE NOTICE 'SKIP B5 trigger - audit_logs missing expected columns';
     RETURN;
   END IF;
 
-  CREATE OR REPLACE FUNCTION audit_partner_access_change()
-  RETURNS trigger
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path = public
-  AS $$
   BEGIN
-    IF NEW.access_level IS DISTINCT FROM OLD.access_level
-       OR NEW.role IS DISTINCT FROM OLD.role
-       OR NEW.manage_other_side IS DISTINCT FROM OLD.manage_other_side THEN
-      BEGIN
-        INSERT INTO audit_logs (table_name, record_id, action, performed_by, old_values, new_values)
-        VALUES (
-          'business_partners',
-          NEW.id::text,
-          'UPDATE',
-          auth.uid()::text,
-          jsonb_build_object(
-            'access_level', OLD.access_level,
-            'role', OLD.role,
-            'manage_other_side', OLD.manage_other_side
-          ),
-          jsonb_build_object(
-            'access_level', NEW.access_level,
-            'role', NEW.role,
-            'manage_other_side', NEW.manage_other_side
-          )
-        );
-      EXCEPTION WHEN others THEN
-        RAISE NOTICE 'audit write skipped: %', SQLERRM;
-      END;
-    END IF;
-    RETURN NULL;
+    DROP TRIGGER IF EXISTS trg_audit_partner_access ON business_partners;
+    CREATE TRIGGER trg_audit_partner_access
+    AFTER UPDATE ON business_partners
+    FOR EACH ROW EXECUTE FUNCTION audit_partner_access_change();
+    RAISE NOTICE 'B5 audit trigger ready';
+  EXCEPTION WHEN others THEN
+    RAISE NOTICE 'B5 trigger creation failed: %', SQLERRM;
   END;
-  $$;
-
-  DROP TRIGGER IF EXISTS trg_audit_partner_access ON business_partners;
-  CREATE TRIGGER trg_audit_partner_access
-  AFTER UPDATE ON business_partners
-  FOR EACH ROW EXECUTE FUNCTION audit_partner_access_change();
-  RAISE NOTICE 'B5 audit trigger ready';
 END $b5$;
 
 -- ---------------------------------------------------------------------------
