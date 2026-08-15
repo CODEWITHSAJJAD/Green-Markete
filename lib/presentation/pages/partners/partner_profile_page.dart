@@ -80,6 +80,8 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     PartnerProvider partnerProvider,
     TransactionProvider transactionProvider,
   ) {
+    final auth = context.watch<AuthProvider>();
+    final isOwner = auth.capabilities.isOwner;
     final partner = widget.initialPartner ??
         partnerProvider.partners.cast<PartnerModel?>().firstWhere(
               (item) => item?.id == widget.partnerId,
@@ -88,6 +90,8 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     if (partner == null) {
       return const Center(child: Text('Partner not found'));
     }
+
+    final isEmployee = partner.role != 'partner' && partner.role != 'owner';
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -111,7 +115,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                         Text(partner.fullName, style: theme.textTheme.headlineSmall),
                         const SizedBox(height: 4),
                         Text(
-                          [partner.role, partner.city, partner.phone]
+                          [partner.role.toUpperCase(), partner.city, partner.phone]
                               .where((item) => item != null && item.isNotEmpty)
                               .join('  •  '),
                           style: theme.textTheme.bodyMedium,
@@ -126,6 +130,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
+                  _chip(theme, isEmployee ? 'Type: Employee / Staff' : 'Type: Business Partner'),
                   _chip(theme, 'Access: ${partner.accessLevel ?? 'viewer'}'),
                   _chip(theme, partner.isClaimed ? 'Claimed profile' : 'Invitation pending'),
                 ],
@@ -149,24 +154,45 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
           ),
         ),
         const SizedBox(height: 16),
-        if (currentRole == 'owner')
+        if (isOwner)
           GreenCard(
             padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Access Management', style: theme.textTheme.titleLarge),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Access & Role Management', style: theme.textTheme.titleLarge),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Owner Controls',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
+                Text('Access Level', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children: [
                     ChoiceChip(
-                      label: const Text('Viewer'),
+                      label: const Text('Viewer (Scoped Access)'),
                       selected: (partner.accessLevel ?? 'viewer') == 'viewer',
                       onSelected: (_) => _updateAccess(context, partner, businessId, 'viewer'),
                     ),
                     ChoiceChip(
-                      label: const Text('Editor'),
+                      label: const Text('Editor (Elevated Access)'),
                       selected: (partner.accessLevel ?? 'viewer') == 'editor',
                       onSelected: (_) => _updateAccess(context, partner, businessId, 'editor'),
                     ),

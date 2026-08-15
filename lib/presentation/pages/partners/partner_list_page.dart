@@ -20,6 +20,7 @@ class PartnerListPage extends StatefulWidget {
 
 class _PartnerListPageState extends State<PartnerListPage> {
   final _searchCtrl = TextEditingController();
+  String _filter = 'all'; // 'all', 'employees', 'partners'
 
   @override
   void initState() {
@@ -52,14 +53,28 @@ class _PartnerListPageState extends State<PartnerListPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final businessId = context.watch<AuthProvider>().businessId ?? '';
+    final auth = context.watch<AuthProvider>();
+    final businessId = auth.businessId ?? '';
+    final currentBusiness =
+        auth.businesses.where((b) => b.id == auth.businessId).firstOrNull;
+    final isSoloBusiness = currentBusiness?.businessType == 'single';
+
     final search = _searchCtrl.text.trim();
     final partnerProvider = context.watch<PartnerProvider>();
-    final partners = search.isEmpty ? partnerProvider.partners : partnerProvider.searchResults;
+    final allPartners = search.isEmpty ? partnerProvider.partners : partnerProvider.searchResults;
+
+    final filteredPartners = allPartners.where((p) {
+      if (_filter == 'employees') return p.role != 'partner';
+      if (_filter == 'partners') return p.role == 'partner';
+      return true;
+    }).toList();
+
+    final employeeCount = allPartners.where((p) => p.role != 'partner').length;
+    final partnerCount = allPartners.where((p) => p.role == 'partner').length;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Partners'),
+        title: Text(isSoloBusiness ? 'Employees & Staff' : 'Partners & Staff'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -81,10 +96,15 @@ class _PartnerListPageState extends State<PartnerListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Business partners & staff', style: theme.textTheme.headlineMedium),
+                Text(
+                  isSoloBusiness ? 'Business Staff & Access' : 'Business Partners & Staff',
+                  style: theme.textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 8),
                 Text(
-                  'Manage purchasers, sellers, accountants, employees, and business partners from one directory.',
+                  isSoloBusiness
+                      ? 'Manage purchasers, sellers, accountants, and staff members.'
+                      : 'Manage purchasers, sellers, accountants, employees, and equity partners.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 18),
@@ -99,6 +119,33 @@ class _PartnerListPageState extends State<PartnerListPage> {
                     prefixIcon: Icon(MingCuteIcons.mgc_search_2_line),
                   ),
                 ),
+                if (!isSoloBusiness) ...[
+                  const SizedBox(height: 14),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ChoiceChip(
+                          label: Text('All (${allPartners.length})'),
+                          selected: _filter == 'all',
+                          onSelected: (_) => setState(() => _filter = 'all'),
+                        ),
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: Text('Staff / Employees ($employeeCount)'),
+                          selected: _filter == 'employees',
+                          onSelected: (_) => setState(() => _filter = 'employees'),
+                        ),
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: Text('Equity Partners ($partnerCount)'),
+                          selected: _filter == 'partners',
+                          onSelected: (_) => setState(() => _filter = 'partners'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -122,72 +169,118 @@ class _PartnerListPageState extends State<PartnerListPage> {
                 ],
               ),
             )
-          else if (partners.isEmpty)
+          else if (filteredPartners.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: EmptyState(
                 icon: MingCuteIcons.mgc_user_3_line,
-                title: 'No partners found',
-                subtitle: 'Add partners to build your purchase and sales network.',
-                actionLabel: 'New Partner',
+                title: _filter == 'employees'
+                    ? 'No employees found'
+                    : _filter == 'partners'
+                        ? 'No partners found'
+                        : 'No members found',
+                subtitle: isSoloBusiness
+                    ? 'Add employees to assign purchasing, selling, or accounting duties.'
+                    : 'Add staff or partners to build your operations network.',
+                actionLabel: isSoloBusiness ? 'Add Employee' : 'Add Member',
                 onAction: _openCreate,
               ),
             )
           else
             Column(
-              children: partners
-                    .map(
-                      (partner) => GreenCard(
+              children: filteredPartners
+                  .map(
+                    (partner) {
+                      final isEmployee = partner.role != 'partner' && partner.role != 'owner';
+                      return GreenCard(
                         margin: const EdgeInsets.only(bottom: AppSpacing.md),
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => PartnerProfilePage(partnerId: partner.id, initialPartner: partner),
+                            builder: (_) => PartnerProfilePage(
+                              partnerId: partner.id,
+                              initialPartner: partner,
+                            ),
                           ),
                         ),
                         child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-                                child: Text(
-                                  partner.fullName.substring(0, 1).toUpperCase(),
-                                  style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary),
+                          children: [
+                            CircleAvatar(
+                              radius: 24,
+                              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                              child: Text(
+                                partner.fullName.substring(0, 1).toUpperCase(),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(partner.fullName, style: theme.textTheme.titleMedium),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      [describeSide(partner.role), partner.city ?? '', partner.phone ?? '']
-                                          .where((item) => item.isNotEmpty)
-                                          .join('  •  '),
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        _accessBadge(theme, partner.accessLevel ?? 'viewer'),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          partner.fullName,
+                                          style: theme.textTheme.titleMedium,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isEmployee
+                                              ? theme.colorScheme.secondary.withValues(alpha: 0.1)
+                                              : theme.colorScheme.primary.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          isEmployee ? 'Staff' : 'Partner',
+                                          style: theme.textTheme.labelSmall?.copyWith(
+                                            color: isEmployee
+                                                ? theme.colorScheme.secondary
+                                                : theme.colorScheme.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    [
+                                      describeSide(partner.role),
+                                      partner.city ?? '',
+                                      partner.phone ?? ''
+                                    ].where((item) => item.isNotEmpty).join('  •  '),
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      _accessBadge(theme, partner.accessLevel ?? 'viewer'),
+                                      const SizedBox(width: 6),
+                                      _claimedBadge(theme, partner.isClaimed),
+                                      if (partner.manageOtherSide) ...[
                                         const SizedBox(width: 6),
-                                        _claimedBadge(theme, partner.isClaimed),
-                                        if (partner.manageOtherSide) ...[
-                                          const SizedBox(width: 6),
-                                          _crossSideBadge(theme),
-                                        ],
+                                        _crossSideBadge(theme),
                                       ],
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                    )
-                    .toList(),
+                      );
+                    },
+                  )
+                  .toList(),
             ),
         ],
       ),
@@ -199,7 +292,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
               heroTag: null,
               onPressed: _openCreate,
               icon: const Icon(MingCuteIcons.mgc_user_4_line),
-              label: const Text('New Partner'),
+              label: Text(isSoloBusiness ? 'Add Employee' : 'Add Member'),
             )
           : null,
     );

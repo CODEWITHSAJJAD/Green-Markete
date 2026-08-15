@@ -18,7 +18,8 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
-  String _role = 'partner';
+  String _memberType = 'employee';
+  String _role = 'purchaser';
   String _accessLevel = 'viewer';
   bool _manageOtherSide = false;
   bool _saving = false;
@@ -50,14 +51,20 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
     setState(() => _saving = false);
     if (partner != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Partner created successfully')),
+        SnackBar(
+          content: Text(
+            _memberType == 'employee'
+                ? 'Employee added successfully'
+                : 'Partner added successfully',
+          ),
+        ),
       );
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.read<PartnerProvider>().error ?? 'Failed to create partner',
+            context.read<PartnerProvider>().error ?? 'Failed to add member',
           ),
         ),
       );
@@ -66,14 +73,75 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final auth = context.watch<AuthProvider>();
+    final currentBusiness =
+        auth.businesses.where((b) => b.id == auth.businessId).firstOrNull;
+    final isSoloBusiness = currentBusiness?.businessType == 'single';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Partner')),
+      appBar: AppBar(
+        title: Text(isSoloBusiness ? 'Add Employee' : 'Add Member (Employee / Partner)'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (!isSoloBusiness) ...[
+                Text('Member Classification', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Staff / Employee'),
+                        selected: _memberType == 'employee',
+                        onSelected: (_) => setState(() {
+                          _memberType = 'employee';
+                          if (_role == 'partner') _role = 'purchaser';
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Business Partner'),
+                        selected: _memberType == 'partner',
+                        onSelected: (_) => setState(() {
+                          _memberType = 'partner';
+                          _role = 'partner';
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 18, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Single Owner Business: All members are added as Staff / Employees.',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               TextFormField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(labelText: 'Full name'),
@@ -98,31 +166,46 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
               const SizedBox(height: 16),
               AppDropdown<String>(
                 value: _role,
-                labelText: 'Role / Position (Employee or Partner)',
-                items: const [
-                  DropdownItem(
-                    value: 'purchaser',
-                    child: Text('Purchaser (Purchases, Transport & Suppliers)'),
-                  ),
-                  DropdownItem(
-                    value: 'seller',
-                    child: Text('Seller (Sales, Customers & Settlements)'),
-                  ),
-                  DropdownItem(
-                    value: 'accountant',
-                    child: Text('Accountant (Expenses, Dues & Ledgers)'),
-                  ),
-                  DropdownItem(
-                    value: 'both',
-                    child: Text('Manager (Both Purchasing & Selling)'),
-                  ),
-                  DropdownItem(
-                    value: 'partner',
-                    child: Text('Partner (Investor / Co-Owner)'),
-                  ),
-                ],
+                labelText: _memberType == 'employee' ? 'Employee Role' : 'Partner Role',
+                items: _memberType == 'employee'
+                    ? const [
+                        DropdownItem(
+                          value: 'purchaser',
+                          child: Text('Purchaser (Purchases, Transport & Suppliers)'),
+                        ),
+                        DropdownItem(
+                          value: 'seller',
+                          child: Text('Seller (Sales, Customers & Settlements)'),
+                        ),
+                        DropdownItem(
+                          value: 'accountant',
+                          child: Text('Accountant (Expenses, Dues & Ledgers)'),
+                        ),
+                        DropdownItem(
+                          value: 'both',
+                          child: Text('Manager (Both Purchasing & Selling)'),
+                        ),
+                      ]
+                    : const [
+                        DropdownItem(
+                          value: 'partner',
+                          child: Text('Partner (Investor / Equity Co-Owner)'),
+                        ),
+                        DropdownItem(
+                          value: 'purchaser',
+                          child: Text('Purchaser Partner (Managing Purchases)'),
+                        ),
+                        DropdownItem(
+                          value: 'seller',
+                          child: Text('Seller Partner (Managing Sales)'),
+                        ),
+                        DropdownItem(
+                          value: 'both',
+                          child: Text('Active Partner (Managing Both Sides)'),
+                        ),
+                      ],
                 onChanged: (value) =>
-                    setState(() => _role = value ?? 'purchaser'),
+                    setState(() => _role = value ?? (_memberType == 'employee' ? 'purchaser' : 'partner')),
               ),
               const SizedBox(height: 16),
               AppDropdown<String>(
