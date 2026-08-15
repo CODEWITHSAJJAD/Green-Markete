@@ -82,11 +82,10 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
   ) {
     final auth = context.watch<AuthProvider>();
     final isOwner = auth.capabilities.isOwner;
-    final partner = widget.initialPartner ??
-        partnerProvider.partners.cast<PartnerModel?>().firstWhere(
-              (item) => item?.id == widget.partnerId,
-              orElse: () => null,
-            );
+    final partner = partnerProvider.partners.cast<PartnerModel?>().firstWhere(
+          (item) => item?.id == widget.partnerId,
+          orElse: () => widget.initialPartner,
+        );
     if (partner == null) {
       return const Center(child: Text('Partner not found'));
     }
