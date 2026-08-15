@@ -1,5 +1,6 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/unit_converter.dart';
@@ -313,32 +314,41 @@ class _EntryCardState extends State<_EntryCard> {
         children: [
           Row(
             children: [
-              Expanded(
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: Text(
-                  'Supplier ${widget.index + 1}',
-                  style: theme.textTheme.titleSmall,
+                  'Purchase #${widget.index + 1}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              SizedBox(
-                width: 110,
-                child: AppDropdown<int>(
-                  value: _batchGroup,
-                  labelText: 'Batch',
-                  items: [
-                    for (var g = 1; g <= 6; g++)
-                      DropdownItem(value: g, child: Text('Batch $g')),
-                  ],
-                  onChanged: (v) => _update(() => _batchGroup = v ?? 1),
-                ),
-              ),
+              const Spacer(),
               if (widget.deletable)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline),
+                  icon: const Icon(MingCuteIcons.mgc_delete_3_line, size: 20, color: Colors.red),
+                  tooltip: 'Delete purchase',
                   onPressed: widget.onDelete,
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          AppDropdown<int>(
+            value: _batchGroup,
+            labelText: 'Batch Group',
+            prefixIcon: const Icon(MingCuteIcons.mgc_box_3_line, size: 18),
+            items: [
+              for (var g = 1; g <= 6; g++)
+                DropdownItem(value: g, child: Text('Batch $g')),
+            ],
+            onChanged: (v) => _update(() => _batchGroup = v ?? 1),
+          ),
+          const SizedBox(height: 12),
           SupplierDropdownField(
             value: (widget.entry['supplierName'] as String?) ?? '',
             suppliers: widget.suppliers,
@@ -353,6 +363,7 @@ class _EntryCardState extends State<_EntryCard> {
               value: _marketId,
               labelText: 'Market',
               hintText: 'Market (optional)',
+              prefixIcon: const Icon(MingCuteIcons.mgc_location_line, size: 18),
               items: [
                 for (final m in widget.markets!)
                   DropdownItem(
@@ -363,21 +374,16 @@ class _EntryCardState extends State<_EntryCard> {
               onChanged: (v) => _update(() => _marketId = v),
             ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: AppDropdown<String>(
-                  value: unitKey,
-                  labelText: 'Unit',
-                  items: [
-                    for (final u in purchaseUnits)
-                      DropdownItem(value: u.key, child: Text(u.label)),
-                    const DropdownItem(value: 'custom', child: Text('Custom')),
-                  ],
-                  onChanged: (v) => _update(() => _unitKey = v ?? 'kg'),
-                ),
-              ),
+          AppDropdown<String>(
+            value: unitKey,
+            labelText: 'Purchase Unit',
+            prefixIcon: const Icon(MingCuteIcons.mgc_scale_line, size: 18),
+            items: [
+              for (final u in purchaseUnits)
+                DropdownItem(value: u.key, child: Text(u.label)),
+              const DropdownItem(value: 'custom', child: Text('Custom Weight')),
             ],
+            onChanged: (v) => _update(() => _unitKey = v ?? 'kg'),
           ),
           if (unitKey == 'custom') ...[
             const SizedBox(height: 8),
