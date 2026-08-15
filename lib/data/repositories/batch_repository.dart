@@ -435,14 +435,176 @@ class BatchRepository {
   }
 
   Future<BatchPLDetailModel> getSummary(String id) async {
-    final response = await _client.rpc(
-      'get_batch_pl',
-      params: {'p_batch_id': id},
-    );
-    final data = (response as Map<String, dynamic>)['data'];
-    if (data is Map<String, dynamic>) {
-      return BatchPLDetailModel.fromJson({...data, 'batch_id': id});
+    try {
+      final response = await _client.rpc(
+        'get_batch_pl',
+        params: {'p_batch_id': id},
+      );
+      if (response is Map<String, dynamic>) {
+        final data = response['data'] ?? response;
+        if (data is Map<String, dynamic> &&
+            (data['cost_breakdown'] != null ||
+                data['total_cost'] != null ||
+                data['purchase_cost'] != null)) {
+          return BatchPLDetailModel.fromJson({...data, 'batch_id': id});
+        }
+      }
+    } catch (e) {
+      debugPrint('get_batch_pl rpc fallback: $e');
     }
+
+    // Direct fallback calculation from Supabase tables
+    try {
+      final batchRow = await _client
+          .from('product_batches')
+          .select('*, products(name)')
+          .eq('id', id)
+          .maybeSingle();
+
+      if (batchRow != null) {
+        final purchases = await _safeSelect(
+          table: 'batch_purchases',
+          select: '*',
+          filter: (q) => q.eq('batch_id', id),
+        );
+        final expenses = await _safeSelect(
+          table: 'expenses',
+          select: '*',
+          filter: (q) => q.eq('batch_id', id),
+        );
+        final vehicles = await _safeSelect(
+          table: 'batch_vehicles',
+          select: '*',
+          filter: (q) => q.eq('batch_id', id),
+        );
+        final packings = await _safeSelect(
+          table: 'packing_records',
+          select: '*',
+          filter: (q) => q.eq('batch_id', id),
+        );
+        final partners = await _safeSelect(
+          table: 'batch_partners',
+          select: '*',
+          filter: (q) => q.eq('batch_id', id),
+        );
+        final sales = await _safeSelect(
+          table: 'sales',
+          select: '*',
+          filter: (q) => q.eq('batch_id', id),
+        );
+
+        double purchaseCost = 0;
+        if (purchases.isNotEmpty) {
+          for (final p in purchases) {
+            final q = (p['quantity'] as num?)?.toDouble() ?? 0.0;
+            final r = (p['price_per_unit'] as num?)?.toDouble() ?? 0.0;
+            purchaseCost += (q * r);
+          }
+        } else {
+          purchaseCost = (batchRow['total_purchase_cost'] as num?)?.toDouble() ??
+              (((batchRow['purchase_price_per_unit'] as num?)?.toDouble() ?? 0.0) *
+                  ((batchRow['total_quantity'] as num?)?.toDouble() ?? 0.0));
+        }
+
+        double purchaserExpenses = 0;
+        double sellerExpenses = 0;
+        for (final e in expenses) {
+          final amt = (e['amount'] as num?)?.toDouble() ?? 0.0;
+          final side = (e['expense_side'] as String?)?.toLowerCase();
+          if (side == 'purchaser') {
+            purchaserExpenses += amt;
+          } else {
+            sellerExpenses += amt;
+          }
+        }
+
+        double transportCost = 0;
+        for (final v in vehicles) {
+          transportCost += (v['total_cost'] as num?)?.toDouble() ??
+              (v['transport_cost'] as num?)?.toDouble() ??
+              0.0;
+        }
+
+        double packingCost = 0;
+        for (final p in packings) {
+          packingCost += (p['total_packing_cost'] as num?)?.toDouble() ??
+              (((p['cost_per_unit'] as num?)?.toDouble() ?? 0.0) *
+                  ((p['unit_count'] as num?)?.toInt() ?? 0));
+        }
+
+        double purchaserDaily = 0;
+        double sellerDaily = 0;
+        for (final pt in partners) {
+          final rate = (pt['daily_charge_rate'] as num?)?.toDouble() ?? 0.0;
+          final days = (pt['days_involved'] as num?)?.toInt() ?? 1;
+          final role = (pt['role'] as String?)?.toLowerCase();
+          if (role == 'purchaser') {
+            purchaserDaily += (rate * days);
+          } else {
+            sellerDaily += (rate * days);
+          }
+        }
+
+        final totalCost = purchaseCost +
+            purchaserDaily +
+            purchaserExpenses +
+            packingCost +
+            transportCost +
+            sellerDaily +
+            sellerExpenses;
+
+        double totalRevenue = 0;
+        double cashReceived = 0;
+        double soldQuantity = 0;
+        for (final s in sales) {
+          final amt = (s['total_amount'] as num?)?.toDouble() ??
+              (((s['quantity_sold'] as num?)?.toDouble() ?? 0.0) *
+                  ((s['price_per_unit'] as num?)?.toDouble() ?? 0.0));
+          totalRevenue += amt;
+          soldQuantity += (s['quantity_sold'] as num?)?.toDouble() ?? 0.0;
+          final mode = (s['payment_mode'] as String?)?.toLowerCase() ?? 'cash';
+          final cash = (s['cash_received'] as num?)?.toDouble() ??
+              (mode == 'cash' ? amt : 0.0);
+          cashReceived += cash;
+        }
+
+        final creditOutstanding =
+            (totalRevenue - cashReceived).clamp(0, double.infinity).toDouble();
+        final netProfitLoss = totalRevenue - totalCost;
+        final totalQty = (batchRow['total_quantity'] as num?)?.toDouble() ?? 0.0;
+        final remainingQuantity =
+            (totalQty - soldQuantity).clamp(0, totalQty).toDouble();
+        final avgSalePrice =
+            soldQuantity > 0 ? (totalRevenue / soldQuantity) : null;
+
+        return BatchPLDetailModel(
+          batchId: id,
+          batchCode: batchRow['batch_code'] as String?,
+          costBreakdown: CostBreakdownModel(
+            purchaseCost: purchaseCost,
+            purchaserDailyCharges: purchaserDaily,
+            purchaserExpenses: purchaserExpenses,
+            packingCost: packingCost,
+            transportCost: transportCost,
+            sellerDailyCharges: sellerDaily,
+            sellerExpenses: sellerExpenses,
+            totalCost: totalCost,
+          ),
+          revenue: RevenueModel(
+            totalRevenue: totalRevenue,
+            cashReceived: cashReceived,
+            creditOutstanding: creditOutstanding,
+          ),
+          netProfitLoss: netProfitLoss,
+          soldQuantity: soldQuantity,
+          remainingQuantity: remainingQuantity,
+          avgSalePrice: avgSalePrice,
+        );
+      }
+    } catch (e) {
+      debugPrint('Direct P&L table fallback failed: $e');
+    }
+
     return BatchPLDetailModel(batchId: id);
   }
 

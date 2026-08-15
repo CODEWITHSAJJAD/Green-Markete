@@ -887,6 +887,16 @@ Future<void> advanceBatchStatus(
   if (index < 0 || index == batchStatusFlow.length - 1) return;
 
   final nextStatus = batchStatusFlow[index + 1];
+  final auth = context.read<AuthProvider>();
+
+  if (nextStatus == 'closed' && !auth.canEditSellerSide && !auth.capabilities.isOwner) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Only the seller or business owner can close a batch.'),
+      ),
+    );
+    return;
+  }
   try {
     await context.read<BatchDetailProvider>().updateStatus(nextStatus);
     if (!context.mounted) return;

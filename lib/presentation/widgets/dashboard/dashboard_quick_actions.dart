@@ -13,6 +13,8 @@ import '../../providers/capability.dart';
 import '../../providers/customer_provider.dart';
 import '../green_card.dart';
 
+import '../../pages/suppliers/supplier_settlement_page.dart';
+
 class DashboardQuickActions extends StatelessWidget {
   const DashboardQuickActions({super.key});
 
@@ -49,6 +51,8 @@ class DashboardQuickActions extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final canCreate = auth.capabilities.can(Capability.createBatch);
     final canSell = auth.canEditSellerSide;
+    final canRecordPayment = auth.capabilities.can(Capability.recordPayment);
+    final canManageSupplier = auth.capabilities.can(Capability.manageSupplier);
 
     Widget tile(IconData icon, String label, VoidCallback onTap, Color color) {
       return GreenCard(
@@ -81,63 +85,80 @@ class DashboardQuickActions extends StatelessWidget {
       );
     }
 
+    final items = <Widget>[
+      if (canCreate)
+        Expanded(
+          child: tile(
+            MingCuteIcons.mgc_add_line,
+            'New Batch',
+            () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) => const CreateBatchWizard(),
+              ),
+            ),
+            theme.colorScheme.primary,
+          ),
+        ),
+      if (canSell)
+        Expanded(
+          child: tile(
+            MingCuteIcons.mgc_bill_line,
+            'New Sale',
+            () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) => const QuickSalePage(),
+              ),
+            ),
+            theme.colorScheme.secondary,
+          ),
+        ),
+      if (canRecordPayment)
+        Expanded(
+          child: tile(
+            MingCuteIcons.mgc_wallet_3_line,
+            'Record Payment',
+            () => _recordPayment(context),
+            Colors.deepPurple,
+          ),
+        ),
+      if (canManageSupplier && !canSell)
+        Expanded(
+          child: tile(
+            MingCuteIcons.mgc_store_2_line,
+            'Suppliers',
+            () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) => const SupplierSettlementPage(),
+              ),
+            ),
+            const Color(0xFFD97706),
+          ),
+        ),
+      Expanded(
+        child: tile(
+          MingCuteIcons.mgc_chart_bar_line,
+          'Reports',
+          () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(builder: (_) => const ReportsPage()),
+          ),
+          const Color(0xFF0EA5E9),
+        ),
+      ),
+    ];
+
+    // Build row with 8px spacing between elements
+    final spacedItems = <Widget>[];
+    for (var i = 0; i < items.length; i++) {
+      if (i > 0) spacedItems.add(const SizedBox(width: 8));
+      spacedItems.add(items[i]);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Quick actions', style: theme.textTheme.titleLarge),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            if (canCreate)
-              Expanded(
-                child: tile(
-                  MingCuteIcons.mgc_add_line,
-                  'New Batch',
-                  () => Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CreateBatchWizard(),
-                    ),
-                  ),
-                  theme.colorScheme.primary,
-                ),
-              ),
-            if (canSell) ...[
-              const SizedBox(width: 8),
-              Expanded(
-                child: tile(
-                  MingCuteIcons.mgc_bill_line,
-                  'New Sale',
-                  () => Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(
-                      builder: (_) => const QuickSalePage(),
-                    ),
-                  ),
-                  theme.colorScheme.secondary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: tile(
-                  MingCuteIcons.mgc_wallet_3_line,
-                  'Record Payment',
-                  () => _recordPayment(context),
-                  Colors.deepPurple,
-                ),
-              ),
-            ],
-            const SizedBox(width: 8),
-            Expanded(
-              child: tile(
-                MingCuteIcons.mgc_chart_bar_line,
-                'Reports',
-                () => Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute(builder: (_) => const ReportsPage()),
-                ),
-                const Color(0xFF0EA5E9),
-              ),
-            ),
-          ],
-        ),
+        Row(children: spacedItems),
       ],
     );
   }
