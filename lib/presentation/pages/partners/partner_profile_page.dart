@@ -233,12 +233,19 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                   ),
                   const Divider(height: 28),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Individual Permissions', style: theme.textTheme.titleMedium),
+                      Expanded(
+                        child: Text(
+                          'Individual Permissions',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        'Tap switch to toggle',
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        'Tap to toggle',
+                        style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
