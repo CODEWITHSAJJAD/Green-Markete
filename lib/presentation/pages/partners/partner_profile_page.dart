@@ -232,7 +232,19 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                         _toggleManageOtherSide(context, partner, businessId, value),
                   ),
                   const Divider(height: 28),
-                  Text('Active Permissions for this Business', style: theme.textTheme.titleMedium),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Individual Permissions', style: theme.textTheme.titleMedium),
+                      Text(
+                        'Tap switch to toggle',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   Builder(
                     builder: (_) {
@@ -241,48 +253,58 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                         sideRole: partner.role,
                         manageOtherSide: partner.manageOtherSide,
                       );
+                      final hasPurchasing = caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase);
+                      final hasSelling = caps.can(Capability.recordSale) || caps.can(Capability.createCustomer);
+                      final hasAccounting = caps.isAccountant || (caps.can(Capability.addExpense) && caps.can(Capability.createSettlement));
+                      final hasBatchControl = caps.isEditor || caps.can(Capability.closeBatch);
+
                       return Column(
                         children: [
-                          _permissionRow(
+                          _permissionToggleRow(
                             theme,
                             MingCuteIcons.mgc_shopping_bag_2_line,
                             'Batches & Purchases',
-                            caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase),
-                            'Create new batches & enter purchases',
+                            'Create new batches & log purchases',
+                            hasPurchasing,
+                            (val) => _togglePurchasing(context, partner, businessId, val),
                           ),
                           const SizedBox(height: 8),
-                          _permissionRow(
+                          _permissionToggleRow(
                             theme,
                             MingCuteIcons.mgc_bill_line,
                             'Sales & Customers',
-                            caps.can(Capability.recordSale) || caps.can(Capability.createCustomer),
-                            'Record sales, issue bills & manage customers',
+                            'Record sales, create customers & invoices',
+                            hasSelling,
+                            (val) => _toggleSelling(context, partner, businessId, val),
                           ),
                           const SizedBox(height: 8),
-                          _permissionRow(
+                          _permissionToggleRow(
                             theme,
                             MingCuteIcons.mgc_wallet_3_line,
-                            'Expenses & Settlements',
-                            caps.can(Capability.addExpense) || caps.can(Capability.createSettlement),
-                            'Log expenses & record partner/supplier settlements',
+                            'Expenses & Accounting',
+                            'Financial manager for all expenses & settlements',
+                            hasAccounting,
+                            (val) => _toggleAccounting(context, partner, businessId, val),
                           ),
                           const SizedBox(height: 8),
-                          _permissionRow(
-                            theme,
-                            MingCuteIcons.mgc_truck_line,
-                            'Transport & Vehicles',
-                            caps.can(Capability.manageTransport),
-                            'Create & assign vehicle transport loads',
-                          ),
-                          const SizedBox(height: 8),
-                          _permissionRow(
+                          _permissionToggleRow(
                             theme,
                             MingCuteIcons.mgc_route_line,
-                            'Batch Status Control',
-                            caps.can(Capability.editBatch),
-                            caps.can(Capability.closeBatch)
-                                ? 'Full control (advance + close batches)'
-                                : 'Advance batches up to selling status',
+                            'Batch Status & Closure Control',
+                            hasBatchControl
+                                ? 'Elevated access (can advance & close batches)'
+                                : 'Scoped access (cannot advance to closed)',
+                            hasBatchControl,
+                            (val) => _toggleBatchControl(context, partner, businessId, val),
+                          ),
+                          const SizedBox(height: 8),
+                          _permissionToggleRow(
+                            theme,
+                            MingCuteIcons.mgc_transfer_line,
+                            'Cross-Side Operations',
+                            'Grants full write access on both business sides',
+                            partner.manageOtherSide,
+                            (val) => _toggleManageOtherSide(context, partner, businessId, val),
                           ),
                         ],
                       );
@@ -498,36 +520,37 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     );
   }
 
-  Widget _permissionRow(
+  Widget _permissionToggleRow(
     ThemeData theme,
     IconData icon,
     String title,
-    bool isGranted,
     String subtitle,
+    bool isGranted,
+    ValueChanged<bool> onToggle,
   ) {
     final color = isGranted ? theme.colorScheme.primary : theme.colorScheme.outline;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: isGranted
-            ? theme.colorScheme.primary.withValues(alpha: 0.06)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+            ? theme.colorScheme.primary.withValues(alpha: 0.07)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isGranted
-              ? theme.colorScheme.primary.withValues(alpha: 0.2)
+              ? theme.colorScheme.primary.withValues(alpha: 0.25)
               : theme.colorScheme.outline.withValues(alpha: 0.1),
         ),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 16, color: color),
+            child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -536,7 +559,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
               children: [
                 Text(
                   title,
-                  style: theme.textTheme.labelMedium?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: isGranted ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
                   ),
@@ -546,30 +569,94 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                   subtitle,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isGranted
-                  ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                  : theme.colorScheme.outline.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              isGranted ? 'Allowed' : 'Disabled',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: isGranted ? theme.colorScheme.primary : theme.colorScheme.outline,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          Switch.adaptive(
+            value: isGranted,
+            onChanged: onToggle,
+            activeTrackColor: theme.colorScheme.primary,
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _togglePurchasing(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    bool enable,
+  ) async {
+    String newRole;
+    if (enable) {
+      if (partner.role == 'seller') {
+        newRole = 'both';
+      } else if (partner.role == 'accountant') {
+        newRole = 'both';
+      } else {
+        newRole = 'purchaser';
+      }
+    } else {
+      if (partner.role == 'both') {
+        newRole = 'seller';
+      } else if (partner.role == 'purchaser') {
+        newRole = 'seller';
+      } else {
+        newRole = partner.role;
+      }
+    }
+    await _updateRole(context, partner, businessId, newRole);
+  }
+
+  Future<void> _toggleSelling(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    bool enable,
+  ) async {
+    String newRole;
+    if (enable) {
+      if (partner.role == 'purchaser') {
+        newRole = 'both';
+      } else if (partner.role == 'accountant') {
+        newRole = 'both';
+      } else {
+        newRole = 'seller';
+      }
+    } else {
+      if (partner.role == 'both') {
+        newRole = 'purchaser';
+      } else if (partner.role == 'seller') {
+        newRole = 'purchaser';
+      } else {
+        newRole = partner.role;
+      }
+    }
+    await _updateRole(context, partner, businessId, newRole);
+  }
+
+  Future<void> _toggleAccounting(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    bool enable,
+  ) async {
+    final newRole = enable ? 'accountant' : 'purchaser';
+    await _updateRole(context, partner, businessId, newRole);
+  }
+
+  Future<void> _toggleBatchControl(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    bool enable,
+  ) async {
+    final newLevel = enable ? 'editor' : 'viewer';
+    await _updateAccess(context, partner, businessId, newLevel);
   }
 }
