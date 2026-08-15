@@ -73,6 +73,7 @@ class CapabilityService {
       case Capability.editBatch:
         return (isEditor || canEditPurchaserSide || canEditSellerSide) && !isAccountant;
       case Capability.closeBatch:
+        return isOwner || canEditSellerSide;
       case Capability.voidExpense:
       case Capability.archiveCustomer:
       case Capability.manageAccess:
@@ -88,8 +89,9 @@ class CapabilityService {
       case Capability.addPurchaserExpense:
         return canEditPurchaserSide || isAccountant;
       case Capability.recordSale:
-      case Capability.recordPayment:
         return canEditSellerSide && !isAccountant;
+      case Capability.recordPayment:
+        return canEditSellerSide || isAccountant;
       case Capability.addSellerExpense:
         return canEditSellerSide || isAccountant;
       case Capability.addExpense:
@@ -99,7 +101,7 @@ class CapabilityService {
       case Capability.createSettlement:
         return isOwner || isEditor || isAccountant || canEditSellerSide;
       case Capability.manageSupplier:
-        return isOwner || isEditor || isAccountant;
+        return isOwner || isEditor || isAccountant || canEditPurchaserSide;
     }
   }
 }

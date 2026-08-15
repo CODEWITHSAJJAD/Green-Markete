@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 
+import 'package:provider/provider.dart';
+
 import '../pages/markets/market_list_page.dart';
 import '../pages/partners/partner_list_page.dart';
 import '../pages/products/product_list_page.dart';
@@ -10,6 +12,7 @@ import '../pages/suppliers/supplier_settlement_page.dart';
 import '../pages/transactions/partner_dues_page.dart';
 import '../pages/transactions/transaction_list_page.dart';
 import '../pages/vehicles/vehicle_list_page.dart';
+import '../providers/auth_provider.dart';
 
 class SidebarDrawer extends StatelessWidget {
   const SidebarDrawer({
@@ -31,6 +34,13 @@ class SidebarDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final caps = auth.capabilities;
+    final canPurchaser = auth.canEditPurchaserSide;
+    final canSeller = auth.canEditSellerSide;
+    final isAccountant = caps.isAccountant;
+    final isOwner = caps.isOwner;
+
     return Drawer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,20 +67,22 @@ class SidebarDrawer extends StatelessWidget {
                     selected: currentTab == 1,
                     onTap: () => onSelectTab(1),
                   ),
-                  _NavTile(
-                    icon: MingCuteIcons.mgc_bill_line,
-                    activeIcon: MingCuteIcons.mgc_bill_fill,
-                    label: 'Sales',
-                    selected: currentTab == 2,
-                    onTap: () => onSelectTab(2),
-                  ),
-                  _NavTile(
-                    icon: MingCuteIcons.mgc_user_3_line,
-                    activeIcon: MingCuteIcons.mgc_user_3_fill,
-                    label: 'Customers',
-                    selected: currentTab == 3,
-                    onTap: () => onSelectTab(3),
-                  ),
+                  if (isOwner || canSeller)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_bill_line,
+                      activeIcon: MingCuteIcons.mgc_bill_fill,
+                      label: 'Sales',
+                      selected: currentTab == 2,
+                      onTap: () => onSelectTab(2),
+                    ),
+                  if (isOwner || canSeller || isAccountant)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_user_3_line,
+                      activeIcon: MingCuteIcons.mgc_user_3_fill,
+                      label: 'Customers',
+                      selected: currentTab == 3,
+                      onTap: () => onSelectTab(3),
+                    ),
                   const SizedBox(height: 8),
                   const _SectionHeader('Manage'),
                   _NavTile(
@@ -79,30 +91,33 @@ class SidebarDrawer extends StatelessWidget {
                     label: 'Products',
                     onTap: () => onOpenPage(const ProductListPage()),
                   ),
-                  _NavTile(
-                    icon: MingCuteIcons.mgc_user_4_line,
-                    activeIcon: MingCuteIcons.mgc_user_4_fill,
-                    label: 'Partners',
-                    onTap: () => onOpenPage(const PartnerListPage()),
-                  ),
+                  if (isOwner)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_user_4_line,
+                      activeIcon: MingCuteIcons.mgc_user_4_fill,
+                      label: 'Partners',
+                      onTap: () => onOpenPage(const PartnerListPage()),
+                    ),
                   _NavTile(
                     icon: MingCuteIcons.mgc_store_2_line,
                     activeIcon: MingCuteIcons.mgc_store_2_fill,
                     label: 'Markets',
                     onTap: () => onOpenPage(const MarketListPage()),
                   ),
-                  _NavTile(
-                    icon: MingCuteIcons.mgc_truck_line,
-                    activeIcon: MingCuteIcons.mgc_truck_fill,
-                    label: 'Vehicles',
-                    onTap: () => onOpenPage(const VehicleListPage()),
-                  ),
-                  _NavTile(
-                    icon: MingCuteIcons.mgc_store_2_line,
-                    activeIcon: MingCuteIcons.mgc_store_2_fill,
-                    label: 'Supplier Settlements',
-                    onTap: () => onOpenPage(const SupplierSettlementPage()),
-                  ),
+                  if (isOwner || canPurchaser)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_truck_line,
+                      activeIcon: MingCuteIcons.mgc_truck_fill,
+                      label: 'Vehicles',
+                      onTap: () => onOpenPage(const VehicleListPage()),
+                    ),
+                  if (isOwner || canPurchaser || isAccountant)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_store_2_line,
+                      activeIcon: MingCuteIcons.mgc_store_2_fill,
+                      label: 'Supplier Settlements',
+                      onTap: () => onOpenPage(const SupplierSettlementPage()),
+                    ),
                   const SizedBox(height: 8),
                   const _SectionHeader('Insights'),
                   _NavTile(
@@ -111,18 +126,20 @@ class SidebarDrawer extends StatelessWidget {
                     label: 'Reports',
                     onTap: () => onOpenPage(const ReportsPage()),
                   ),
-                  _NavTile(
-                    icon: MingCuteIcons.mgc_exchange_dollar_line,
-                    activeIcon: MingCuteIcons.mgc_exchange_dollar_fill,
-                    label: 'Transactions',
-                    onTap: () => onOpenPage(const TransactionListPage()),
-                  ),
-                  _NavTile(
-                    icon: MingCuteIcons.mgc_wallet_3_line,
-                    activeIcon: MingCuteIcons.mgc_wallet_3_fill,
-                    label: 'Partner Dues',
-                    onTap: () => onOpenPage(const PartnerDuesPage()),
-                  ),
+                  if (isOwner || isAccountant || canSeller)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_exchange_dollar_line,
+                      activeIcon: MingCuteIcons.mgc_exchange_dollar_fill,
+                      label: 'Transactions',
+                      onTap: () => onOpenPage(const TransactionListPage()),
+                    ),
+                  if (isOwner || canSeller || isAccountant)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_wallet_3_line,
+                      activeIcon: MingCuteIcons.mgc_wallet_3_fill,
+                      label: 'Partner Dues',
+                      onTap: () => onOpenPage(const PartnerDuesPage()),
+                    ),
                   const SizedBox(height: 8),
                   const _SectionHeader('Account'),
                   _NavTile(
