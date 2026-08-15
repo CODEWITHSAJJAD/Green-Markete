@@ -174,8 +174,8 @@ class _WizardExpensesStepState extends State<WizardExpensesStep> {
                   decimal: true,
                 ),
                 decoration: const InputDecoration(
-                  labelText: 'Amount *',
-                  prefixIcon: Icon(MingCuteIcons.mgc_currency_dollar_line, size: 18),
+                  labelText: 'Amount (Rs) *',
+                  prefixIcon: Icon(MingCuteIcons.mgc_wallet_3_line, size: 18),
                 ),
                 onChanged: (v) {
                   e['amount'] = double.tryParse(v) ?? 0.0;

@@ -10,7 +10,7 @@ class CurrencyFormatter {
   /// Currency symbols for known codes. Falls back to the code itself when no
   /// symbol is known.
   static const Map<String, String> _symbols = {
-    'PKR': 'PKR',
+    'PKR': 'Rs',
     'USD': '\$',
     'EUR': '€',
     'GBP': '£',

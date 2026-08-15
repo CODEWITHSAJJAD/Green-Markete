@@ -368,9 +368,9 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                               decimal: true,
                             ),
                             decoration: const InputDecoration(
-                              labelText: 'Daily Rate',
+                              labelText: 'Daily Rate (Rs)',
                               prefixIcon: Icon(
-                                MingCuteIcons.mgc_currency_dollar_line,
+                                MingCuteIcons.mgc_wallet_3_line,
                                 size: 18,
                               ),
                             ),
@@ -425,11 +425,13 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                               color: theme.colorScheme.primary,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              'Auto charge: ${CurrencyFormatter.format(totalPartnerCharge)} ($days days × ${CurrencyFormatter.format(rate)})',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Text(
+                                'Auto charge: ${CurrencyFormatter.format(totalPartnerCharge)} ($days days × ${CurrencyFormatter.format(rate)})',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],

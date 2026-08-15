@@ -118,7 +118,7 @@ class DashboardQuickActions extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: tile(
-                  MingCuteIcons.mgc_exchange_dollar_line,
+                  MingCuteIcons.mgc_wallet_3_line,
                   'Record Payment',
                   () => _recordPayment(context),
                   Colors.deepPurple,
