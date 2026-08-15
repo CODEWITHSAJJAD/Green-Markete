@@ -4,12 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/config/theme.dart';
-import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
-import '../../../data/models/market_model.dart';
-import '../../../data/models/product_model.dart';
-import '../../../data/models/partner_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
@@ -21,11 +18,12 @@ import '../../providers/product_provider.dart';
 import '../../providers/supplier_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/vehicle_provider.dart';
-import '../../widgets/partner_selector.dart';
-import '../../widgets/packing_entry_form.dart';
-import '../../widgets/purchase_entry_form.dart';
-import '../../../data/models/vehicle_model.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+import '../../widgets/batches/wizard_basic_info_step.dart';
+import '../../widgets/batches/wizard_expenses_step.dart';
+import '../../widgets/batches/wizard_packing_step.dart';
+import '../../widgets/batches/wizard_partners_step.dart';
+import '../../widgets/batches/wizard_review_step.dart';
+import '../../widgets/batches/wizard_transport_step.dart';
 
 class CreateBatchWizard extends StatefulWidget {
   const CreateBatchWizard({super.key});
@@ -143,11 +141,6 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     }
   }
 
-  /// Generate a unique batch code on the frontend. The DB trigger that
-  /// auto-generates `GM-YYYY-NNNN` has a race condition between its
-  /// SELECT MAX and INSERT, so we send our own unique value. If the trigger
-  /// is conditional (`IF NEW.batch_code IS NULL`), it skips generation and
-  /// uses ours.
   String _generateBatchCode() {
     final now = DateTime.now();
     final year = now.year;
@@ -192,9 +185,6 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       .toSet()
       .toList();
 
-  /// Suppliers known to the business (from the provider) plus any name typed
-  /// or created in this wizard session, so new entries immediately suggest
-  /// suppliers already entered in earlier lines.
   List<String> _mergedSuppliers(BuildContext context) {
     final names = <String>{
       ...context.watch<SupplierProvider>().suppliers,
@@ -247,6 +237,33 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
   double _groupLoadCost(int g) =>
       _loadsFor(g).fold<double>(0, (acc, v) => acc + _loadTotal(v));
+
+  double _loadTotal(Map<String, dynamic> load) {
+    final cost = double.tryParse(load['transport_cost'].toString()) ?? 0;
+    final units = double.tryParse(load['unit_count'].toString()) ?? 0;
+    return load['cost_type'] == 'per_packing' ? units * cost : cost;
+  }
+
+  void _addExpense() {
+    final g = _activeGroup;
+    setState(
+      () => _expensesByGroup[g] = [
+        ..._expensesFor(g),
+        {
+          'expense_side': _transportPaidBy == 'purchaser'
+              ? 'purchaser'
+              : 'transport',
+          'expense_type': 'misc',
+          'amount': 0.0,
+          'description': null,
+          'paid_by': null,
+          'payment_mode': 'cash',
+          'payment_reference': null,
+          'expense_date': DateTime.now().toIso8601String().split('T').first,
+        },
+      ],
+    );
+  }
 
   Future<void> _submit() async {
     final businessId = context.read<AuthProvider>().businessId;
@@ -478,11 +495,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final step = context.watch<BatchWizardProvider>().currentStep;
+    final wizard = context.watch<BatchWizardProvider>();
+    final currentStep = wizard.currentStep;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Batch Wizard'),
+        title: const Text('New Batch'),
         leading: IconButton(
           icon: const Icon(MingCuteIcons.mgc_close_line),
           onPressed: () => Navigator.of(context).pop(),
@@ -490,1110 +508,238 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
       ),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            color: theme.colorScheme.surface,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Step ${step + 1} of 6',
-                  style: theme.textTheme.labelMedium,
-                ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(value: (step + 1) / 6),
-                const SizedBox(height: 8),
-                Text(_stepTitle(step), style: theme.textTheme.titleLarge),
-              ],
-            ),
-          ),
+          _stepperBar(theme, currentStep),
           Expanded(
             child: PageView(
               controller: _pageCtrl,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _step1(theme),
-                _step2(),
-                _step3(),
-                _step4(),
-                _stepTransport(theme),
-                _step5(theme),
-              ],
-            ),
-          ),
-          SafeArea(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  if (step > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _submitting ? null : _prev,
-                        child: const Text('Back'),
-                      ),
-                    ),
-                  if (step > 0) const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _submitting || !_validateStep(step)
-                          ? null
-                          : () {
-                              if (step == 5) {
-                                _submit();
-                              } else {
-                                _next();
-                              }
-                            },
-                      child: _submitting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(step == 5 ? 'Confirm & Create' : 'Next'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _stepTitle(int s) {
-    switch (s) {
-      case 0:
-        return 'Product & Purchase';
-      case 1:
-        return 'Purchasing Partners';
-      case 2:
-        return 'Packing';
-      case 3:
-        return 'Purchaser Expenses';
-      case 4:
-        return 'Transport & Loads';
-      case 5:
-        return 'Review & Confirm';
-      default:
-        return '';
-    }
-  }
-
-  Widget _step1(ThemeData theme) {
-    final productsProvider = context.watch<ProductProvider>();
-    final marketsProvider = context.watch<MarketProvider>();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Product', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          productsProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : productsProvider.error != null
-              ? Text(productsProvider.error!)
-              : _productDropdown(theme, productsProvider.products),
-          const SizedBox(height: 16),
-          Text('Markets', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          marketsProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : marketsProvider.error != null
-              ? Text(marketsProvider.error!)
-              : Column(
-                  children: [
-                    _marketDropdown(
-                      theme,
-                      marketsProvider.markets,
-                      isSource: true,
-                    ),
-                    const SizedBox(height: 12),
-                    _marketDropdown(
-                      theme,
-                      marketsProvider.markets,
-                      isSource: false,
-                    ),
-                  ],
-                ),
-          const SizedBox(height: 16),
-          Text('Purchase Date', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _purchaseDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now(),
-              );
-              if (picked != null) setState(() => _purchaseDate = picked);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(MingCuteIcons.mgc_calendar_3_line, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${_purchaseDate.year}-${_purchaseDate.month.toString().padLeft(2, '0')}-${_purchaseDate.day.toString().padLeft(2, '0')}',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('Purchases', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            'Add purchases from one or more suppliers. Each line has its own unit, market and payment mode.',
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          PurchaseEntryForm(
-            entries: _purchases,
-            markets: marketsProvider.markets,
-            suppliers: _mergedSuppliers(context),
-            onChanged: (entries) => setState(() => _purchases = entries),
-            onCreateSupplier: (name) async {
-              final auth = context.read<AuthProvider>();
-              final id = auth.businessId;
-              if (id == null || id.isEmpty) return;
-              final suppliers = context.read<SupplierProvider>();
-              final messenger = ScaffoldMessenger.of(context);
-              final theme = Theme.of(context);
-              final err = await suppliers.createSupplier(id, name);
-              if (err != null && context.mounted) {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text('Could not save supplier: $err'),
-                    backgroundColor: theme.colorScheme.error,
-                  ),
-                );
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          Text('Transport Paid By', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'purchaser', label: Text('Purchaser')),
-              ButtonSegment(value: 'seller', label: Text('Seller')),
-            ],
-            selected: {_transportPaidBy},
-            onSelectionChanged: (v) =>
-                setState(() => _transportPaidBy = v.first),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _productDropdown(ThemeData theme, List<ProductModel> products) {
-    return DropdownButtonFormField2<String>(
-      isExpanded: true,
-      valueListenable: ValueNotifier(_productId),
-      decoration: const InputDecoration(labelText: 'Select product'),
-      items: products
-          .map(
-            (p) => DropdownItem(
-              value: p.id,
-              child: Text(p.name, overflow: TextOverflow.ellipsis, maxLines: 1),
-            ),
-          )
-          .toList(),
-      onChanged: (v) {
-        if (v != null) {
-          final p = products.firstWhere((x) => x.id == v);
-          setState(() {
-            _productId = v;
-            _productName = p.name;
-          });
-        }
-      },
-    );
-  }
-
-  Widget _marketDropdown(
-    ThemeData theme,
-    List<MarketModel> markets, {
-    required bool isSource,
-  }) {
-    return DropdownButtonFormField2<String>(
-      isExpanded: true,
-      valueListenable: ValueNotifier(
-        isSource ? _sourceMarketId : _destinationMarketId,
-      ),
-      decoration: InputDecoration(
-        labelText: isSource ? 'Source market' : 'Destination market',
-      ),
-      items: markets
-          .map(
-            (m) => DropdownItem(
-              value: m.id,
-              child: Text(
-                '${m.name} • ${m.city}',
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: (v) {
-        setState(() {
-          if (isSource) {
-            _sourceMarketId = v;
-          } else {
-            _destinationMarketId = v;
-          }
-        });
-      },
-    );
-  }
-
-  Widget _step2() {
-    final partners = context.watch<PartnerProvider>().partners;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _groupSelector(),
-          const SizedBox(height: 12),
-          const Text(
-            'Add at least one purchasing partner. Daily charge × days will be added to cost automatically.',
-          ),
-          const SizedBox(height: 16),
-          PartnerSelector(
-            key: ValueKey('partners-$_activeGroup'),
-            selectedPartners: const <PartnerModel>[],
-            businessId: context.read<AuthProvider>().businessId ?? '',
-            onChanged: (selected) =>
-                setState(() => _partnersByGroup[_activeGroup] = selected),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Selling Partner',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          partners.isEmpty
-              ? const Text(
-                  'No partners yet. Add at least one purchasing partner above first.',
-                  style: TextStyle(color: Colors.grey),
-                )
-              : DropdownButtonFormField2<String>(
-                  isExpanded: true,
-                  valueListenable: ValueNotifier(_sellerFor(_activeGroup)),
-                  decoration: const InputDecoration(
-                    labelText: 'Select the selling partner',
-                  ),
-                  items: partners
-                      .map(
-                        (p) => DropdownItem(
-                          value: p.id,
-                          child: Text(
-                            p.fullName,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
+                WizardBasicInfoStep(
+                  productId: _productId,
+                  productName: _productName,
+                  sourceMarketId: _sourceMarketId,
+                  destinationMarketId: _destinationMarketId,
+                  purchaseDate: _purchaseDate,
+                  purchases: _purchases,
+                  transportPaidBy: _transportPaidBy,
+                  suppliers: _mergedSuppliers(context),
+                  onProductChanged: (id, name) => setState(() {
+                    _productId = id;
+                    _productName = name;
+                  }),
+                  onSourceMarketChanged: (v) =>
+                      setState(() => _sourceMarketId = v),
+                  onDestinationMarketChanged: (v) =>
+                      setState(() => _destinationMarketId = v),
+                  onPurchaseDateChanged: (d) =>
+                      setState(() => _purchaseDate = d),
+                  onPurchasesChanged: (entries) =>
+                      setState(() => _purchases = entries),
+                  onTransportPaidByChanged: (v) =>
+                      setState(() => _transportPaidBy = v),
+                  onCreateSupplier: (name) async {
+                    final auth = context.read<AuthProvider>();
+                    final id = auth.businessId;
+                    if (id == null || id.isEmpty) return;
+                    final suppliers = context.read<SupplierProvider>();
+                    final messenger = ScaffoldMessenger.of(context);
+                    final theme = Theme.of(context);
+                    final err = await suppliers.createSupplier(id, name);
+                    if (err != null && mounted) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Could not save supplier: $err'),
+                          backgroundColor: theme.colorScheme.error,
                         ),
-                      )
-                      .toList(),
-                  onChanged: (v) =>
+                      );
+                    }
+                  },
+                ),
+                WizardPartnersStep(
+                  groupCount: _groupCount,
+                  activeGroup: _activeGroup,
+                  onGroupSelected: (g) => setState(() => _activeGroup = g),
+                  businessId: context.read<AuthProvider>().businessId ?? '',
+                  partnersForActiveGroup: _partnersFor(_activeGroup),
+                  sellerForActiveGroup: _sellerFor(_activeGroup),
+                  onPartnersChanged: (selected) =>
+                      setState(() => _partnersByGroup[_activeGroup] = selected),
+                  onSellerChanged: (v) =>
                       setState(() => _sellerByGroup[_activeGroup] = v),
                 ),
-        ],
-      ),
-    );
-  }
-
-  Widget _groupSelector() {
-    if (_groupCount <= 1) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Batch group (split purchases into separate batches)',
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (var g = 1; g <= _groupCount; g++)
-              ChoiceChip(
-                label: Text('Batch $g'),
-                selected: _activeGroup == g,
-                onSelected: (_) => setState(() => _activeGroup = g),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-      ],
-    );
-  }
-
-  Widget _step3() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _groupSelector(),
-          const Text(
-            'Add packing records (optional). Total cost = count \u00d7 cost per unit.',
-          ),
-          const SizedBox(height: 16),
-          PackingEntryForm(
-            key: ValueKey('packing-$_activeGroup'),
-            entries: _packingFor(_activeGroup),
-            totalKg: _groupQuantityKg(_activeGroup),
-            onChanged: (records) =>
-                setState(() => _packingByGroup[_activeGroup] = records),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _step4() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _groupSelector(),
-          const Text(
-            'Add expenses (optional). These will appear in batch P&L breakdown.',
-          ),
-          const SizedBox(height: 16),
-          _expenseList(),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _addExpense,
-              icon: const Icon(MingCuteIcons.mgc_add_line),
-              label: const Text('Add expense'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _addExpense() {
-    final g = _activeGroup;
-    setState(
-      () => _expensesByGroup[g] = [
-        ..._expensesFor(g),
-        {
-          'expense_side': _transportPaidBy == 'purchaser'
-              ? 'purchaser'
-              : 'transport',
-          'expense_type': 'misc',
-          'amount': 0.0,
-          'description': null,
-          'paid_by': null,
-          'payment_mode': 'cash',
-          'payment_reference': null,
-          'expense_date': DateTime.now().toIso8601String().split('T').first,
-        },
-      ],
-    );
-  }
-
-  Widget _expenseList() {
-    final theme = Theme.of(context);
-    final expenses = _expensesFor(_activeGroup);
-    return Column(
-      children: List.generate(expenses.length, (i) {
-        final e = expenses[i];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.12),
-            ),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField2<String>(
-                      isExpanded: true,
-                      valueListenable: ValueNotifier(
-                        e['expense_side'] as String,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Side'),
-                      items: const [
-                        DropdownItem(
-                          value: 'purchaser',
-                          child: Text(
-                            'Purchaser',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'transport',
-                          child: Text(
-                            'Transport',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'seller',
-                          child: Text(
-                            'Seller',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => e['expense_side'] = v ?? 'purchaser'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButtonFormField2<String>(
-                      isExpanded: true,
-                      valueListenable: ValueNotifier(
-                        e['expense_type'] as String,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Type'),
-                      items: const [
-                        DropdownItem(
-                          value: 'daily_charge',
-                          child: Text(
-                            'Daily Charge',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'labor',
-                          child: Text(
-                            'Labor',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'accountant',
-                          child: Text(
-                            'Accountant',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'source_stall_fee',
-                          child: Text(
-                            'Stall Fee (source)',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'destination_stall_fee',
-                          child: Text(
-                            'Stall Fee (destination)',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'transport',
-                          child: Text(
-                            'Transport',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'local_transport',
-                          child: Text(
-                            'Local Transport',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'misc',
-                          child: Text(
-                            'Misc',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => e['expense_type'] = v ?? 'misc'),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(MingCuteIcons.mgc_delete_3_line),
-                    onPressed: () {
-                      final g = _activeGroup;
-                      final next = [..._expensesFor(g)];
-                      next.removeAt(i);
-                      setState(() => _expensesByGroup[g] = next);
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                initialValue: e['amount'].toString(),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+                WizardPackingStep(
+                  groupCount: _groupCount,
+                  activeGroup: _activeGroup,
+                  onGroupSelected: (g) => setState(() => _activeGroup = g),
+                  packingForActiveGroup: _packingFor(_activeGroup),
+                  groupQuantityKg: _groupQuantityKg(_activeGroup),
+                  onPackingChanged: (records) =>
+                      setState(() => _packingByGroup[_activeGroup] = records),
                 ),
-                decoration: const InputDecoration(labelText: 'Amount'),
-                onChanged: (v) => e['amount'] = double.tryParse(v) ?? 0.0,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                initialValue: e['description']?.toString(),
-                decoration: const InputDecoration(labelText: 'Description'),
-                onChanged: (v) => e['description'] = v.isEmpty ? null : v,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField2<String>(
-                      isExpanded: true,
-                      valueListenable: ValueNotifier(
-                        e['payment_mode'] as String,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Payment'),
-                      items: const [
-                        DropdownItem(
-                          value: 'cash',
-                          child: Text(
-                            'Cash',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'bank_transfer',
-                          child: Text(
-                            'Bank Transfer',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => e['payment_mode'] = v ?? 'cash'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: e['expense_date']?.toString(),
-                      decoration: const InputDecoration(
-                        labelText: 'Date (YYYY-MM-DD)',
-                      ),
-                      onChanged: (v) => e['expense_date'] = v.isEmpty
-                          ? DateTime.now().toIso8601String().split('T').first
-                          : v,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _stepTransport(ThemeData theme) {
-    final vehicles = context.watch<VehicleProvider>().vehicles;
-    final loads = _loadsFor(_activeGroup);
-    final packing = _packingFor(_activeGroup);
-    final totalPackedUnits = packing.fold<int>(
-      0,
-      (a, p) => a + ((p['unit_count'] as num?)?.toInt() ?? 0),
-    );
-    final totalLoadedUnits =
-        loads.fold<double>(0, (a, l) => a + (double.tryParse(l['unit_count'].toString()) ?? 0));
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _groupSelector(),
-          Text(
-            'Split the batch across vehicles. Linked loads split shared transport fairly between packing records.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          if (totalPackedUnits > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              totalLoadedUnits <= 0
-                  ? '$totalPackedUnits units packed — nothing loaded yet.'
-                  : '${totalLoadedUnits.toStringAsFixed(0)} of $totalPackedUnits units loaded — ${(totalPackedUnits - totalLoadedUnits).toStringAsFixed(0)} remaining.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: totalLoadedUnits > totalPackedUnits
-                    ? Colors.orange
-                    : theme.colorScheme.primary,
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          if (vehicles.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
+                WizardExpensesStep(
+                  groupCount: _groupCount,
+                  activeGroup: _activeGroup,
+                  onGroupSelected: (g) => setState(() => _activeGroup = g),
+                  expensesForActiveGroup: _expensesFor(_activeGroup),
+                  onExpensesChanged: (records) =>
+                      setState(() => _expensesByGroup[_activeGroup] = records),
+                  onAddExpense: _addExpense,
                 ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(MingCuteIcons.mgc_information_line, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'No vehicles registered yet. Add them from Manage â†’ Vehicles, or skip this step.',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else ...[
-            ...List.generate(loads.length, (i) {
-              final load = loads[i];
-              return _transportLoadCard(theme, i, load, vehicles);
-            }),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                final g = _activeGroup;
-                setState(() {
-                  _loadsByGroup[g] = [
-                    ..._loadsFor(g),
-                    {
-                      'vehicle_id': null,
-                      'packing_index': null,
-                      'unit_count': '0',
-                      'cost_type': 'per_vehicle',
-                      'transport_cost': '0',
-                    },
-                  ];
-                });
-              },
-              icon: const Icon(MingCuteIcons.mgc_add_line),
-              label: const Text('Add vehicle load'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _transportLoadCard(
-    ThemeData theme,
-    int index,
-    Map<String, dynamic> load,
-    List<VehicleModel> vehicles,
-  ) {
-    final packing = _packingFor(_activeGroup);
-    return Container(
-      key: ValueKey('load-$index'),
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Text('Load ${index + 1}', style: theme.textTheme.titleSmall),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(MingCuteIcons.mgc_close_line, size: 18),
-                onPressed: () {
-                  final g = _activeGroup;
-                  final next = [..._loadsFor(g)];
-                  next.removeAt(index);
-                  setState(() => _loadsByGroup[g] = next);
-                },
-              ),
-            ],
-          ),
-          DropdownButtonFormField2<String>(
-            isExpanded: true,
-            valueListenable: ValueNotifier(load['vehicle_id'] as String?),
-            decoration: const InputDecoration(labelText: 'Vehicle'),
-            items: [
-              for (final v in vehicles)
-                DropdownItem(
-                  value: v.id,
-                  child: Text(v.plateNumber, overflow: TextOverflow.ellipsis),
+                WizardTransportStep(
+                  groupCount: _groupCount,
+                  activeGroup: _activeGroup,
+                  onGroupSelected: (g) => setState(() => _activeGroup = g),
+                  loadsForActiveGroup: _loadsFor(_activeGroup),
+                  packingForActiveGroup: _packingFor(_activeGroup),
+                  onLoadsChanged: (records) =>
+                      setState(() => _loadsByGroup[_activeGroup] = records),
                 ),
-            ],
-            onChanged: (v) => setState(() => load['vehicle_id'] = v),
-          ),
-          if (packing.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            DropdownButtonFormField2<int>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(load['packing_index'] as int?),
-              decoration: const InputDecoration(
-                labelText: 'Packing record (optional)',
-              ),
-              items: [
-                for (var i = 0; i < packing.length; i++)
-                  if (_packingRemaining(i) > 0 ||
-                      load['packing_index'] == i)
-                    DropdownItem(
-                      value: i,
-                      child: Text(
-                        '${_packingLabel(i)}'
-                        '${_packingRemaining(i) > 0 ? ' — ${_packingRemaining(i).toStringAsFixed(0)} left' : ''}',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                WizardReviewStep(
+                  groupCount: _groupCount,
+                  productName: _productName,
+                  purchasesForGroup: _purchasesFor,
+                  groupQuantityKg: _groupQuantityKg,
+                  groupPurchaseCost: _groupPurchaseCost,
+                  groupPaidAmount: _groupPaidAmount,
+                  groupSuppliers: _groupSuppliers,
+                  groupPaymentMode: _groupPaymentMode,
+                  groupPackingCost: _groupPackingCost,
+                  groupExpenseCost: _groupExpenseCost,
+                  groupDailyCharges: _groupDailyCharges,
+                  groupLoadCost: _groupLoadCost,
+                  loadsForGroup: _loadsFor,
+                  partnersForGroup: _partnersFor,
+                ),
               ],
-              onChanged: (v) => setState(() => load['packing_index'] = v),
             ),
-          ],
-          const SizedBox(height: 12),
-          TextFormField(
-            initialValue: load['unit_count'].toString(),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Units loaded'),
-            onChanged: (v) => setState(() => load['unit_count'] = v),
           ),
-          if (load['packing_index'] is int) ...[
-            const SizedBox(height: 6),
-            Builder(builder: (context) {
-              final remaining = _packingRemaining(
-                load['packing_index'] as int,
-              );
-              return Text(
-                remaining < 0
-                    ? 'Overloaded by ${remaining.abs().toStringAsFixed(0)} — exceeds available units'
-                    : 'Remaining after this load: ${remaining.toStringAsFixed(0)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: remaining < 0 ? Colors.orange : Colors.grey,
-                ),
-              );
-            }),
-          ],
-          const SizedBox(height: 12),
-          DropdownButtonFormField2<String>(
-            isExpanded: true,
-            valueListenable: ValueNotifier(load['cost_type'] as String),
-            decoration: const InputDecoration(labelText: 'Cost type'),
-            items: const [
-              DropdownItem(
-                value: 'per_vehicle',
-                child: Text('Flat per vehicle'),
-              ),
-              DropdownItem(
-                value: 'per_packing',
-                child: Text('Per unit loaded'),
-              ),
-              DropdownItem(value: 'lump_sum', child: Text('Lump sum')),
-            ],
-            onChanged: (v) =>
-                setState(() => load['cost_type'] = v ?? 'per_vehicle'),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            initialValue: load['transport_cost'].toString(),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: load['cost_type'] == 'per_packing'
-                  ? 'Transport cost per unit'
-                  : 'Transport cost',
-            ),
-            onChanged: (v) => setState(() => load['transport_cost'] = v),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Total: ${CurrencyFormatter.format(_loadTotal(load))}',
-            style: theme.textTheme.labelMedium,
-          ),
+          _navBar(theme, currentStep),
         ],
       ),
     );
   }
 
-  double _loadTotal(Map<String, dynamic> load) {
-    final cost = double.tryParse(load['transport_cost'].toString()) ?? 0;
-    final units = double.tryParse(load['unit_count'].toString()) ?? 0;
-    return load['cost_type'] == 'per_packing' ? units * cost : cost;
-  }
-
-  /// Total units already loaded across all loads linked to a packing record.
-  double _loadedUnitsFor(int packingIndex) {
-    var total = 0.0;
-    for (final load in _loadsFor(_activeGroup)) {
-      if (load['packing_index'] == packingIndex) {
-        total += double.tryParse(load['unit_count'].toString()) ?? 0;
-      }
-    }
-    return total;
-  }
-
-  /// Units left to load for a packing record (packed - loaded across all loads).
-  double _packingRemaining(int packingIndex) {
-    final packing = _packingFor(_activeGroup);
-    if (packingIndex < 0 || packingIndex >= packing.length) return 0;
-    final packed =
-        (packing[packingIndex]['unit_count'] as num?)?.toDouble() ?? 0;
-    return packed - _loadedUnitsFor(packingIndex);
-  }
-
-  String _packingLabel(int index) {
-    final packing = _packingFor(_activeGroup);
-    if (index < 0 || index >= packing.length) return '—';
-    final p = packing[index];
-    final unitType = p['unit_type'] as String? ?? '';
-    final count = (p['unit_count'] as num?)?.toInt() ?? 0;
-    final label = p['unit_label'] as String?;
-    if (unitType == 'custom') {
-      final weight = (p['packed_kg'] as num?)?.toDouble() ?? 0;
-      final name = label == null || label.isEmpty ? 'Loose' : label;
-      return '${index + 1}. $name'
-          '${weight > 0 ? ' (${weight.toStringAsFixed(1)} kg)' : ''}';
-    }
-    return '${index + 1}. $unitType × $count';
-  }
-
-  Widget _step5(ThemeData theme) {
-    final groups = [for (var g = 1; g <= _groupCount; g++) g];
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final g in groups) _groupSummaryCard(theme, g),
-          if (groups.length > 1) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(MingCuteIcons.mgc_information_line, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${groups.length} batches will be created. Backend will auto-generate batch codes (GM-YYYY-NNNN) and recompute totals.',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(MingCuteIcons.mgc_information_line, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Backend will auto-generate a batch code (GM-YYYY-NNNN) and recompute totals.',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _groupSummaryCard(ThemeData theme, int g) {
-    final groupPurchases = _purchasesFor(g);
-    final purchaseCost = _groupPurchaseCost(g);
-    final totalQty = _groupQuantityKg(g);
-    final paidAmount = _groupPaidAmount(g);
-    final suppliers = _groupSuppliers(g);
-    final aggregatePaymentMode = _groupPaymentMode(g);
-    final packingCost = _groupPackingCost(g);
-    final expenseCost = _groupExpenseCost(g);
-    final dailyCharges = _groupDailyCharges(g);
-    final transportLoadCost = _groupLoadCost(g);
-    final total =
-        purchaseCost +
-        packingCost +
-        expenseCost +
-        dailyCharges +
-        transportLoadCost;
-    final partnerCount = _partnersFor(
-      g,
-    ).where((p) => p['partner_id'] != null).length;
-
+  Widget _stepperBar(ThemeData theme, int currentStep) {
+    const labels = [
+      'Basic',
+      'Partners',
+      'Packing',
+      'Expenses',
+      'Transport',
+      'Review',
+    ];
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _groupCount > 1 ? 'Batch $g' : 'Summary',
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 12),
-          _summaryRow('Product', _productName ?? '-'),
-          _summaryRow('Quantity', '${totalQty.toStringAsFixed(1)} kg'),
-          _summaryRow(
-            'Supplier',
-            suppliers.isEmpty ? '-' : suppliers.join(', '),
-          ),
-          if (groupPurchases.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-            ...groupPurchases.map(
-              (p) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        p['supplierName'] as String? ?? '-',
-                        style: theme.textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        '${(p['kgTotal'] as num?)?.toStringAsFixed(1) ?? '0'} kg \u00d7 ${CurrencyFormatter.format((p['lineCost'] as num?)?.toDouble())}',
-                        textAlign: TextAlign.end,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+      child: Row(
+        children: List.generate(labels.length * 2 - 1, (i) {
+          if (i.isOdd) {
+            final stepIndex = i ~/ 2;
+            return Expanded(
+              child: Container(
+                height: 2,
+                color: stepIndex < currentStep
+                    ? AppColors.primary
+                    : theme.colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            );
+          }
+          final stepIndex = i ~/ 2;
+          final isActive = stepIndex == currentStep;
+          final isDone = stepIndex < currentStep;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: isDone
+                    ? AppColors.primary
+                    : isActive
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : theme.colorScheme.surfaceContainerHighest,
+                child: isDone
+                    ? const Icon(
+                        MingCuteIcons.mgc_check_line,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : Text(
+                        '${stepIndex + 1}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isActive
+                              ? AppColors.primary
+                              : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                labels[stepIndex],
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-          ],
-          _summaryRow(
-            'Purchase payment',
-            aggregatePaymentMode == 'cash'
-                ? 'Cash'
-                : aggregatePaymentMode == 'credit'
-                ? 'Credit'
-                : 'Part cash / credit',
-          ),
-          if (paidAmount > 0)
-            _summaryRow('Paid now', CurrencyFormatter.format(paidAmount)),
-          _summaryRow('Purchase cost', CurrencyFormatter.format(purchaseCost)),
-          _summaryRow('Partners', '$partnerCount'),
-          _summaryRow('Daily charges', CurrencyFormatter.format(dailyCharges)),
-          _summaryRow('Packing', CurrencyFormatter.format(packingCost)),
-          _summaryRow('Expenses', CurrencyFormatter.format(expenseCost)),
-          _summaryRow(
-            'Vehicle loads',
-            '${_loadsFor(g).where((v) => v['vehicle_id'] != null).length}',
-          ),
-          _summaryRow(
-            'Transport loads',
-            CurrencyFormatter.format(transportLoadCost),
-          ),
-          const Divider(height: 24),
-          _summaryRow(
-            'Total estimated cost',
-            CurrencyFormatter.format(total),
-            isBold: true,
-          ),
-        ],
+            ],
+          );
+        }),
       ),
     );
   }
 
-  Widget _summaryRow(String label, String value, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  Widget _navBar(ThemeData theme, int currentStep) {
+    final isLast = currentStep == 5;
+    final canNext = _validateStep(currentStep);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          ),
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
-              ),
+          if (currentStep > 0)
+            OutlinedButton(
+              onPressed: _submitting ? null : _prev,
+              child: const Text('Back'),
             ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-              ),
+          const Spacer(),
+          if (!isLast)
+            FilledButton(
+              onPressed: canNext ? _next : null,
+              child: const Text('Next'),
+            )
+          else
+            FilledButton(
+              onPressed: _submitting ? null : _submit,
+              child: _submitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Create Batch'),
             ),
-          ),
         ],
       ),
     );

@@ -7,12 +7,12 @@ import '../../../core/config/theme.dart';
 import '../../../core/supabase/supabase_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../../data/models/supplier_payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/capability.dart';
 import '../../providers/data_refresh.dart';
 import '../../providers/supplier_provider.dart';
-import '../../widgets/green_card.dart';
+import '../../widgets/suppliers/supplier_header_card.dart';
+import '../../widgets/suppliers/supplier_ledger_tile.dart';
 import 'record_supplier_payment_page.dart';
 
 enum _LedgerRange { all, sevenDays, thirtyDays, custom }
@@ -204,87 +204,58 @@ class _SupplierLedgerPageState extends State<SupplierLedgerPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withValues(alpha: 0.08),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          SupplierHeaderCard(
+            title: _supplierName,
+            subtitle: 'Supplier statement',
+            metrics: [
+              buildSupplierMetric(
+                theme,
+                'Purchases',
+                CurrencyFormatter.format(totalPurchases),
               ),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.08),
+              buildSupplierMetric(
+                theme,
+                'Paid',
+                CurrencyFormatter.format(totalPayments),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _supplierName,
-                  style: theme.textTheme.headlineMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text('Supplier statement', style: theme.textTheme.bodyMedium),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _metric(
-                      theme,
-                      'Purchases',
-                      CurrencyFormatter.format(totalPurchases),
-                    ),
-                    _metric(
-                      theme,
-                      'Paid',
-                      CurrencyFormatter.format(totalPayments),
-                    ),
-                    _metric(
-                      theme,
-                      'Outstanding',
-                      CurrencyFormatter.format(outstanding),
-                      color: outstanding > 0
-                          ? AppColors.error
-                          : AppColors.success,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              buildSupplierMetric(
+                theme,
+                'Outstanding',
+                CurrencyFormatter.format(outstanding),
+                color: outstanding > 0 ? AppColors.error : AppColors.success,
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          _buildDateFilter(theme),
+          _buildFilter(theme),
           const SizedBox(height: 16),
+          Text('Ledger entries', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
           if (provider.isLoading)
             const Padding(
-              padding: EdgeInsets.all(24),
+              padding: EdgeInsets.all(32),
               child: Center(child: CircularProgressIndicator()),
             )
-          else if (provider.error != null)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(provider.error.toString()),
-            )
           else if (ledger.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text('No purchases or payments in this range.'),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text(
+                  'No transactions found for this supplier.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             )
           else
-            Column(children: ledger.map((e) => _ledgerCard(theme, e)).toList()),
+            ...ledger.map((e) => SupplierLedgerTile(entry: e)),
         ],
       ),
     );
   }
 
-  Widget _buildDateFilter(ThemeData theme) {
+  Widget _buildFilter(ThemeData theme) {
     Widget chip(String label, _LedgerRange value) {
       final selected = _range == value;
       return ChoiceChip(
@@ -299,7 +270,7 @@ class _SupplierLedgerPageState extends State<SupplierLedgerPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Date range', style: theme.textTheme.labelMedium),
+        Text('Filter range', style: theme.textTheme.labelMedium),
         const SizedBox(height: 6),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -356,136 +327,6 @@ class _SupplierLedgerPageState extends State<SupplierLedgerPage> {
           ),
         ],
       ],
-    );
-  }
-
-  Widget _ledgerCard(ThemeData theme, SupplierLedgerEntry e) {
-    final isPayment = e.type == 'payment';
-    final batchCode = e.batchCode;
-    final paidAtPurchase = e.paidAtPurchase;
-
-    return GreenCard(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: isPayment
-                ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                : theme.colorScheme.secondary.withValues(alpha: 0.12),
-            child: Icon(
-              isPayment
-                  ? MingCuteIcons.mgc_arrow_down_line
-                  : MingCuteIcons.mgc_arrow_up_line,
-              color: isPayment
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.secondary,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  e.description,
-                  style: theme.textTheme.titleMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormatter.toDDMMYYYY(
-                    DateTime.tryParse(e.date) ?? DateTime(2000),
-                  ),
-                  style: theme.textTheme.bodySmall,
-                ),
-                if (batchCode != null && batchCode.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      batchCode,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-                if (!isPayment) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'Debt ${CurrencyFormatter.format(e.amount)} · Paid ${CurrencyFormatter.format(paidAtPurchase)} · Remaining ${CurrencyFormatter.format((e.amount - paidAtPurchase).clamp(0, double.infinity))}',
-                    style: theme.textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                CurrencyFormatter.format(e.amount),
-                style: theme.textTheme.titleMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Bal: ${CurrencyFormatter.format(e.runningBalance.clamp(0, double.infinity))}',
-                style: theme.textTheme.bodySmall,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metric(ThemeData theme, String label, String value, {Color? color}) {
-    return Container(
-      width: 155,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.08),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
     );
   }
 }
