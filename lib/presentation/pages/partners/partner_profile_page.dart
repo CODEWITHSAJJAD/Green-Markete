@@ -7,6 +7,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/partner_model.dart';
 import '../../../data/repositories/partner_repository.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/capability.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/green_card.dart';
@@ -198,6 +199,63 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                     onChanged: (value) =>
                         _toggleManageOtherSide(context, partner, businessId, value),
                   ),
+                  const Divider(height: 28),
+                  Text('Active Permissions for this Business', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  Builder(
+                    builder: (_) {
+                      final caps = CapabilityService(
+                        partner.accessLevel ?? 'viewer',
+                        sideRole: partner.role,
+                        manageOtherSide: partner.manageOtherSide,
+                      );
+                      return Column(
+                        children: [
+                          _permissionRow(
+                            theme,
+                            MingCuteIcons.mgc_shopping_bag_2_line,
+                            'Batches & Purchases',
+                            caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase),
+                            'Create new batches & enter purchases',
+                          ),
+                          const SizedBox(height: 8),
+                          _permissionRow(
+                            theme,
+                            MingCuteIcons.mgc_bill_line,
+                            'Sales & Customers',
+                            caps.can(Capability.recordSale) || caps.can(Capability.createCustomer),
+                            'Record sales, issue bills & manage customers',
+                          ),
+                          const SizedBox(height: 8),
+                          _permissionRow(
+                            theme,
+                            MingCuteIcons.mgc_wallet_3_line,
+                            'Expenses & Settlements',
+                            caps.can(Capability.addExpense) || caps.can(Capability.createSettlement),
+                            'Log expenses & record partner/supplier settlements',
+                          ),
+                          const SizedBox(height: 8),
+                          _permissionRow(
+                            theme,
+                            MingCuteIcons.mgc_truck_line,
+                            'Transport & Vehicles',
+                            caps.can(Capability.manageTransport),
+                            'Create & assign vehicle transport loads',
+                          ),
+                          const SizedBox(height: 8),
+                          _permissionRow(
+                            theme,
+                            MingCuteIcons.mgc_route_line,
+                            'Batch Status Control',
+                            caps.can(Capability.editBatch),
+                            caps.can(Capability.closeBatch)
+                                ? 'Full control (advance + close batches)'
+                                : 'Advance batches up to selling status',
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ],
             ),
@@ -365,6 +423,81 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
           Text(title, style: theme.textTheme.bodySmall),
           const SizedBox(height: 8),
           Text(CurrencyFormatter.format(value), style: theme.textTheme.titleMedium),
+        ],
+      ),
+    );
+  }
+
+  Widget _permissionRow(
+    ThemeData theme,
+    IconData icon,
+    String title,
+    bool isGranted,
+    String subtitle,
+  ) {
+    final color = isGranted ? theme.colorScheme.primary : theme.colorScheme.outline;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isGranted
+            ? theme.colorScheme.primary.withValues(alpha: 0.06)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isGranted
+              ? theme.colorScheme.primary.withValues(alpha: 0.2)
+              : theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isGranted ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isGranted
+                  ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                  : theme.colorScheme.outline.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              isGranted ? 'Allowed' : 'Disabled',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: isGranted ? theme.colorScheme.primary : theme.colorScheme.outline,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );

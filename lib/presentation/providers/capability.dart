@@ -69,35 +69,34 @@ class CapabilityService {
     switch (c) {
       case Capability.createBatch:
       case Capability.createProduct:
-        return (isEditor || canEditPurchaserSide) && !isAccountant;
+        return isEditor || (canEditPurchaserSide && !isAccountant);
       case Capability.editBatch:
-        return (isEditor || canEditPurchaserSide || canEditSellerSide) && !isAccountant;
+        return isEditor || canEditPurchaserSide || canEditSellerSide;
       case Capability.closeBatch:
         return isOwner || canEditSellerSide;
       case Capability.voidExpense:
       case Capability.archiveCustomer:
       case Capability.manageAccess:
       case Capability.viewAuditLog:
-        return isOwner;
       case Capability.createPartner:
       case Capability.createMarket:
         return isOwner;
       case Capability.addPacking:
       case Capability.recordPurchase:
       case Capability.manageTransport:
-        return canEditPurchaserSide && !isAccountant;
+        return isEditor || (canEditPurchaserSide && !isAccountant);
       case Capability.addPurchaserExpense:
         return canEditPurchaserSide || isAccountant;
       case Capability.recordSale:
-        return canEditSellerSide && !isAccountant;
+        return isEditor || (canEditSellerSide && !isAccountant);
       case Capability.recordPayment:
-        return canEditSellerSide || isAccountant;
+        return canEditSellerSide || isAccountant || isEditor;
       case Capability.addSellerExpense:
         return canEditSellerSide || isAccountant;
       case Capability.addExpense:
-        return canEditPurchaserSide || canEditSellerSide || isAccountant;
+        return canEditPurchaserSide || canEditSellerSide || isAccountant || isEditor;
       case Capability.createCustomer:
-        return (isEditor || canEditSellerSide) && !isAccountant;
+        return isEditor || canEditSellerSide;
       case Capability.createSettlement:
         return isOwner || isEditor || isAccountant || canEditSellerSide;
       case Capability.manageSupplier:
