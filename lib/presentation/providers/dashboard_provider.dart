@@ -17,11 +17,29 @@ class DashboardProvider extends ChangeNotifier {
   double _todaySales = 0;
   double get todaySales => _todaySales;
 
+  int _todaySalesCount = 0;
+  int get todaySalesCount => _todaySalesCount;
+
+  double _totalRevenue = 0;
+  double get totalRevenue => _totalRevenue;
+
+  double _totalCost = 0;
+  double get totalCost => _totalCost;
+
+  double _totalProfitLoss = 0;
+  double get totalProfitLoss => _totalProfitLoss;
+
   double _outstandingCredit = 0;
   double get outstandingCredit => _outstandingCredit;
 
+  double _supplierPayables = 0;
+  double get supplierPayables => _supplierPayables;
+
   int _activeBatchesCount = 0;
   int get activeBatchesCount => _activeBatchesCount;
+
+  int _sellingBatchesCount = 0;
+  int get sellingBatchesCount => _sellingBatchesCount;
 
   int _batchesCount = 0;
   int get batchesCount => _batchesCount;
@@ -31,6 +49,9 @@ class DashboardProvider extends ChangeNotifier {
 
   int _customersCount = 0;
   int get customersCount => _customersCount;
+
+  int _customersWithCreditCount = 0;
+  int get customersWithCreditCount => _customersWithCreditCount;
 
   List<BatchModel> _recentBatches = const [];
   List<BatchModel> get recentBatches => _recentBatches;
@@ -43,11 +64,18 @@ class DashboardProvider extends ChangeNotifier {
     try {
       final summary = await _repo.getSummary(businessId);
       _todaySales = summary.todaySales;
+      _todaySalesCount = summary.todaySalesCount;
+      _totalRevenue = summary.totalRevenue;
+      _totalCost = summary.totalCost;
+      _totalProfitLoss = summary.totalProfitLoss;
       _outstandingCredit = summary.outstandingCredit;
+      _supplierPayables = summary.supplierPayables;
       _activeBatchesCount = summary.activeBatches;
+      _sellingBatchesCount = summary.sellingBatches;
       _batchesCount = summary.totalBatches;
       _productsCount = summary.totalProducts;
       _customersCount = summary.totalCustomers;
+      _customersWithCreditCount = summary.customersWithCreditCount;
       _recentBatches = summary.recentBatches;
       _error = null;
     } catch (e) {

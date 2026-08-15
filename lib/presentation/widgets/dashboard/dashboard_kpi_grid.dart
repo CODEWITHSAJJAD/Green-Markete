@@ -6,6 +6,7 @@ import '../../../core/utils/breakpoints.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../pages/batches/batch_list_page.dart';
 import '../../pages/customers/customer_list_page.dart';
+import '../../pages/products/product_list_page.dart';
 import '../../pages/reports/reports_page.dart';
 import '../../providers/dashboard_provider.dart';
 import '../dashboard_card.dart';
@@ -30,29 +31,61 @@ class DashboardKpiGrid extends StatelessWidget {
           FormFactor.medium => (constraints.maxWidth - 24) / 3,
           FormFactor.expanded => (constraints.maxWidth - 36) / 4,
         };
+
         return Wrap(
           spacing: 12,
           runSpacing: 12,
           children: [
+            // 1. Customer Credit / Receivables
             SizedBox(
               width: cardWidth,
               child: DashboardCard(
-                title: 'Outstanding Credit',
+                title: 'Customer Credit',
                 value: CurrencyFormatter.format(provider.outstandingCredit),
                 icon: MingCuteIcons.mgc_wallet_3_line,
                 color: AppColors.secondary,
+                badge: provider.customersWithCreditCount > 0
+                    ? '${provider.customersWithCreditCount} due'
+                    : 'All clear',
+                subtitle: 'Receivables from buyers',
                 onTap: () => Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => const ReportsPage()),
                 ),
               ),
             ),
+
+            // 2. Batches in Progress & Selling
             SizedBox(
               width: cardWidth,
               child: DashboardCard(
-                title: 'Customers',
+                title: 'Batches Pipeline',
+                value: '${provider.batchesCount}',
+                icon: MingCuteIcons.mgc_shopping_bag_2_line,
+                color: const Color(0xFF0EA5E9),
+                badge: '${provider.activeBatchesCount} active',
+                subtitle: '${provider.sellingBatchesCount} ready to sell',
+                onTap: () {
+                  if (onSelectTab != null) {
+                    onSelectTab!(1);
+                  } else {
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(builder: (_) => const BatchListPage()),
+                    );
+                  }
+                },
+              ),
+            ),
+
+            // 3. Customers & Buyers
+            SizedBox(
+              width: cardWidth,
+              child: DashboardCard(
+                title: 'Total Customers',
                 value: '${provider.customersCount}',
                 icon: MingCuteIcons.mgc_user_3_line,
                 color: const Color(0xFF8B5CF6),
+                badge: '${provider.customersWithCreditCount} with credit',
+                subtitle: 'Buyers & market clients',
                 onTap: () {
                   if (onSelectTab != null) {
                     onSelectTab!(3);
@@ -64,40 +97,20 @@ class DashboardKpiGrid extends StatelessWidget {
                 },
               ),
             ),
+
+            // 4. Products Catalog
             SizedBox(
               width: cardWidth,
               child: DashboardCard(
-                title: 'Total Batches',
-                value: '${provider.batchesCount}',
-                icon: MingCuteIcons.mgc_archive_line,
-                color: const Color(0xFF0EA5E9),
-                onTap: () {
-                  if (onSelectTab != null) {
-                    onSelectTab!(1);
-                  } else {
-                    Navigator.of(context, rootNavigator: true).push(
-                      MaterialPageRoute(builder: (_) => const BatchListPage()),
-                    );
-                  }
-                },
-              ),
-            ),
-            SizedBox(
-              width: cardWidth,
-              child: DashboardCard(
-                title: 'Products',
+                title: 'Product Catalog',
                 value: '${provider.productsCount}',
-                icon: MingCuteIcons.mgc_package_line,
+                icon: MingCuteIcons.mgc_leaf_2_line,
                 color: const Color(0xFF10B981),
-                onTap: () {
-                  if (onSelectTab != null) {
-                    onSelectTab!(1);
-                  } else {
-                    Navigator.of(context, rootNavigator: true).push(
-                      MaterialPageRoute(builder: (_) => const BatchListPage()),
-                    );
-                  }
-                },
+                badge: 'Active lines',
+                subtitle: 'Produce lines & units',
+                onTap: () => Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(builder: (_) => const ProductListPage()),
+                ),
               ),
             ),
           ],

@@ -152,21 +152,35 @@ class CreditReportModel {
 class DashboardSummaryModel {
   final double todaySales;
   final double todayRevenue;
+  final int todaySalesCount;
+  final double totalRevenue;
+  final double totalCost;
+  final double totalProfitLoss;
   final int activeBatches;
+  final int sellingBatches;
   final int totalBatches;
   final int totalProducts;
   final int totalCustomers;
+  final int customersWithCreditCount;
   final double outstandingCredit;
+  final double supplierPayables;
   final List<BatchModel> recentBatches;
 
   DashboardSummaryModel({
     this.todaySales = 0,
     this.todayRevenue = 0,
+    this.todaySalesCount = 0,
+    this.totalRevenue = 0,
+    this.totalCost = 0,
+    this.totalProfitLoss = 0,
     this.activeBatches = 0,
+    this.sellingBatches = 0,
     this.totalBatches = 0,
     this.totalProducts = 0,
     this.totalCustomers = 0,
+    this.customersWithCreditCount = 0,
     this.outstandingCredit = 0,
+    this.supplierPayables = 0,
     this.recentBatches = const [],
   });
 
@@ -177,11 +191,18 @@ class DashboardSummaryModel {
       todayRevenue: (json['today_revenue'] as num?)?.toDouble() ??
           (json['today_sales'] as num?)?.toDouble() ??
           0,
+      todaySalesCount: (json['today_sales_count'] as num?)?.toInt() ?? 0,
+      totalRevenue: (json['total_revenue'] as num?)?.toDouble() ?? 0,
+      totalCost: (json['total_cost'] as num?)?.toDouble() ?? 0,
+      totalProfitLoss: (json['total_profit_loss'] as num?)?.toDouble() ?? 0,
       activeBatches: json['active_batches'] as int? ?? 0,
+      sellingBatches: json['selling_batches'] as int? ?? 0,
       totalBatches: json['total_batches'] as int? ?? 0,
       totalProducts: json['total_products'] as int? ?? 0,
       totalCustomers: json['total_customers'] as int? ?? 0,
+      customersWithCreditCount: json['customers_with_credit_count'] as int? ?? 0,
       outstandingCredit: (json['outstanding_credit'] as num?)?.toDouble() ?? 0,
+      supplierPayables: (json['supplier_payables'] as num?)?.toDouble() ?? 0,
       recentBatches: recentRaw
           .map((e) => BatchModel.fromJson(e as Map<String, dynamic>))
           .toList(),
