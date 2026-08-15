@@ -26,6 +26,7 @@ class SupplierSettlementPage extends StatefulWidget {
 }
 
 class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
+  final _searchCtrl = TextEditingController();
   RealtimeChannel? _paymentsChannel;
 
   _DateRange _range = _DateRange.all;
@@ -46,6 +47,15 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
         _subscribe(id);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    if (_paymentsChannel != null) {
+      SupabaseService.instance.client.removeChannel(_paymentsChannel!);
+    }
+    super.dispose();
   }
 
   Future<void> _reload(String businessId) async {
@@ -156,14 +166,6 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
         .subscribe();
   }
 
-  @override
-  void dispose() {
-    if (_paymentsChannel != null) {
-      SupabaseService.instance.client.removeChannel(_paymentsChannel!);
-    }
-    super.dispose();
-  }
-
   Future<void> _openLedger(SupplierOutstanding s) async {
     final id = _businessId;
     if (id.isEmpty) return;
@@ -191,13 +193,21 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final provider = context.watch<SupplierProvider>();
-    final outstanding = provider.outstanding;
-    final totalOutstanding = outstanding.fold<double>(
+    final allOutstanding = provider.outstanding;
+    final totalOutstanding = allOutstanding.fold<double>(
       0,
       (s, o) => s + o.outstanding,
     );
-    final totalDue = outstanding.fold<double>(0, (s, o) => s + o.totalDue);
-    final totalPaid = outstanding.fold<double>(0, (s, o) => s + o.totalPaid);
+    final totalDue = allOutstanding.fold<double>(0, (s, o) => s + o.totalDue);
+    final totalPaid = allOutstanding.fold<double>(0, (s, o) => s + o.totalPaid);
+
+    final query = _searchCtrl.text.trim().toLowerCase();
+    final outstanding = query.isEmpty
+        ? allOutstanding
+        : allOutstanding.where((s) {
+            final name = s.supplierName.toLowerCase();
+            return name.contains(query);
+          }).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Supplier Settlements')),
@@ -235,6 +245,21 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
               ],
             ),
             const SizedBox(height: 16),
+            TextField(
+              controller: _searchCtrl,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Search suppliers by name',
+                prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(MingCuteIcons.mgc_close_line),
+                        onPressed: () => setState(() => _searchCtrl.clear()),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 16),
             _buildDateFilter(theme),
             const SizedBox(height: 16),
             Row(
@@ -264,13 +289,14 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
             else if (_showBatches)
               _buildBatchesView(theme, provider)
             else if (outstanding.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
                 child: EmptyState(
                   icon: MingCuteIcons.mgc_store_line,
-                  title: 'No suppliers yet',
-                  subtitle:
-                      'Add multi-supplier purchases in the batch wizard and they will appear here for settlement.',
+                  title: query.isNotEmpty ? 'No matching suppliers' : 'No suppliers yet',
+                  subtitle: query.isNotEmpty
+                      ? 'Try modifying your search query.'
+                      : 'Add multi-supplier purchases in the batch wizard and they will appear here for settlement.',
                 ),
               )
             else

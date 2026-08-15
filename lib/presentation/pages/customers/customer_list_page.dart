@@ -81,11 +81,26 @@ class _CustomerListPageState extends State<CustomerListPage> {
     final businessId = auth.businessId ?? '';
     final isOwner = auth.user?.role == 'owner';
     final provider = context.watch<CustomerProvider>();
-    final visibleCustomers = _sharedOnly
+    final query = _searchCtrl.text.trim().toLowerCase();
+
+    final baseCustomers = _sharedOnly
         ? provider.customers
             .where((c) => provider.sharedCustomerIds.contains(c.id))
             .toList()
         : provider.customers;
+
+    final visibleCustomers = query.isEmpty
+        ? baseCustomers
+        : baseCustomers.where((c) {
+            final name = c.fullName.toLowerCase();
+            final phone = (c.phone ?? '').toLowerCase();
+            final shop = (c.shopName ?? '').toLowerCase();
+            final city = (c.city ?? '').toLowerCase();
+            return name.contains(query) ||
+                phone.contains(query) ||
+                shop.contains(query) ||
+                city.contains(query);
+          }).toList();
 
     Widget customersSection;
     if (provider.isLoading) {

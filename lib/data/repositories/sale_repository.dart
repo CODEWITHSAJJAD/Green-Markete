@@ -51,6 +51,29 @@ class SaleRepository {
     return rows.map(SaleModel.fromJson).toList();
   }
 
+  Future<List<SaleModel>> listByBusiness(
+    String businessId, {
+    int limit = 100,
+  }) async {
+    try {
+      final batches = await _client
+          .from('batches')
+          .select('id')
+          .eq('business_id', businessId);
+      final batchIds = (batches as List).map((b) => b['id'].toString()).toList();
+      if (batchIds.isEmpty) return [];
+      final rows = await _client
+          .from('sales')
+          .select()
+          .filter('batch_id', 'in', batchIds)
+          .order('sale_date', ascending: false)
+          .limit(limit);
+      return (rows as List).map((r) => SaleModel.fromJson(r as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Collects part or all of a sale's credit, moving the collected amount from
   /// `credit_amount` into `cash_received` so the sale total stays intact.
   /// Returns the updated sale, or `null` if the sale no longer exists.

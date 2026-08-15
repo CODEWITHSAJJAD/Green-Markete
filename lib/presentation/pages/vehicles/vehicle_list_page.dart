@@ -19,6 +19,8 @@ class VehicleListPage extends StatefulWidget {
 }
 
 class _VehicleListPageState extends State<VehicleListPage> {
+  final _searchCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -27,6 +29,12 @@ class _VehicleListPageState extends State<VehicleListPage> {
       final businessId = context.read<AuthProvider>().businessId ?? '';
       if (businessId.isNotEmpty) context.read<VehicleProvider>().load(businessId);
     });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _openCreate() async {
@@ -75,11 +83,31 @@ class _VehicleListPageState extends State<VehicleListPage> {
     final theme = Theme.of(context);
     final businessId = context.watch<AuthProvider>().businessId ?? '';
     final vehicleProvider = context.watch<VehicleProvider>();
-    final vehicles = vehicleProvider.vehicles;
+    final allVehicles = vehicleProvider.vehicles;
+
+    final query = _searchCtrl.text.trim().toLowerCase();
+    final filteredVehicles = query.isEmpty
+        ? allVehicles
+        : allVehicles.where((v) {
+            final plate = v.plateNumber.toLowerCase();
+            final driver = (v.driverName ?? '').toLowerCase();
+            final phone = (v.driverPhone ?? '').toLowerCase();
+            final notes = (v.notes ?? '').toLowerCase();
+            return plate.contains(query) ||
+                driver.contains(query) ||
+                phone.contains(query) ||
+                notes.contains(query);
+          }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vehicles'),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
+        onPressed: _openCreate,
+        icon: const Icon(MingCuteIcons.mgc_truck_line),
+        label: const Text('New Vehicle'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -107,6 +135,21 @@ class _VehicleListPageState extends State<VehicleListPage> {
                   'Register the vehicles that carry your batches and split loads to track shared transport.',
                   style: theme.textTheme.bodyMedium,
                 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _searchCtrl,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Search vehicles by plate, driver, or phone',
+                    prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(MingCuteIcons.mgc_close_line),
+                            onPressed: () => setState(() => _searchCtrl.clear()),
+                          )
+                        : null,
+                  ),
+                ),
               ],
             ),
           ),
@@ -130,12 +173,12 @@ class _VehicleListPageState extends State<VehicleListPage> {
                 ],
               ),
             )
-          else if (vehicles.isEmpty)
+          else if (filteredVehicles.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: EmptyState(
                 icon: MingCuteIcons.mgc_truck_line,
-                title: 'No vehicles found',
+                title: query.isNotEmpty ? 'No matching vehicles' : 'No vehicles found',
                 subtitle: 'Register your fleet to track shared transport loads per batch.',
                 actionLabel: 'New Vehicle',
                 onAction: _openCreate,
@@ -143,7 +186,7 @@ class _VehicleListPageState extends State<VehicleListPage> {
             )
           else
             Column(
-              children: vehicles
+              children: filteredVehicles
                   .map(
                     (vehicle) => Dismissible(
                       key: ValueKey('vehicle-${vehicle.id}'),
@@ -210,12 +253,6 @@ class _VehicleListPageState extends State<VehicleListPage> {
                   .toList(),
             ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: _openCreate,
-        icon: const Icon(MingCuteIcons.mgc_truck_line),
-        label: const Text('New Vehicle'),
       ),
     );
   }

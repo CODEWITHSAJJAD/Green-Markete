@@ -19,6 +19,8 @@ class MarketListPage extends StatefulWidget {
 }
 
 class _MarketListPageState extends State<MarketListPage> {
+  final _searchCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -27,6 +29,12 @@ class _MarketListPageState extends State<MarketListPage> {
       final businessId = context.read<AuthProvider>().businessId ?? '';
       if (businessId.isNotEmpty) context.read<MarketProvider>().load(businessId);
     });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _openCreate() async {
@@ -75,11 +83,27 @@ class _MarketListPageState extends State<MarketListPage> {
     final theme = Theme.of(context);
     final businessId = context.watch<AuthProvider>().businessId ?? '';
     final marketProvider = context.watch<MarketProvider>();
-    final markets = marketProvider.markets;
+    final allMarkets = marketProvider.markets;
+
+    final query = _searchCtrl.text.trim().toLowerCase();
+    final filteredMarkets = query.isEmpty
+        ? allMarkets
+        : allMarkets.where((m) {
+            final name = m.name.toLowerCase();
+            final city = m.city.toLowerCase();
+            final address = (m.address ?? '').toLowerCase();
+            return name.contains(query) || city.contains(query) || address.contains(query);
+          }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Markets'),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
+        onPressed: _openCreate,
+        icon: const Icon(MingCuteIcons.mgc_store_2_line),
+        label: const Text('New Market'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -107,6 +131,21 @@ class _MarketListPageState extends State<MarketListPage> {
                   'Organize source and destination markets, stalls, and routes for every batch.',
                   style: theme.textTheme.bodyMedium,
                 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _searchCtrl,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Search markets by name or city',
+                    prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(MingCuteIcons.mgc_close_line),
+                            onPressed: () => setState(() => _searchCtrl.clear()),
+                          )
+                        : null,
+                  ),
+                ),
               ],
             ),
           ),
@@ -130,12 +169,12 @@ class _MarketListPageState extends State<MarketListPage> {
                 ],
               ),
             )
-          else if (markets.isEmpty)
+          else if (filteredMarkets.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: EmptyState(
                 icon: MingCuteIcons.mgc_store_2_line,
-                title: 'No markets found',
+                title: query.isNotEmpty ? 'No matching markets' : 'No markets found',
                 subtitle: 'Add source and destination markets to organise batch routes.',
                 actionLabel: 'New Market',
                 onAction: _openCreate,
@@ -143,7 +182,7 @@ class _MarketListPageState extends State<MarketListPage> {
             )
           else
             Column(
-              children: markets
+              children: filteredMarkets
                   .map(
                     (market) => Dismissible(
                       key: ValueKey('market-${market.id}'),
@@ -206,12 +245,6 @@ class _MarketListPageState extends State<MarketListPage> {
                   .toList(),
             ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: _openCreate,
-        icon: const Icon(MingCuteIcons.mgc_map_pin_line),
-        label: const Text('New Market'),
       ),
     );
   }

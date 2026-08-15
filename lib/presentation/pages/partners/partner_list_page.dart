@@ -59,9 +59,22 @@ class _PartnerListPageState extends State<PartnerListPage> {
         auth.businesses.where((b) => b.id == auth.businessId).firstOrNull;
     final isSoloBusiness = currentBusiness?.businessType == 'single';
 
-    final search = _searchCtrl.text.trim();
+    final query = _searchCtrl.text.trim().toLowerCase();
     final partnerProvider = context.watch<PartnerProvider>();
-    final allPartners = search.isEmpty ? partnerProvider.partners : partnerProvider.searchResults;
+    final allPartners = query.isEmpty
+        ? partnerProvider.partners
+        : partnerProvider.partners.where((p) {
+            final name = p.fullName.toLowerCase();
+            final phone = (p.phone ?? '').toLowerCase();
+            final city = (p.city ?? '').toLowerCase();
+            final role = p.role.toLowerCase();
+            final type = p.memberType.toLowerCase();
+            return name.contains(query) ||
+                phone.contains(query) ||
+                city.contains(query) ||
+                role.contains(query) ||
+                type.contains(query);
+          }).toList();
 
     final filteredPartners = allPartners.where((p) {
       if (_filter == 'employees') return p.isEmployee;
@@ -110,13 +123,16 @@ class _PartnerListPageState extends State<PartnerListPage> {
                 const SizedBox(height: 18),
                 TextField(
                   controller: _searchCtrl,
-                  onChanged: (query) {
-                    context.read<PartnerProvider>().search(query, businessId);
-                    setState(() {});
-                  },
-                  decoration: const InputDecoration(
-                    hintText: 'Search by name or phone',
-                    prefixIcon: Icon(MingCuteIcons.mgc_search_2_line),
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name, phone, role, or city',
+                    prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(MingCuteIcons.mgc_close_line),
+                            onPressed: () => setState(() => _searchCtrl.clear()),
+                          )
+                        : null,
                   ),
                 ),
                 if (!isSoloBusiness) ...[

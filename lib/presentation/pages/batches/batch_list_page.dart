@@ -27,6 +27,8 @@ class BatchListPage extends StatefulWidget {
 }
 
 class _BatchListPageState extends State<BatchListPage> {
+  final _searchCtrl = TextEditingController();
+  String _statusFilter = 'all';
   bool _selecting = false;
   final Set<String> _selectedIds = {};
 
@@ -34,6 +36,12 @@ class _BatchListPageState extends State<BatchListPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   void _load() {
@@ -169,9 +177,21 @@ class _BatchListPageState extends State<BatchListPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final batchesProvider = context.watch<BatchListProvider>();
-    final batches = batchesProvider.batches;
+    final allBatches = batchesProvider.batches;
     final isLoading = batchesProvider.isLoading;
     final error = batchesProvider.error;
+
+    final query = _searchCtrl.text.trim().toLowerCase();
+    final filteredBatches = allBatches.where((b) {
+      if (_statusFilter != 'all' && b.status.toLowerCase() != _statusFilter) {
+        return false;
+      }
+      if (query.isEmpty) return true;
+      final code = b.batchCode.toLowerCase();
+      final prod = (b.productName ?? '').toLowerCase();
+      final status = b.status.toLowerCase();
+      return code.contains(query) || prod.contains(query) || status.contains(query);
+    }).toList();
 
     return Scaffold(
       appBar: _selecting
@@ -215,7 +235,41 @@ class _BatchListPageState extends State<BatchListPage> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
               _hero(theme),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _searchCtrl,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Search batches by code, product, or status',
+                  prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(MingCuteIcons.mgc_close_line),
+                          onPressed: () => setState(() => _searchCtrl.clear()),
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _statusChip('All', 'all'),
+                    const SizedBox(width: 8),
+                    _statusChip('Selling', 'selling'),
+                    const SizedBox(width: 8),
+                    _statusChip('In Transit', 'in_transit'),
+                    const SizedBox(width: 8),
+                    _statusChip('Packing', 'packing'),
+                    const SizedBox(width: 8),
+                    _statusChip('Purchased', 'purchased'),
+                    const SizedBox(width: 8),
+                    _statusChip('Closed', 'closed'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               if (isLoading)
                 const Padding(
                   padding: EdgeInsets.all(24),
@@ -238,19 +292,21 @@ class _BatchListPageState extends State<BatchListPage> {
                     ],
                   ),
                 )
-              else if (batches.isEmpty)
+              else if (filteredBatches.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: EmptyState(
                     icon: MingCuteIcons.mgc_shopping_bag_2_line,
-                    title: 'No batches yet',
-                    subtitle: 'Create your first batch to start tracking produce from purchase to sale.',
-                    actionLabel: 'New Batch',
-                    onAction: _openCreate,
+                    title: query.isNotEmpty ? 'No matching batches' : 'No batches yet',
+                    subtitle: query.isNotEmpty
+                        ? 'Try modifying your search or filter.'
+                        : 'Create your first batch to start tracking produce from purchase to sale.',
+                    actionLabel: query.isEmpty ? 'New Batch' : null,
+                    onAction: query.isEmpty ? _openCreate : null,
                   ),
                 )
               else ...[
-                ...batches.map((batch) {
+                ...filteredBatches.map((batch) {
                   final isSelected = _selectedIds.contains(batch.id);
                   final card = GreenCard(
                     margin: const EdgeInsets.only(bottom: 14),
@@ -424,6 +480,14 @@ class _BatchListPageState extends State<BatchListPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _statusChip(String label, String value) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _statusFilter == value,
+      onSelected: (_) => setState(() => _statusFilter = value),
     );
   }
 

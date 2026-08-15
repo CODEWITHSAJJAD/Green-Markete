@@ -18,6 +18,8 @@ class ProductListPage extends StatefulWidget {
 }
 
 class _ProductListPageState extends State<ProductListPage> {
+  final _searchCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -28,10 +30,27 @@ class _ProductListPageState extends State<ProductListPage> {
   }
 
   @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final businessId = context.watch<AuthProvider>().businessId ?? '';
     final provider = context.watch<ProductProvider>();
+
+    final query = _searchCtrl.text.trim().toLowerCase();
+    final allProducts = provider.products;
+    final filteredProducts = query.isEmpty
+        ? allProducts
+        : allProducts.where((p) {
+            final name = p.name.toLowerCase();
+            final cat = (p.category ?? '').toLowerCase();
+            final unit = p.baseUnit.toLowerCase();
+            return name.contains(query) || cat.contains(query) || unit.contains(query);
+          }).toList();
 
     Widget productsSection;
     if (provider.isLoading) {
@@ -44,20 +63,20 @@ class _ProductListPageState extends State<ProductListPage> {
         padding: const EdgeInsets.all(24),
         child: Text(provider.error!.toString()),
       );
-    } else if (provider.products.isEmpty) {
+    } else if (filteredProducts.isEmpty) {
       productsSection = Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Column(
           children: [
             Icon(MingCuteIcons.mgc_package_line, size: 52, color: theme.colorScheme.outline),
             const SizedBox(height: 12),
-            Text('No products yet', style: theme.textTheme.titleLarge),
+            Text(query.isNotEmpty ? 'No matching products' : 'No products yet', style: theme.textTheme.titleLarge),
           ],
         ),
       );
     } else {
       productsSection = Column(
-        children: provider.products
+        children: filteredProducts
             .map(
               (product) => Dismissible(
                 key: ValueKey('product-${product.id}'),
@@ -159,6 +178,21 @@ class _ProductListPageState extends State<ProductListPage> {
                 Text(
                   'Define categories, units, and produce lines used across purchasing, packing, and sales.',
                   style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _searchCtrl,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Search products by name or category',
+                    prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(MingCuteIcons.mgc_close_line),
+                            onPressed: () => setState(() => _searchCtrl.clear()),
+                          )
+                        : null,
+                  ),
                 ),
               ],
             ),

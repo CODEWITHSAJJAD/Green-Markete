@@ -417,6 +417,21 @@ class SaleProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> loadByBusiness(String businessId) async {
+    _isLoading = true;
+    await Future<void>.value();
+    _error = null;
+    notifyListeners();
+    try {
+      _sales = await _repo.listByBusiness(businessId);
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> add(SaleCreateRequest request) async {
     try {
       await _repo.create(request);
