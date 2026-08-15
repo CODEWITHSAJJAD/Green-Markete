@@ -259,10 +259,12 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                         partner.accessLevel ?? 'viewer',
                         sideRole: partner.role,
                         manageOtherSide: partner.manageOtherSide,
+                        customPermissions: partner.permissions,
                       );
                       final hasPurchasing = caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase);
                       final hasSelling = caps.can(Capability.recordSale) || caps.can(Capability.createCustomer);
-                      final hasAccounting = caps.isAccountant || (caps.can(Capability.addExpense) && caps.can(Capability.createSettlement));
+                      final hasExpenses = caps.can(Capability.addExpense) || caps.can(Capability.createSettlement);
+                      final hasTransport = caps.can(Capability.manageTransport);
                       final hasBatchControl = caps.isEditor || caps.can(Capability.closeBatch);
 
                       return Column(
@@ -273,7 +275,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                             'Batches & Purchases',
                             'Create new batches & log purchases',
                             hasPurchasing,
-                            (val) => _togglePurchasing(context, partner, businessId, val),
+                            (val) => _togglePermission(context, partner, businessId, 'can_purchase', val),
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
@@ -282,7 +284,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                             'Sales & Customers',
                             'Record sales, create customers & invoices',
                             hasSelling,
-                            (val) => _toggleSelling(context, partner, businessId, val),
+                            (val) => _togglePermission(context, partner, businessId, 'can_sell', val),
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
@@ -290,8 +292,17 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                             MingCuteIcons.mgc_wallet_3_line,
                             'Expenses & Settlements',
                             'Log expenses & record partner/supplier settlements',
-                            hasAccounting,
-                            (val) => _toggleExpenses(context, partner, businessId, val),
+                            hasExpenses,
+                            (val) => _togglePermission(context, partner, businessId, 'can_expense', val),
+                          ),
+                          const SizedBox(height: 8),
+                          _permissionToggleRow(
+                            theme,
+                            MingCuteIcons.mgc_truck_line,
+                            'Transport & Vehicles',
+                            'Create & assign vehicle transport loads',
+                            hasTransport,
+                            (val) => _togglePermission(context, partner, businessId, 'can_transport', val),
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
@@ -302,7 +313,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                                 ? 'Elevated access (can advance & close batches)'
                                 : 'Scoped access (cannot advance to closed)',
                             hasBatchControl,
-                            (val) => _toggleBatchControl(context, partner, businessId, val),
+                            (val) => _togglePermission(context, partner, businessId, 'can_close_batch', val),
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
@@ -593,80 +604,26 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     );
   }
 
-  Future<void> _togglePurchasing(
+  Future<void> _togglePermission(
     BuildContext context,
     PartnerModel partner,
     String businessId,
+    String permissionKey,
     bool enable,
   ) async {
-    // If the partner's role is not naturally purchaser, grant/revoke via cross-side access
-    if (partner.role != 'purchaser' && partner.role != 'both') {
-      await _toggleManageOtherSide(context, partner, businessId, enable);
-    } else {
-      // Role is already purchaser or both
+    final ok = await context.read<PartnerProvider>().updatePermission(
+      partner.id,
+      permissionKey,
+      enable,
+      businessId,
+    );
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            enable
-                ? 'Purchasing is already enabled for ${partner.role}'
-                : 'To remove purchasing from a ${partner.role}, change their role to Seller or Accountant above.',
-          ),
+          content: Text(ok ? 'Permission updated successfully' : 'Failed to update permission'),
+          duration: const Duration(seconds: 1),
         ),
       );
     }
-  }
-
-  Future<void> _toggleSelling(
-    BuildContext context,
-    PartnerModel partner,
-    String businessId,
-    bool enable,
-  ) async {
-    // If the partner's role is not naturally seller, grant/revoke via cross-side access
-    if (partner.role != 'seller' && partner.role != 'both') {
-      await _toggleManageOtherSide(context, partner, businessId, enable);
-    } else {
-      // Role is already seller or both
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            enable
-                ? 'Selling is already enabled for ${partner.role}'
-                : 'To remove selling from a ${partner.role}, change their role to Purchaser or Accountant above.',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _toggleExpenses(
-    BuildContext context,
-    PartnerModel partner,
-    String businessId,
-    bool enable,
-  ) async {
-    if (partner.role != 'accountant') {
-      await _toggleManageOtherSide(context, partner, businessId, enable);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            enable
-                ? 'Expenses & settlements are already enabled for Accountant'
-                : 'To reassign accounting duties, select another role above.',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _toggleBatchControl(
-    BuildContext context,
-    PartnerModel partner,
-    String businessId,
-    bool enable,
-  ) async {
-    final newLevel = enable ? 'editor' : 'viewer';
-    await _updateAccess(context, partner, businessId, newLevel);
   }
 }

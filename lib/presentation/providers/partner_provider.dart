@@ -104,4 +104,21 @@ class PartnerProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> updatePermission(
+    String partnerId,
+    String permissionKey,
+    bool value,
+    String businessId,
+  ) async {
+    try {
+      await _repo.updatePermission(partnerId, permissionKey, value, businessId);
+      await load(businessId);
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

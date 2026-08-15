@@ -72,6 +72,39 @@ class PartnerRepository {
         .eq('business_id', businessId);
   }
 
+  Future<void> updatePermission(
+    String partnerId,
+    String permissionKey,
+    bool isGranted,
+    String businessId,
+  ) async {
+    try {
+      final current = await _client
+          .from('business_partners')
+          .select('permissions')
+          .eq('id', partnerId)
+          .eq('business_id', businessId)
+          .maybeSingle();
+
+      final existing = (current?['permissions'] as Map<String, dynamic>?) ?? {};
+      final updated = Map<String, dynamic>.from(existing);
+      updated[permissionKey] = isGranted;
+
+      await _client
+          .from('business_partners')
+          .update({'permissions': updated})
+          .eq('id', partnerId)
+          .eq('business_id', businessId);
+    } catch (_) {
+      // If table doesn't have permissions column, fallback gracefully
+      if (permissionKey == 'can_purchase' || permissionKey == 'can_sell') {
+        await updateManageOtherSide(partnerId, isGranted, businessId);
+      } else if (permissionKey == 'can_close_batch') {
+        await updateAccess(partnerId, isGranted ? 'editor' : 'viewer', businessId);
+      }
+    }
+  }
+
   Future<void> updateRole(String partnerId, String role, String businessId) async {
     await _client
         .from('business_partners')
