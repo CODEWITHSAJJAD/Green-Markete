@@ -1,6 +1,8 @@
 # Project State — Green Market Frontend
 
-**Last updated:** 2026-08-15 (daily-109)
+**Last updated:** 2026-08-15 (daily-110)
+
+> **Session (2026-08-15, daily-110, DashboardCard badge RenderFlex overflow fix):** Per runtime layout assertion ("RenderFlex overflowed by 2.8 pixels on the right in DashboardCard Row:36"): Wrapped badge container in `Flexible` with text overflow ellipsis and micro-padding adjustments in `DashboardCard`, ensuring metric cards cleanly render across compact device widths (360dp) without overflow. `dart analyze lib` = clean (0 errors, 0 warnings); `flutter test` green (1 passed).
 
 > **Session (2026-08-15, daily-109, Fine-grained permission enforcement & memberType badge synchronization):** Per user report ("purchaser still able to close batch when closure control is toggled off, and main card on employee profile shows Employee/Staff when Business Partner is checked below"): (1) **Partner Profile Badge Synchronization:** Fixed `isEmployee` check in `PartnerProfilePage` to evaluate `partner.memberType == 'employee'`, properly reflecting 'Business Partner' vs 'Staff / Employee' across the main profile card and toggle selections. (2) **Multi-User Custom Permission Enforcement:** Enriched `MembershipModel` and `AuthRepository.listMyMemberships` to load `permissions` JSON map. Updated `AuthProvider` to pass `customPermissions` into `CapabilityService`. (3) **Closure Capability Gating:** Fixed `BatchDetailPage` and `confirmCloseBatch` to strictly enforce `context.watch<AuthProvider>().capabilities.can(Capability.closeBatch)` instead of falling back to default role strings. Synchronized `can_close_batch` toggle in `PartnerRepository.updatePermission` with `access_level` ('editor' vs 'viewer'). `dart analyze lib` = clean (0 errors, 0 warnings); `flutter test` green (1 passed).
 
