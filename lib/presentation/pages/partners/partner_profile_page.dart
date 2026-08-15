@@ -288,10 +288,10 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                           _permissionToggleRow(
                             theme,
                             MingCuteIcons.mgc_wallet_3_line,
-                            'Expenses & Accounting',
-                            'Financial manager for all expenses & settlements',
+                            'Expenses & Settlements',
+                            'Log expenses & record partner/supplier settlements',
                             hasAccounting,
-                            (val) => _toggleAccounting(context, partner, businessId, val),
+                            (val) => _toggleExpenses(context, partner, businessId, val),
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
@@ -599,25 +599,21 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     String businessId,
     bool enable,
   ) async {
-    String newRole;
-    if (enable) {
-      if (partner.role == 'seller') {
-        newRole = 'both';
-      } else if (partner.role == 'accountant') {
-        newRole = 'both';
-      } else {
-        newRole = 'purchaser';
-      }
+    // If the partner's role is not naturally purchaser, grant/revoke via cross-side access
+    if (partner.role != 'purchaser' && partner.role != 'both') {
+      await _toggleManageOtherSide(context, partner, businessId, enable);
     } else {
-      if (partner.role == 'both') {
-        newRole = 'seller';
-      } else if (partner.role == 'purchaser') {
-        newRole = 'seller';
-      } else {
-        newRole = partner.role;
-      }
+      // Role is already purchaser or both
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            enable
+                ? 'Purchasing is already enabled for ${partner.role}'
+                : 'To remove purchasing from a ${partner.role}, change their role to Seller or Accountant above.',
+          ),
+        ),
+      );
     }
-    await _updateRole(context, partner, businessId, newRole);
   }
 
   Future<void> _toggleSelling(
@@ -626,35 +622,42 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     String businessId,
     bool enable,
   ) async {
-    String newRole;
-    if (enable) {
-      if (partner.role == 'purchaser') {
-        newRole = 'both';
-      } else if (partner.role == 'accountant') {
-        newRole = 'both';
-      } else {
-        newRole = 'seller';
-      }
+    // If the partner's role is not naturally seller, grant/revoke via cross-side access
+    if (partner.role != 'seller' && partner.role != 'both') {
+      await _toggleManageOtherSide(context, partner, businessId, enable);
     } else {
-      if (partner.role == 'both') {
-        newRole = 'purchaser';
-      } else if (partner.role == 'seller') {
-        newRole = 'purchaser';
-      } else {
-        newRole = partner.role;
-      }
+      // Role is already seller or both
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            enable
+                ? 'Selling is already enabled for ${partner.role}'
+                : 'To remove selling from a ${partner.role}, change their role to Purchaser or Accountant above.',
+          ),
+        ),
+      );
     }
-    await _updateRole(context, partner, businessId, newRole);
   }
 
-  Future<void> _toggleAccounting(
+  Future<void> _toggleExpenses(
     BuildContext context,
     PartnerModel partner,
     String businessId,
     bool enable,
   ) async {
-    final newRole = enable ? 'accountant' : 'purchaser';
-    await _updateRole(context, partner, businessId, newRole);
+    if (partner.role != 'accountant') {
+      await _toggleManageOtherSide(context, partner, businessId, enable);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            enable
+                ? 'Expenses & settlements are already enabled for Accountant'
+                : 'To reassign accounting duties, select another role above.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _toggleBatchControl(
