@@ -98,16 +98,31 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
               const SizedBox(height: 16),
               AppDropdown<String>(
                 value: _role,
-                labelText: 'Business role',
+                labelText: 'Role / Position (Employee or Partner)',
                 items: const [
-                  DropdownItem(value: 'purchaser', child: Text('Purchaser')),
-                  DropdownItem(value: 'seller', child: Text('Seller')),
-                  DropdownItem(value: 'both', child: Text('Both')),
-                  DropdownItem(value: 'accountant', child: Text('Accountant')),
-                  DropdownItem(value: 'partner', child: Text('Partner')),
+                  DropdownItem(
+                    value: 'purchaser',
+                    child: Text('Purchaser (Purchases, Transport & Suppliers)'),
+                  ),
+                  DropdownItem(
+                    value: 'seller',
+                    child: Text('Seller (Sales, Customers & Settlements)'),
+                  ),
+                  DropdownItem(
+                    value: 'accountant',
+                    child: Text('Accountant (Expenses, Dues & Ledgers)'),
+                  ),
+                  DropdownItem(
+                    value: 'both',
+                    child: Text('Manager (Both Purchasing & Selling)'),
+                  ),
+                  DropdownItem(
+                    value: 'partner',
+                    child: Text('Partner (Investor / Co-Owner)'),
+                  ),
                 ],
                 onChanged: (value) =>
-                    setState(() => _role = value ?? 'partner'),
+                    setState(() => _role = value ?? 'purchaser'),
               ),
               const SizedBox(height: 16),
               AppDropdown<String>(

@@ -81,10 +81,10 @@ class _PartnerListPageState extends State<PartnerListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Business partners & access', style: theme.textTheme.headlineMedium),
+                Text('Business partners & staff', style: theme.textTheme.headlineMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'Manage purchasers, sellers, accountants, and invitations from one directory.',
+                  'Manage purchasers, sellers, accountants, employees, and business partners from one directory.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 18),
