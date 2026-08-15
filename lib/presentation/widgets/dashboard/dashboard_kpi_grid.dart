@@ -36,17 +36,17 @@ class DashboardKpiGrid extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            // 1. Customer Credit / Receivables
+            // 1. Customer Dues / Receivables
             SizedBox(
               width: cardWidth,
               child: DashboardCard(
-                title: 'Customer Credit',
+                title: 'Customer Dues',
                 value: CurrencyFormatter.format(provider.outstandingCredit),
                 icon: MingCuteIcons.mgc_wallet_3_line,
                 color: AppColors.secondary,
                 badge: provider.customersWithCreditCount > 0
-                    ? '${provider.customersWithCreditCount} due'
-                    : 'All clear',
+                    ? '${provider.customersWithCreditCount} pending'
+                    : 'All settled',
                 subtitle: 'Receivables from buyers',
                 onTap: () => Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => const ReportsPage()),
@@ -54,16 +54,16 @@ class DashboardKpiGrid extends StatelessWidget {
               ),
             ),
 
-            // 2. Batches in Progress & Selling
+            // 2. Active Produce Batches
             SizedBox(
               width: cardWidth,
               child: DashboardCard(
-                title: 'Batches Pipeline',
-                value: '${provider.batchesCount}',
+                title: 'Produce Batches',
+                value: '${provider.batchesCount} Batches',
                 icon: MingCuteIcons.mgc_shopping_bag_2_line,
-                color: const Color(0xFF0EA5E9),
-                badge: '${provider.activeBatchesCount} active',
-                subtitle: '${provider.sellingBatchesCount} ready to sell',
+                color: const Color(0xFF0284C7),
+                badge: '${provider.activeBatchesCount} in pipeline',
+                subtitle: '${provider.sellingBatchesCount} selling in market',
                 onTap: () {
                   if (onSelectTab != null) {
                     onSelectTab!(1);
@@ -76,16 +76,16 @@ class DashboardKpiGrid extends StatelessWidget {
               ),
             ),
 
-            // 3. Customers & Buyers
+            // 3. Buyer Directory
             SizedBox(
               width: cardWidth,
               child: DashboardCard(
-                title: 'Total Customers',
-                value: '${provider.customersCount}',
+                title: 'Buyer Directory',
+                value: '${provider.customersCount} Clients',
                 icon: MingCuteIcons.mgc_user_3_line,
-                color: const Color(0xFF8B5CF6),
+                color: const Color(0xFF7C3AED),
                 badge: '${provider.customersWithCreditCount} with credit',
-                subtitle: 'Buyers & market clients',
+                subtitle: 'Registered shopkeepers',
                 onTap: () {
                   if (onSelectTab != null) {
                     onSelectTab!(3);
@@ -98,15 +98,15 @@ class DashboardKpiGrid extends StatelessWidget {
               ),
             ),
 
-            // 4. Products Catalog
+            // 4. Produce Varieties
             SizedBox(
               width: cardWidth,
               child: DashboardCard(
-                title: 'Product Catalog',
-                value: '${provider.productsCount}',
+                title: 'Produce Lines',
+                value: '${provider.productsCount} Varieties',
                 icon: MingCuteIcons.mgc_leaf_2_line,
-                color: const Color(0xFF10B981),
-                badge: 'Active lines',
+                color: const Color(0xFF059669),
+                badge: 'Active catalog',
                 subtitle: 'Produce lines & units',
                 onTap: () => Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => const ProductListPage()),

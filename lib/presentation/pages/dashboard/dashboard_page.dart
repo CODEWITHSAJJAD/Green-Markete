@@ -4,7 +4,6 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../pages/batches/batch_list_page.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -109,7 +108,9 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                           leading: CircleAvatar(
                             backgroundColor: isCurrent
-                                ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                                ? theme.colorScheme.primary.withValues(
+                                    alpha: 0.12,
+                                  )
                                 : theme.colorScheme.surfaceContainerHighest,
                             child: Icon(
                               MingCuteIcons.mgc_store_2_line,
@@ -122,8 +123,9 @@ class _DashboardPageState extends State<DashboardPage> {
                           title: Text(
                             b.name,
                             style: TextStyle(
-                              fontWeight:
-                                  isCurrent ? FontWeight.bold : FontWeight.w500,
+                              fontWeight: isCurrent
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
                               color: isCurrent
                                   ? theme.colorScheme.primary
                                   : theme.colorScheme.onSurface,
@@ -146,7 +148,9 @@ class _DashboardPageState extends State<DashboardPage> {
                               await currentAuth.switchBusiness(b.id);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Switched to ${b.name}')),
+                                  SnackBar(
+                                    content: Text('Switched to ${b.name}'),
+                                  ),
                                 );
                               }
                             }
@@ -220,9 +224,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildHeader(ThemeData theme) {
     final auth = context.watch<AuthProvider>();
-    final l10n = AppLocalizations.of(context)!;
     final firstName = (auth.user?.fullName ?? '').trim().split(' ').first;
-    final businessName = auth.businesses
+    final businessName =
+        auth.businesses
             .where((b) => b.id == auth.businessId)
             .map((b) => b.name)
             .firstOrNull ??
@@ -239,9 +243,14 @@ class _DashboardPageState extends State<DashboardPage> {
               onTap: () => _showBusinessSwitcher(context),
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: theme.colorScheme.outline.withValues(alpha: 0.12),
@@ -268,10 +277,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(
-                      MingCuteIcons.mgc_down_line,
-                      size: 13,
-                    ),
+                    const Icon(MingCuteIcons.mgc_down_line, size: 13),
                   ],
                 ),
               ),
@@ -280,22 +286,32 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         const SizedBox(height: 16),
         Text(
-          firstName.isEmpty
-              ? l10n.dashboardGreetingFallback
-              : l10n.dashboardGreeting(firstName),
+          _timeGreeting(firstName),
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         Text(
-          DateFormat('EEEE, d MMMM').format(DateTime.now()),
+          DateFormat('EEEE, d MMMM yyyy').format(DateTime.now()),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
     );
+  }
+
+  String _timeGreeting(String firstName) {
+    final hour = DateTime.now().hour;
+    final timeStr = hour < 12
+        ? 'Good morning'
+        : hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
+    return firstName.isNotEmpty ? '$timeStr, $firstName' : '$timeStr';
   }
 
   Widget _buildError(ThemeData theme, String error, String businessId) {
