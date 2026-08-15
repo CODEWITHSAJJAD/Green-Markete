@@ -349,18 +349,56 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
         const SizedBox(height: 12),
         _stat(theme, 'Net Balance', (balance['net_balance'] as num?)?.toDouble() ?? 0, fullWidth: true),
         const SizedBox(height: 12),
-        ...entries.take(5).map(
-              (entry) => GreenCard(
-                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                padding: EdgeInsets.zero,
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
-                  title: Text(entry['description']?.toString() ?? '-'),
-                  subtitle: Text(entry['date']?.toString() ?? '-'),
-                  trailing: Text(CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)),
+        if (entries.isEmpty)
+          GreenCard(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(MingCuteIcons.mgc_history_line, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No ledger entries yet. Payments, advances, and batch settlements recorded for this partner will appear here.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...entries.take(5).map(
+                (entry) => GreenCard(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  padding: EdgeInsets.zero,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: (entry['type'] == 'received' ? theme.colorScheme.primary : theme.colorScheme.error)
+                            .withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        entry['type'] == 'received' ? MingCuteIcons.mgc_arrow_down_line : MingCuteIcons.mgc_arrow_up_line,
+                        size: 16,
+                        color: entry['type'] == 'received' ? theme.colorScheme.primary : theme.colorScheme.error,
+                      ),
+                    ),
+                    title: Text(entry['description']?.toString() ?? '-'),
+                    subtitle: Text(entry['date']?.toString() ?? '-'),
+                    trailing: Text(
+                      '${entry['type'] == 'received' ? '+' : '-'} ${CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: entry['type'] == 'received' ? theme.colorScheme.primary : theme.colorScheme.error,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
       ],
     );
   }
