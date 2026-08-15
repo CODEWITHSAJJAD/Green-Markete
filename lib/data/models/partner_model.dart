@@ -29,8 +29,13 @@ class PartnerModel {
 
   factory PartnerModel.fromJson(Map<String, dynamic> json) {
     Map<String, bool>? parsedPermissions;
+    String? permMemberType;
     if (json['permissions'] is Map) {
-      parsedPermissions = (json['permissions'] as Map).map(
+      final permMap = json['permissions'] as Map;
+      if (permMap['member_type'] != null) {
+        permMemberType = permMap['member_type'].toString();
+      }
+      parsedPermissions = permMap.map(
         (k, v) => MapEntry(k.toString(), v == true),
       );
     }
@@ -38,6 +43,7 @@ class PartnerModel {
     final rawRole = json['role'] as String? ?? 'purchaser';
     final role = rawRole == 'partner' ? 'both' : rawRole;
     final memberType = json['member_type'] as String? ??
+        permMemberType ??
         (rawRole == 'partner' ? 'partner' : 'employee');
 
     return PartnerModel(

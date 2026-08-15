@@ -1,6 +1,8 @@
 # Project State — Green Market Frontend
 
-**Last updated:** 2026-08-15 (daily-103)
+**Last updated:** 2026-08-15 (daily-104)
+
+> **Session (2026-08-15, daily-104, Partner member_type persistent storage across app lifecycle):** Per user report ("member type is only save temporarily, whenever page reopens it changes"), solved member type persistence: (1) **Dual-Layer Persistence:** Updated `PartnerRepository` to save `member_type` to persistent local storage (`SharedPreferences`) on every create and update (`updateMemberType`), while simultaneously persisting into `permissions` JSON payload and attempting direct table update on `business_partners`. (2) **Robust Retrieval & Ingestion:** Enriched `list()` and `search()` queries in `PartnerRepository` to restore `member_type` from `SharedPreferences` or `permissions['member_type']`, and updated `PartnerModel.fromJson` to parse `member_type` from nested permissions or direct JSON fields, guaranteeing member type ('Staff / Employee' vs 'Business Partner') remains permanently saved and preserved across app restarts and page navigations. `dart analyze lib` = clean (0 errors, 0 warnings); `flutter test` green (1 passed).
 
 > **Session (2026-08-15, daily-103, Dashboard DB query & hero card layout overflow fix):** (1) **Database Query Fix:** In `DashboardRepository._fetchSummary`, replaced query selecting non-existent `total_cost` and `total_revenue` columns on `product_batches` table with `'*, products(name)'`, fixing code 42703 PostgrestException. (2) **Layout Overflow Fix:** Fixed 15px RenderFlex overflow in `DashboardHeroCard` by applying `Expanded`, `Flexible`, and `FittedBox` to the Lifetime Profit/Loss row and margin percentage badge, ensuring responsive rendering on compact device screens. `dart analyze lib` = clean (0 errors, 0 warnings); `flutter test` green (1 passed).
 
