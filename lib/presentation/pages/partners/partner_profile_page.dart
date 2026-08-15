@@ -90,7 +90,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
       return const Center(child: Text('Partner not found'));
     }
 
-    final isEmployee = partner.role != 'partner' && partner.role != 'owner';
+    final isEmployee = partner.memberType == 'employee';
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -129,7 +129,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _chip(theme, isEmployee ? 'Type: Employee / Staff' : 'Type: Business Partner'),
+                  _chip(theme, isEmployee ? 'Type: Staff / Employee' : 'Type: Business Partner'),
                   _chip(theme, 'Access: ${partner.accessLevel ?? 'viewer'}'),
                   _chip(theme, partner.isClaimed ? 'Claimed profile' : 'Invitation pending'),
                 ],
@@ -199,74 +199,55 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                       onSelected: (_) => _updateMemberType(context, partner, businessId, 'employee'),
                     ),
                     ChoiceChip(
-                      avatar: const Icon(MingCuteIcons.mgc_group_line, size: 16),
+                      avatar: const Icon(MingCuteIcons.mgc_briefcase_line, size: 16),
                       label: const Text('Business Partner'),
                       selected: partner.memberType == 'partner',
                       onSelected: (_) => _updateMemberType(context, partner, businessId, 'partner'),
                     ),
                   ],
                 ),
-                if (partner.role != 'owner') ...[
-                  const Divider(height: 28),
-                  Text('Assigned Role', style: theme.textTheme.titleSmall),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _roleChip(context, partner, businessId, 'purchaser', 'Purchaser'),
-                      _roleChip(context, partner, businessId, 'seller', 'Seller'),
-                      _roleChip(context, partner, businessId, 'both', 'Both (Purchaser & Seller)'),
-                      _roleChip(context, partner, businessId, 'accountant', 'Accountant'),
-                    ],
-                  ),
-                ],
-                const Divider(height: 28),
+                const SizedBox(height: 16),
+                Text('Assigned Role', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _roleChip(context, partner, businessId, 'purchaser', 'Purchaser'),
+                    _roleChip(context, partner, businessId, 'seller', 'Seller'),
+                    _roleChip(context, partner, businessId, 'both', 'Both (Purchaser & Seller)'),
+                    _roleChip(context, partner, businessId, 'accountant', 'Accountant'),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 Text('Access Level', style: theme.textTheme.titleSmall),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children: [
                     ChoiceChip(
-                      label: const Text('Viewer (Scoped Access)'),
-                      selected: (partner.accessLevel ?? 'viewer') == 'viewer',
-                      onSelected: (_) => _updateAccess(context, partner, businessId, 'viewer'),
-                    ),
-                    ChoiceChip(
-                      label: const Text('Editor (Elevated Access)'),
+                      label: const Text('Elevated (Editor)'),
                       selected: (partner.accessLevel ?? 'viewer') == 'editor',
                       onSelected: (_) => _updateAccess(context, partner, businessId, 'editor'),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Scoped (Viewer)'),
+                      selected: (partner.accessLevel ?? 'viewer') == 'viewer',
+                      onSelected: (_) => _updateAccess(context, partner, businessId, 'viewer'),
                     ),
                   ],
                 ),
                 if (partner.role != 'owner') ...[
-                  const Divider(height: 28),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Allow editing the other side'),
-                    subtitle: const Text(
-                      'Grants this partner write access on both sides '
-                      '(e.g. a purchaser can also manage sales).',
-                    ),
-                    value: partner.manageOtherSide,
-                    onChanged: (value) =>
-                        _toggleManageOtherSide(context, partner, businessId, value),
-                  ),
-                  const Divider(height: 28),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Individual Permissions',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      Icon(MingCuteIcons.mgc_safe_lock_line, size: 18, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
-                        'Tap to toggle',
-                        style: theme.textTheme.labelSmall?.copyWith(
+                        'Fine-Grained Permissions',
+                        style: theme.textTheme.titleSmall?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -282,11 +263,11 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                         manageOtherSide: partner.manageOtherSide,
                         customPermissions: partner.permissions,
                       );
-                      final hasPurchasing = caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase);
-                      final hasSelling = caps.can(Capability.recordSale) || caps.can(Capability.createCustomer);
-                      final hasExpenses = caps.can(Capability.addExpense) || caps.can(Capability.createSettlement);
-                      final hasTransport = caps.can(Capability.manageTransport);
-                      final hasBatchControl = caps.isEditor || caps.can(Capability.closeBatch);
+                      final hasPurchasing = partner.permissions?['can_purchase'] ?? (caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase));
+                      final hasSelling = partner.permissions?['can_sell'] ?? (caps.can(Capability.recordSale) || caps.can(Capability.createCustomer));
+                      final hasExpenses = partner.permissions?['can_expense'] ?? (caps.can(Capability.addExpense) || caps.can(Capability.createSettlement));
+                      final hasTransport = partner.permissions?['can_transport'] ?? caps.can(Capability.manageTransport);
+                      final hasBatchControl = partner.permissions?['can_close_batch'] ?? (caps.isEditor && caps.can(Capability.closeBatch));
 
                       return Column(
                         children: [

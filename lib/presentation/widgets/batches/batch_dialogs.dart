@@ -9,6 +9,7 @@ import '../../../data/models/sale_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
+import '../../providers/capability.dart';
 import '../../providers/data_refresh.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/transaction_provider.dart';
@@ -935,6 +936,16 @@ Future<void> advanceBatchStatus(
 }
 
 Future<void> confirmCloseBatch(BuildContext context, String batchId) async {
+  final auth = context.read<AuthProvider>();
+  if (!auth.capabilities.can(Capability.closeBatch)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('You do not have permission to close batches.'),
+      ),
+    );
+    return;
+  }
+
   final confirm = await showConfirmDialog(
     context,
     title: 'Mark batch as closed?',

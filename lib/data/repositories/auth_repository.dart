@@ -167,22 +167,19 @@ class AuthRepository {
     );
   }
 
-  /// All businesses the user belongs to (owner row + claimed partnerships),
-  /// each with its own role/access level.
   Future<List<MembershipModel>> listMyMemberships(String userId) async {
-    final rows = await _client
-        .from('business_partners')
-        .select('business_id, role, access_level, is_claimed, manage_other_side')
-        .eq('user_id', userId);
-    return [
-      for (final r in rows)
-        MembershipModel(
-          businessId: r['business_id'] as String? ?? '',
-          role: r['role'] as String? ?? 'partner',
-          accessLevel: r['access_level'] as String?,
-          isClaimed: r['is_claimed'] as bool? ?? true,
-          manageOtherSide: r['manage_other_side'] as bool? ?? false,
-        ),
-    ];
+    try {
+      final rows = await _client
+          .from('business_partners')
+          .select('business_id, role, access_level, is_claimed, manage_other_side, permissions')
+          .eq('user_id', userId);
+      return rows.map(MembershipModel.fromJson).toList();
+    } catch (_) {
+      final rows = await _client
+          .from('business_partners')
+          .select('business_id, role, access_level, is_claimed, manage_other_side')
+          .eq('user_id', userId);
+      return rows.map(MembershipModel.fromJson).toList();
+    }
   }
 }

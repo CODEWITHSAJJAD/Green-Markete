@@ -136,8 +136,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
   Widget build(BuildContext context) {
     final batchProvider = context.watch<BatchDetailProvider>();
     final batch = batchProvider.batch;
-    final userRole = context.watch<AuthProvider>().user?.role ?? '';
-    final canDelete = userRole.canCloseBatch;
+    final canDelete = context.watch<AuthProvider>().capabilities.can(Capability.closeBatch);
 
     return Scaffold(
       appBar: AppBar(

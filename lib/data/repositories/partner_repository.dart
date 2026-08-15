@@ -111,13 +111,18 @@ class PartnerRepository {
       final updated = Map<String, dynamic>.from(existing);
       updated[permissionKey] = isGranted;
 
+      final updatePayload = <String, dynamic>{'permissions': updated};
+      if (permissionKey == 'can_close_batch') {
+        updatePayload['access_level'] = isGranted ? 'editor' : 'viewer';
+      }
+
       await _client
         .from('business_partners')
-        .update({'permissions': updated})
+        .update(updatePayload)
         .eq('id', partnerId)
         .eq('business_id', businessId);
     } catch (_) {
-      // If table doesn't have permissions column, fallback gracefully
+      // Fallback gracefully
       if (permissionKey == 'can_purchase' || permissionKey == 'can_sell') {
         await updateManageOtherSide(partnerId, isGranted, businessId);
       } else if (permissionKey == 'can_close_batch') {

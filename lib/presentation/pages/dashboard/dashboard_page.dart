@@ -311,7 +311,7 @@ class _DashboardPageState extends State<DashboardPage> {
         : hour < 17
         ? 'Good afternoon'
         : 'Good evening';
-    return firstName.isNotEmpty ? '$timeStr, $firstName' : '$timeStr';
+    return firstName.isNotEmpty ? '$timeStr, $firstName' : timeStr;
   }
 
   Widget _buildError(ThemeData theme, String error, String businessId) {

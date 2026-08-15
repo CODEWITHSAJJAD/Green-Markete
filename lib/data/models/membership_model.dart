@@ -4,6 +4,7 @@ class MembershipModel {
   final String? accessLevel;
   final bool isClaimed;
   final bool manageOtherSide;
+  final Map<String, bool> permissions;
 
   MembershipModel({
     required this.businessId,
@@ -11,15 +12,25 @@ class MembershipModel {
     this.accessLevel,
     this.isClaimed = false,
     this.manageOtherSide = false,
+    this.permissions = const {},
   });
 
   factory MembershipModel.fromJson(Map<String, dynamic> json) {
+    Map<String, bool> parsedPermissions = {};
+    final rawPerms = json['permissions'];
+    if (rawPerms is Map) {
+      rawPerms.forEach((k, v) {
+        if (v is bool) parsedPermissions[k.toString()] = v;
+      });
+    }
+
     return MembershipModel(
       businessId: json['business_id'] as String? ?? '',
       role: json['role'] as String? ?? 'partner',
       accessLevel: json['access_level'] as String?,
       isClaimed: json['is_claimed'] as bool? ?? json['user_id'] != null,
       manageOtherSide: json['manage_other_side'] as bool? ?? false,
+      permissions: parsedPermissions,
     );
   }
 

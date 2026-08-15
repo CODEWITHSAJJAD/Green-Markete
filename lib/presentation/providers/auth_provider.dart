@@ -46,10 +46,18 @@ class AuthProvider extends ChangeNotifier {
   bool _manageOtherSide = false;
   bool get manageOtherSide => _manageOtherSide;
 
+  Map<String, bool> _customPermissions = const {};
+  Map<String, bool> get customPermissions => _customPermissions;
+
   static const _lastBusinessKey = 'gm_last_active_business';
 
   CapabilityService get capabilities =>
-      CapabilityService(_accessLevel ?? '', sideRole: _sideRole ?? 'both', manageOtherSide: _manageOtherSide);
+      CapabilityService(
+        _accessLevel ?? '',
+        sideRole: _sideRole ?? 'both',
+        manageOtherSide: _manageOtherSide,
+        customPermissions: _customPermissions,
+      );
 
   bool canEditSide(String side) => capabilities.canEditSide(side);
   bool get canEditPurchaserSide => capabilities.canEditPurchaserSide;
@@ -116,6 +124,7 @@ class AuthProvider extends ChangeNotifier {
       _accessLevel = null;
       _sideRole = null;
       _manageOtherSide = false;
+      _customPermissions = const {};
       _needsOnboarding = true;
       return;
     }
@@ -127,16 +136,19 @@ class AuthProvider extends ChangeNotifier {
       _accessLevel = 'owner';
       _sideRole = 'both';
       _manageOtherSide = true;
+      _customPermissions = const {};
     } else if (membership != null) {
       role = membership.effectiveAccessRole;
       _accessLevel = membership.accessLevel;
       _sideRole = membership.sideRole;
       _manageOtherSide = membership.manageOtherSide;
+      _customPermissions = membership.permissions;
     } else {
       role = current.role ?? 'viewer';
       _accessLevel = current.role;
       _sideRole = 'both';
       _manageOtherSide = false;
+      _customPermissions = const {};
     }
     _user = UserModel(
       id: current.id,
