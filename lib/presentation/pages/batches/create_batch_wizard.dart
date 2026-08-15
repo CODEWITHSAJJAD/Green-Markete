@@ -704,7 +704,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     final canNext = _validateStep(currentStep);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
@@ -713,34 +713,43 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
           ),
         ),
       ),
-      child: Row(
-        children: [
-          if (currentStep > 0)
-            OutlinedButton(
-              onPressed: _submitting ? null : _prev,
-              child: const Text('Back'),
-            ),
-          const Spacer(),
-          if (!isLast)
-            FilledButton(
-              onPressed: canNext ? _next : null,
-              child: const Text('Next'),
-            )
-          else
-            FilledButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            if (currentStep > 0) ...[
+              Expanded(
+                flex: 1,
+                child: OutlinedButton(
+                  onPressed: _submitting ? null : _prev,
+                  child: const Text('Back'),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              flex: currentStep > 0 ? 2 : 1,
+              child: isLast
+                  ? FilledButton(
+                      onPressed: _submitting ? null : _submit,
+                      child: _submitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Create Batch'),
                     )
-                  : const Text('Create Batch'),
+                  : FilledButton(
+                      onPressed: canNext ? _next : null,
+                      child: const Text('Next'),
+                    ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

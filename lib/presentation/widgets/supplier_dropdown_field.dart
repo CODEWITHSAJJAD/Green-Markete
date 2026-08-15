@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 
-/// Searchable + creatable supplier dropdown. Shows previously-used supplier
-/// names (from `batch_purchases` plus the historical
-/// `product_batches.supplier_name` fallback) in a dropdown panel below the
-/// field, and lets the user pick one or add a new name inline.
+import '../../core/config/theme.dart';
+
+/// Searchable + creatable supplier dropdown matching [AppDropdown] aesthetics.
+/// Shows previously-used supplier names in a dropdown panel below the field,
+/// and lets the user pick one or create a new name inline.
 class SupplierDropdownField extends StatefulWidget {
   final String value;
   final ValueChanged<String> onChanged;
@@ -13,8 +14,7 @@ class SupplierDropdownField extends StatefulWidget {
   final bool required;
 
   /// Called when the user creates a NEW supplier name via the
-  /// "Add … as new supplier" row — used to persist it (e.g. into the
-  /// `suppliers` registry) so it survives the session.
+  /// "Add … as new supplier" row — used to persist it into the registry.
   final ValueChanged<String>? onCreateSupplier;
 
   const SupplierDropdownField({
@@ -48,14 +48,9 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
   @override
   void didUpdateWidget(covariant SupplierDropdownField old) {
     super.didUpdateWidget(old);
-    // Never clobber text while the user is typing; only sync external
-    // changes (e.g. a freshly loaded supplier list) when unfocused.
     if (!_focus.hasFocus && widget.value != _ctrl.text) {
       _ctrl.text = widget.value;
     }
-    // NOTE: no overlay show/hide here — didUpdateWidget runs during the
-    // build phase, where OverlayPortalController.show() is forbidden.
-    // The panel content refreshes automatically on rebuild.
   }
 
   @override
@@ -111,18 +106,24 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
   Widget build(BuildContext context) {
     return OverlayPortal(
       controller: _overlay,
-      overlayChildBuilder: (_) => _DropdownPanel(
-        link: _link,
-        width: MediaQuery.sizeOf(context).width * 0.94,
-        matches: _matches,
-        value: widget.value,
-        showCreate: _showCreateOption,
-        query: _query,
-        onPick: _pick,
-      ),
+      overlayChildBuilder: (context) {
+        final renderBox = context.findRenderObject() as RenderBox?;
+        final width = renderBox != null && renderBox.hasSize
+            ? renderBox.size.width
+            : MediaQuery.sizeOf(context).width * 0.9;
+        return _DropdownPanel(
+          link: _link,
+          width: width,
+          matches: _matches,
+          value: widget.value,
+          showCreate: _showCreateOption,
+          query: _query,
+          onPick: _pick,
+        );
+      },
       child: CompositedTransformTarget(
         link: _link,
-        child: TextField(
+        child: TextFormField(
           controller: _ctrl,
           focusNode: _focus,
           textCapitalization: TextCapitalization.words,
@@ -140,10 +141,10 @@ class _SupplierDropdownFieldState extends State<SupplierDropdownField> {
                       widget.onChanged('');
                     },
                   )
-                : const Icon(Icons.arrow_drop_down, size: 18),
+                : const Icon(MingCuteIcons.mgc_arrow_down_line, size: 18),
             hintText: widget.suppliers.isEmpty
-                ? 'Type the supplier name'
-                : 'Pick or type a new supplier',
+                ? 'Type supplier name'
+                : 'Pick or type supplier',
           ),
           onChanged: (v) {
             setState(() {
@@ -183,81 +184,108 @@ class _DropdownPanel extends StatelessWidget {
     final theme = Theme.of(context);
     return CompositedTransformFollower(
       link: link,
-      targetAnchor: Alignment.topLeft,
+      targetAnchor: Alignment.bottomLeft,
       followerAnchor: Alignment.topLeft,
-      offset: const Offset(0, 4),
+      offset: const Offset(0, 6),
       child: Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(10),
+        elevation: 6,
+        shadowColor: AppColors.shadow.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
         color: theme.colorScheme.surface,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: width, maxHeight: 220),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final s in matches)
-                  InkWell(
-                    onTap: () => onPick(s),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(MingCuteIcons.mgc_store_line, size: 16),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              s,
-                              style: theme.textTheme.bodyMedium,
-                              overflow: TextOverflow.ellipsis,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.15),
+            ),
+          ),
+          constraints: BoxConstraints(maxWidth: width, maxHeight: 240),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final s in matches)
+                    InkWell(
+                      onTap: () => onPick(s),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 11,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              MingCuteIcons.mgc_store_line,
+                              size: 18,
+                              color: s == value
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
-                          ),
-                          if (s == value)
-                            const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.green,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (showCreate)
-                  InkWell(
-                    onTap: () => onPick(query),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.add,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Add "$query" as new supplier',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                s,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: s == value
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: s == value
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                            if (s == value)
+                              Icon(
+                                MingCuteIcons.mgc_check_line,
+                                size: 18,
+                                color: theme.colorScheme.primary,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                  if (showCreate) ...[
+                    if (matches.isNotEmpty)
+                      const Divider(height: 1, indent: 12, endIndent: 12),
+                    InkWell(
+                      onTap: () => onPick(query),
+                      child: Container(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.06),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              MingCuteIcons.mgc_add_circle_line,
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Add "$query" as new supplier',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),

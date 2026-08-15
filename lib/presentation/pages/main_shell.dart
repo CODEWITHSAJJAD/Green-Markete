@@ -52,9 +52,7 @@ class _MainShellState extends State<MainShell> {
 
   void _selectTab(int index) {
     _closeDrawer();
-    if (index != _index) {
-      _keys[_index].currentState?.popUntil((route) => route.isFirst);
-    }
+    _keys[index].currentState?.popUntil((route) => route.isFirst);
     setState(() => _index = index);
     WidgetsBinding.instance.addPostFrameCallback((_) => _reloadTabData(index));
   }

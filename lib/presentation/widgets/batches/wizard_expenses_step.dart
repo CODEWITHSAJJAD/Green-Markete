@@ -65,8 +65,8 @@ class _WizardExpensesStepState extends State<WizardExpensesStep> {
       children: List.generate(expenses.length, (i) {
         final e = expenses[i];
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
@@ -75,124 +75,24 @@ class _WizardExpensesStepState extends State<WizardExpensesStep> {
             ),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: AppDropdown<String>(
-                      value: e['expense_side'] as String?,
-                      labelText: 'Side',
-                      items: const [
-                        DropdownItem(
-                          value: 'purchaser',
-                          child: Text(
-                            'Purchaser',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'transport',
-                          child: Text(
-                            'Transport',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'seller',
-                          child: Text(
-                            'Seller',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        setState(() => e['expense_side'] = v ?? 'purchaser');
-                        widget.onExpensesChanged(expenses);
-                      },
+                  Text(
+                    'Expense ${i + 1}',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: AppDropdown<String>(
-                      value: e['expense_type'] as String?,
-                      labelText: 'Type',
-                      items: const [
-                        DropdownItem(
-                          value: 'daily_charge',
-                          child: Text(
-                            'Daily Charge',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'labor',
-                          child: Text(
-                            'Labor',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'accountant',
-                          child: Text(
-                            'Accountant',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'source_stall_fee',
-                          child: Text(
-                            'Stall Fee (source)',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'destination_stall_fee',
-                          child: Text(
-                            'Stall Fee (destination)',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'transport',
-                          child: Text(
-                            'Transport',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'local_transport',
-                          child: Text(
-                            'Local Transport',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        DropdownItem(
-                          value: 'misc',
-                          child: Text(
-                            'Misc',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        setState(() => e['expense_type'] = v ?? 'misc');
-                        widget.onExpensesChanged(expenses);
-                      },
-                    ),
-                  ),
+                  const Spacer(),
                   IconButton(
-                    icon: const Icon(MingCuteIcons.mgc_delete_3_line),
+                    icon: const Icon(
+                      MingCuteIcons.mgc_delete_3_line,
+                      size: 20,
+                      color: Colors.red,
+                    ),
+                    tooltip: 'Delete expense',
                     onPressed: () {
                       final next = [...expenses];
                       next.removeAt(i);
@@ -202,49 +102,101 @@ class _WizardExpensesStepState extends State<WizardExpensesStep> {
                 ],
               ),
               const SizedBox(height: 8),
+              AppDropdown<String>(
+                value: e['expense_side'] as String?,
+                labelText: 'Expense Side',
+                items: const [
+                  DropdownItem(
+                    value: 'purchaser',
+                    child: Text('Purchaser Side'),
+                  ),
+                  DropdownItem(
+                    value: 'transport',
+                    child: Text('Transport Side'),
+                  ),
+                  DropdownItem(
+                    value: 'seller',
+                    child: Text('Seller Side'),
+                  ),
+                ],
+                onChanged: (v) {
+                  setState(() => e['expense_side'] = v ?? 'purchaser');
+                  widget.onExpensesChanged(expenses);
+                },
+              ),
+              const SizedBox(height: 12),
+              AppDropdown<String>(
+                value: e['expense_type'] as String?,
+                labelText: 'Expense Type',
+                items: const [
+                  DropdownItem(
+                    value: 'daily_charge',
+                    child: Text('Daily Charge'),
+                  ),
+                  DropdownItem(
+                    value: 'labor',
+                    child: Text('Labor / Handling'),
+                  ),
+                  DropdownItem(
+                    value: 'accountant',
+                    child: Text('Accountant Fee'),
+                  ),
+                  DropdownItem(
+                    value: 'source_stall_fee',
+                    child: Text('Stall Fee (Source)'),
+                  ),
+                  DropdownItem(
+                    value: 'destination_stall_fee',
+                    child: Text('Stall Fee (Destination)'),
+                  ),
+                  DropdownItem(
+                    value: 'transport',
+                    child: Text('Main Transport'),
+                  ),
+                  DropdownItem(
+                    value: 'local_transport',
+                    child: Text('Local Transport / Cartage'),
+                  ),
+                  DropdownItem(
+                    value: 'misc',
+                    child: Text('Miscellaneous / Other'),
+                  ),
+                ],
+                onChanged: (v) {
+                  setState(() => e['expense_type'] = v ?? 'misc');
+                  widget.onExpensesChanged(expenses);
+                },
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 initialValue: e['amount'].toString(),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(labelText: 'Amount'),
+                decoration: const InputDecoration(
+                  labelText: 'Amount *',
+                  prefixIcon: Icon(MingCuteIcons.mgc_currency_dollar_line, size: 18),
+                ),
                 onChanged: (v) {
                   e['amount'] = double.tryParse(v) ?? 0.0;
                   widget.onExpensesChanged(expenses);
                 },
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                initialValue: e['description']?.toString(),
-                decoration: const InputDecoration(labelText: 'Description'),
-                onChanged: (v) {
-                  e['description'] = v.isEmpty ? null : v;
-                  widget.onExpensesChanged(expenses);
-                },
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: AppDropdown<String>(
                       value: e['payment_mode'] as String?,
-                      labelText: 'Payment',
+                      labelText: 'Payment Mode',
                       items: const [
                         DropdownItem(
                           value: 'cash',
-                          child: Text(
-                            'Cash',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
+                          child: Text('Cash'),
                         ),
                         DropdownItem(
                           value: 'bank_transfer',
-                          child: Text(
-                            'Bank Transfer',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
+                          child: Text('Bank Transfer'),
                         ),
                       ],
                       onChanged: (v) {
@@ -253,12 +205,13 @@ class _WizardExpensesStepState extends State<WizardExpensesStep> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       initialValue: e['expense_date']?.toString(),
                       decoration: const InputDecoration(
                         labelText: 'Date (YYYY-MM-DD)',
+                        prefixIcon: Icon(MingCuteIcons.mgc_calendar_line, size: 18),
                       ),
                       onChanged: (v) {
                         e['expense_date'] = v.isEmpty
@@ -269,6 +222,18 @@ class _WizardExpensesStepState extends State<WizardExpensesStep> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                initialValue: e['description']?.toString(),
+                decoration: const InputDecoration(
+                  labelText: 'Description / Notes (optional)',
+                  prefixIcon: Icon(MingCuteIcons.mgc_edit_line, size: 18),
+                ),
+                onChanged: (v) {
+                  e['description'] = v.isEmpty ? null : v;
+                  widget.onExpensesChanged(expenses);
+                },
               ),
             ],
           ),
