@@ -50,9 +50,9 @@ class CapabilityService {
   final Map<String, bool>? customPermissions;
 
   bool get isOwner => accessLevel == 'owner' || sideRole == 'owner';
-  bool get isEditor => accessLevel == 'editor' || isOwner || (customPermissions?['can_close_batch'] ?? false);
+  bool get isEditor => accessLevel == 'editor' || isOwner;
   bool get isViewer => accessLevel == 'viewer';
-  bool get isAccountant => accessLevel == 'accountant' || sideRole == 'accountant';
+  bool get isAccountant => (accessLevel == 'accountant' || sideRole == 'accountant') && !isOwner;
 
   bool get canEditPurchaserSide {
     if (isOwner) return true;
@@ -87,22 +87,27 @@ class CapabilityService {
         if (customPermissions?.containsKey('can_purchase') == true) {
           return customPermissions!['can_purchase']!;
         }
-        return isEditor || (canEditPurchaserSide && !isAccountant);
+        if (isAccountant && !manageOtherSide) return false;
+        return canEditPurchaserSide;
 
       case Capability.createProduct:
         if (customPermissions?.containsKey('can_purchase') == true) {
           return customPermissions!['can_purchase']!;
         }
+        if (isAccountant && !manageOtherSide) return false;
         return isEditor || canEditPurchaserSide;
 
       case Capability.editBatch:
+        if (customPermissions?.containsKey('can_close_batch') == true) {
+          return customPermissions!['can_close_batch']!;
+        }
         return isEditor || canEditPurchaserSide || canEditSellerSide;
 
       case Capability.closeBatch:
         if (customPermissions?.containsKey('can_close_batch') == true) {
           return customPermissions!['can_close_batch']!;
         }
-        return isOwner || canEditSellerSide || isEditor;
+        return isOwner || (isEditor && canEditSellerSide);
 
       case Capability.voidExpense:
       case Capability.archiveCustomer:
@@ -116,50 +121,37 @@ class CapabilityService {
         if (customPermissions?.containsKey('can_transport') == true) {
           return customPermissions!['can_transport']!;
         }
-        return isEditor || (canEditPurchaserSide && !isAccountant);
+        if (isAccountant && !manageOtherSide) return false;
+        return canEditPurchaserSide;
 
       case Capability.addPurchaserExpense:
-        if (customPermissions?.containsKey('can_expense') == true) {
-          return customPermissions!['can_expense']!;
-        }
-        return canEditPurchaserSide || isAccountant;
-
-      case Capability.recordSale:
-      case Capability.createCustomer:
-        if (customPermissions?.containsKey('can_sell') == true) {
-          return customPermissions!['can_sell']!;
-        }
-        return isEditor || (canEditSellerSide && !isAccountant);
-
-      case Capability.recordPayment:
-        if (customPermissions?.containsKey('can_sell') == true) {
-          return customPermissions!['can_sell']!;
-        }
-        return canEditSellerSide || isAccountant || isEditor;
-
       case Capability.addSellerExpense:
-        if (customPermissions?.containsKey('can_expense') == true) {
-          return customPermissions!['can_expense']!;
-        }
-        return canEditSellerSide || isAccountant;
-
       case Capability.addExpense:
         if (customPermissions?.containsKey('can_expense') == true) {
           return customPermissions!['can_expense']!;
         }
-        return canEditPurchaserSide || canEditSellerSide || isAccountant || isEditor;
+        return isAccountant || canEditPurchaserSide || canEditSellerSide || isEditor;
+
+      case Capability.recordSale:
+      case Capability.createCustomer:
+      case Capability.recordPayment:
+        if (customPermissions?.containsKey('can_sell') == true) {
+          return customPermissions!['can_sell']!;
+        }
+        if (isAccountant && !manageOtherSide) return false;
+        return canEditSellerSide;
 
       case Capability.createSettlement:
-        if (customPermissions?.containsKey('can_settle') == true) {
-          return customPermissions!['can_settle']!;
+        if (customPermissions?.containsKey('can_expense') == true) {
+          return customPermissions!['can_expense']!;
         }
-        return isOwner || isEditor || isAccountant || canEditSellerSide;
+        return isAccountant || canEditSellerSide || isEditor;
 
       case Capability.manageSupplier:
         if (customPermissions?.containsKey('can_purchase') == true) {
           return customPermissions!['can_purchase']!;
         }
-        return isOwner || isEditor || isAccountant || canEditPurchaserSide;
+        return isAccountant || canEditPurchaserSide || isEditor;
     }
   }
 }

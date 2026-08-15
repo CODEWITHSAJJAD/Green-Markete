@@ -22,11 +22,12 @@ class PartnerProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  Future<void> load(String businessId) async {
-    _isLoading = true;
-    await Future<void>.value();
+  Future<void> load(String businessId, {bool showLoading = true}) async {
+    if (showLoading && _partners.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
     _error = null;
-    notifyListeners();
     try {
       _partners = await _repo.list(businessId);
     } catch (e) {
@@ -44,15 +45,11 @@ class PartnerProvider extends ChangeNotifier {
       return;
     }
     _debouncer(() async {
-      _isLoading = true;
-      await Future<void>.value();
-      notifyListeners();
       try {
         _searchResults = await _repo.search(query, businessId);
       } catch (e) {
         _error = e.toString().replaceAll('Exception: ', '');
       } finally {
-        _isLoading = false;
         notifyListeners();
       }
     });
@@ -61,6 +58,8 @@ class PartnerProvider extends ChangeNotifier {
   Future<PartnerModel?> create(Map<String, dynamic> data) async {
     try {
       final partner = await _repo.create(data);
+      _partners = [..._partners, partner];
+      notifyListeners();
       return partner;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
@@ -72,7 +71,25 @@ class PartnerProvider extends ChangeNotifier {
   Future<bool> updateAccess(String partnerId, String accessLevel, String businessId) async {
     try {
       await _repo.updateAccess(partnerId, accessLevel, businessId);
-      await load(businessId);
+      _partners = _partners.map((p) {
+        if (p.id == partnerId) {
+          return PartnerModel(
+            id: p.id,
+            fullName: p.fullName,
+            phone: p.phone,
+            city: p.city,
+            role: p.role,
+            accessLevel: accessLevel,
+            isClaimed: p.isClaimed,
+            manageOtherSide: p.manageOtherSide,
+            businessId: p.businessId,
+            userId: p.userId,
+            permissions: p.permissions,
+          );
+        }
+        return p;
+      }).toList();
+      notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
@@ -84,7 +101,25 @@ class PartnerProvider extends ChangeNotifier {
   Future<bool> updateManageOtherSide(String partnerId, bool value, String businessId) async {
     try {
       await _repo.updateManageOtherSide(partnerId, value, businessId);
-      await load(businessId);
+      _partners = _partners.map((p) {
+        if (p.id == partnerId) {
+          return PartnerModel(
+            id: p.id,
+            fullName: p.fullName,
+            phone: p.phone,
+            city: p.city,
+            role: p.role,
+            accessLevel: p.accessLevel,
+            isClaimed: p.isClaimed,
+            manageOtherSide: value,
+            businessId: p.businessId,
+            userId: p.userId,
+            permissions: p.permissions,
+          );
+        }
+        return p;
+      }).toList();
+      notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
@@ -96,7 +131,25 @@ class PartnerProvider extends ChangeNotifier {
   Future<bool> updateRole(String partnerId, String role, String businessId) async {
     try {
       await _repo.updateRole(partnerId, role, businessId);
-      await load(businessId);
+      _partners = _partners.map((p) {
+        if (p.id == partnerId) {
+          return PartnerModel(
+            id: p.id,
+            fullName: p.fullName,
+            phone: p.phone,
+            city: p.city,
+            role: role,
+            accessLevel: p.accessLevel,
+            isClaimed: p.isClaimed,
+            manageOtherSide: p.manageOtherSide,
+            businessId: p.businessId,
+            userId: p.userId,
+            permissions: p.permissions,
+          );
+        }
+        return p;
+      }).toList();
+      notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
@@ -113,7 +166,31 @@ class PartnerProvider extends ChangeNotifier {
   ) async {
     try {
       await _repo.updatePermission(partnerId, permissionKey, value, businessId);
-      await load(businessId);
+      _partners = _partners.map((p) {
+        if (p.id == partnerId) {
+          final updatedPerms = Map<String, bool>.from(p.permissions ?? {});
+          updatedPerms[permissionKey] = value;
+          return PartnerModel(
+            id: p.id,
+            fullName: p.fullName,
+            phone: p.phone,
+            city: p.city,
+            role: p.role,
+            accessLevel: permissionKey == 'can_close_batch'
+                ? (value ? 'editor' : 'viewer')
+                : p.accessLevel,
+            isClaimed: p.isClaimed,
+            manageOtherSide: (permissionKey == 'can_purchase' || permissionKey == 'can_sell')
+                ? value
+                : p.manageOtherSide,
+            businessId: p.businessId,
+            userId: p.userId,
+            permissions: updatedPerms,
+          );
+        }
+        return p;
+      }).toList();
+      notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
