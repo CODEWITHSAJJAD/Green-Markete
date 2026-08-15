@@ -106,7 +106,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   List<Widget> get _pages => [
-        DashboardPage(onMenu: _openDrawer),
+        DashboardPage(onMenu: _openDrawer, onSelectTab: _selectTab),
         BatchListPage(onMenu: _openDrawer),
         SalesListPage(onMenu: _openDrawer),
         CustomerListPage(onMenu: _openDrawer),

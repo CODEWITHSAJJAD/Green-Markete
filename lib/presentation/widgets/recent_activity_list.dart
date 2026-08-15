@@ -4,6 +4,7 @@ import 'package:ming_cute_icons/ming_cute_icons.dart';
 import '../../core/config/theme.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/models/batch_model.dart';
+import '../pages/batches/batch_detail_page.dart';
 import 'green_card.dart';
 import 'status_pill.dart';
 
@@ -35,6 +36,11 @@ class RecentActivityList extends StatelessWidget {
         return GreenCard(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (_) => BatchDetailPage(batchId: batch.id),
+            ),
+          ),
           child: Row(
             children: [
               Container(

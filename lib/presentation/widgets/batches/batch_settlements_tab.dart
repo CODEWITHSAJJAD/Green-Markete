@@ -31,6 +31,7 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
     final detailProvider = context.watch<BatchDetailProvider>();
     final partnerProvider = context.watch<PartnerProvider>();
     final txProvider = context.watch<TransactionProvider>();
+    final expenseProvider = context.watch<ExpenseProvider>();
     final pl = plProvider.pl;
 
     final batch = widget.batch;
@@ -38,39 +39,43 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
     final sellers = batchPartners
         .where((p) => p['role'] == 'seller' || p['role'] == 'both')
         .toList();
-    if (sellers.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'No selling partner on this batch. Add a seller in the wizard to track settlements.',
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-    final sellerId = sellers.first['partner_id'] as String;
-    final sellerName =
-        partnerProvider.partners
-            .where((p) => p.id == sellerId)
-            .map((p) => p.fullName)
-            .firstOrNull ??
-        'Seller';
 
-    if (_ledgerSellerId != sellerId) {
+    String? sellerId;
+    String sellerName = 'Seller';
+
+    if (sellers.isNotEmpty) {
+      sellerId = sellers.first['partner_id'] as String?;
+      if (sellerId != null) {
+        sellerName = partnerProvider.partners
+                .where((p) => p.id == sellerId)
+                .map((p) => p.fullName)
+                .firstOrNull ??
+            (sellers.first['name'] as String?) ??
+            'Seller';
+      }
+    } else {
+      final fallbackSeller = partnerProvider.partners
+          .where((p) => p.role == 'seller' || p.role == 'both' || p.role == 'owner')
+          .firstOrNull;
+      if (fallbackSeller != null) {
+        sellerId = fallbackSeller.id;
+        sellerName = fallbackSeller.fullName;
+      }
+    }
+
+    if (sellerId != null && _ledgerSellerId != sellerId) {
       _ledgerSellerId = sellerId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.read<TransactionProvider>().loadLedger(sellerId);
+        if (mounted) context.read<TransactionProvider>().loadLedger(sellerId!);
       });
     }
 
     final ledgerRows = txProvider.ledger?['transactions'];
     final ledgerTxs = ledgerRows is List
         ? ledgerRows
-              .whereType<Map<String, dynamic>>()
-              .map(TransactionModel.fromJson)
-              .toList()
+            .whereType<Map<String, dynamic>>()
+            .map(TransactionModel.fromJson)
+            .toList()
         : <TransactionModel>[];
     final settledForBatch = ledgerTxs
         .where(
@@ -78,15 +83,35 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
               (t.notes?.contains(batch.batchCode) ?? false) ||
               (t.reference?.contains(batch.batchCode) ?? false),
         )
-        .where((t) => t.toPartnerId == sellerId)
+        .where((t) => sellerId == null || t.toPartnerId == sellerId)
         .fold<double>(0, (sum, t) => sum + t.amount);
 
-    final purchaseCost = pl?.costBreakdown.purchaseCost ?? 0;
-    final purchaserDaily = pl?.costBreakdown.purchaserDailyCharges ?? 0;
-    final purchaserExpenses = pl?.costBreakdown.purchaserExpenses ?? 0;
-    final packingCost = pl?.costBreakdown.packingCost ?? 0;
-    final transport = pl?.costBreakdown.transportCost ?? 0;
-    final transportInBill = batch.transportPaidBy == 'purchaser' ? transport : 0;
+    final purchaseCost = pl?.costBreakdown.purchaseCost ??
+        batch.totalPurchaseCost;
+    final purchaserDaily = pl?.costBreakdown.purchaserDailyCharges ??
+        batchPartners.where((p) => p['role'] == 'purchaser').fold<double>(
+              0,
+              (s, p) =>
+                  s +
+                  ((p['daily_charge_rate'] as num?)?.toDouble() ?? 0) *
+                      ((p['days_involved'] as num?)?.toInt() ?? 1),
+            );
+    final purchaserExpenses = pl?.costBreakdown.purchaserExpenses ??
+        expenseProvider.expenses
+            .where((e) => e.expenseSide == 'purchaser')
+            .fold<double>(0, (s, e) => s + e.amount);
+    final packingCost = pl?.costBreakdown.packingCost ??
+        detailProvider.packingRecords.fold<double>(
+          0,
+          (s, p) => s + p.totalPackingCost,
+        );
+    final transport = pl?.costBreakdown.transportCost ??
+        detailProvider.vehicleLoads.fold<double>(
+          0,
+          (s, l) => s + l.totalCost,
+        );
+    final transportInBill =
+        batch.transportPaidBy == 'purchaser' ? transport : 0.0;
     final owed =
         purchaseCost +
         purchaserDaily +
@@ -119,8 +144,33 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Seller: $sellerName', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 12),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    child: Icon(
+                      MingCuteIcons.mgc_user_3_line,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Seller / Receiving Partner', style: theme.textTheme.bodySmall),
+                        Text(
+                          sellerName,
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               buildBatchCostLine(theme, 'Purchase cost', purchaseCost),
               buildBatchCostLine(theme, 'Purchaser expenses', purchaserExpenses),
               buildBatchCostLine(theme, 'Purchaser daily charges', purchaserDaily),
@@ -132,6 +182,7 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
               buildBatchCostLine(theme, 'Settled for this batch', settledForBatch),
               buildBatchCostLine(theme, 'Remaining', remaining, bold: true),
               if (remaining > 0 &&
+                  sellerId != null &&
                   context.read<AuthProvider>().capabilities.can(
                         Capability.createSettlement,
                       )) ...[
@@ -142,7 +193,7 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
                     onPressed: () => showSettleSellerDialog(
                       context,
                       batch: batch,
-                      sellerId: sellerId,
+                      sellerId: sellerId!,
                       sellerName: sellerName,
                       remaining: remaining,
                       settledForBatch: settledForBatch,

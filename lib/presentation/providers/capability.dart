@@ -68,9 +68,10 @@ class CapabilityService {
   bool can(Capability c) {
     switch (c) {
       case Capability.createBatch:
-      case Capability.editBatch:
       case Capability.createProduct:
-        return isEditor && !isAccountant;
+        return (isEditor || canEditPurchaserSide) && !isAccountant;
+      case Capability.editBatch:
+        return (isEditor || canEditPurchaserSide || canEditSellerSide) && !isAccountant;
       case Capability.closeBatch:
       case Capability.voidExpense:
       case Capability.archiveCustomer:
@@ -94,9 +95,9 @@ class CapabilityService {
       case Capability.addExpense:
         return canEditPurchaserSide || canEditSellerSide || isAccountant;
       case Capability.createCustomer:
-        return isEditor && !isAccountant;
+        return (isEditor || canEditSellerSide) && !isAccountant;
       case Capability.createSettlement:
-        return canEditSellerSide && isEditor && !isAccountant;
+        return isOwner || isEditor || isAccountant || canEditSellerSide;
       case Capability.manageSupplier:
         return isOwner || isEditor || isAccountant;
     }

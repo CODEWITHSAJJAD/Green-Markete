@@ -134,7 +134,6 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     final batchProvider = context.watch<BatchDetailProvider>();
     final batch = batchProvider.batch;
     final userRole = context.watch<AuthProvider>().user?.role ?? '';
-    final canEdit = userRole.canEditBatch;
     final canDelete = userRole.canCloseBatch;
 
     return Scaffold(
@@ -180,7 +179,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
         ),
       ),
       body: _buildBody(context, batchProvider),
-      floatingActionButton: (canEdit && batch?.status != 'closed')
+      floatingActionButton: batch?.status != 'closed'
           ? _buildFab(context)
           : null,
     );

@@ -12,8 +12,13 @@ import '../dashboard_card.dart';
 
 class DashboardKpiGrid extends StatelessWidget {
   final DashboardProvider provider;
+  final ValueChanged<int>? onSelectTab;
 
-  const DashboardKpiGrid({super.key, required this.provider});
+  const DashboardKpiGrid({
+    super.key,
+    required this.provider,
+    this.onSelectTab,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +41,7 @@ class DashboardKpiGrid extends StatelessWidget {
                 value: CurrencyFormatter.format(provider.outstandingCredit),
                 icon: MingCuteIcons.mgc_wallet_3_line,
                 color: AppColors.secondary,
-                onTap: () => Navigator.of(context).push(
+                onTap: () => Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => const ReportsPage()),
                 ),
               ),
@@ -48,9 +53,15 @@ class DashboardKpiGrid extends StatelessWidget {
                 value: '${provider.customersCount}',
                 icon: MingCuteIcons.mgc_user_3_line,
                 color: const Color(0xFF8B5CF6),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CustomerListPage()),
-                ),
+                onTap: () {
+                  if (onSelectTab != null) {
+                    onSelectTab!(3);
+                  } else {
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(builder: (_) => const CustomerListPage()),
+                    );
+                  }
+                },
               ),
             ),
             SizedBox(
@@ -60,9 +71,15 @@ class DashboardKpiGrid extends StatelessWidget {
                 value: '${provider.batchesCount}',
                 icon: MingCuteIcons.mgc_archive_line,
                 color: const Color(0xFF0EA5E9),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BatchListPage()),
-                ),
+                onTap: () {
+                  if (onSelectTab != null) {
+                    onSelectTab!(1);
+                  } else {
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(builder: (_) => const BatchListPage()),
+                    );
+                  }
+                },
               ),
             ),
             SizedBox(
@@ -72,9 +89,15 @@ class DashboardKpiGrid extends StatelessWidget {
                 value: '${provider.productsCount}',
                 icon: MingCuteIcons.mgc_package_line,
                 color: const Color(0xFF10B981),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BatchListPage()),
-                ),
+                onTap: () {
+                  if (onSelectTab != null) {
+                    onSelectTab!(1);
+                  } else {
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(builder: (_) => const BatchListPage()),
+                    );
+                  }
+                },
               ),
             ),
           ],

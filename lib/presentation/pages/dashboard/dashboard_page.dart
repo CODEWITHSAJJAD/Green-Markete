@@ -17,9 +17,10 @@ import '../../widgets/recent_activity_list.dart';
 import '../../widgets/section_header.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key, this.onMenu});
+  const DashboardPage({super.key, this.onMenu, this.onSelectTab});
 
   final VoidCallback? onMenu;
+  final ValueChanged<int>? onSelectTab;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -30,10 +31,136 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final businessId = context.read<AuthProvider>().businessId ?? '';
+      final auth = context.read<AuthProvider>();
+      final businessId = auth.businessId ?? '';
       context.read<DashboardProvider>().load(businessId);
       context.read<ReportProvider>().loadOverdue(businessId);
+      auth.loadBusinesses();
     });
+  }
+
+  void _showBusinessSwitcher(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    if (auth.businesses.isEmpty) {
+      auth.loadBusinesses();
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final currentAuth = ctx.watch<AuthProvider>();
+        final businesses = currentAuth.businesses;
+        final theme = Theme.of(ctx);
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Switch Business',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (businesses.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No businesses found',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: businesses.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final b = businesses[i];
+                        final isCurrent = b.id == currentAuth.businessId;
+
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          leading: CircleAvatar(
+                            backgroundColor: isCurrent
+                                ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                                : theme.colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              MingCuteIcons.mgc_store_2_line,
+                              size: 20,
+                              color: isCurrent
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          title: Text(
+                            b.name,
+                            style: TextStyle(
+                              fontWeight:
+                                  isCurrent ? FontWeight.bold : FontWeight.w500,
+                              color: isCurrent
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          subtitle: Text(
+                            b.businessType.replaceAll('_', ' '),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          trailing: isCurrent
+                              ? Icon(
+                                  MingCuteIcons.mgc_check_circle_fill,
+                                  color: theme.colorScheme.primary,
+                                  size: 22,
+                                )
+                              : null,
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            if (!isCurrent) {
+                              await currentAuth.switchBusiness(b.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Switched to ${b.name}')),
+                                );
+                              }
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -59,7 +186,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 20),
                     DashboardHeroCard(provider: provider),
                     const SizedBox(height: 12),
-                    DashboardKpiGrid(provider: provider),
+                    DashboardKpiGrid(
+                      provider: provider,
+                      onSelectTab: widget.onSelectTab,
+                    ),
                     const SizedBox(height: 20),
                     const DashboardQuickActions(),
                     const SizedBox(height: 24),
@@ -68,11 +198,17 @@ class _DashboardPageState extends State<DashboardPage> {
                     SectionHeader(
                       title: 'Recent batches',
                       trailing: 'View all',
-                      onTapTrailing: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const BatchListPage(),
-                        ),
-                      ),
+                      onTapTrailing: () {
+                        if (widget.onSelectTab != null) {
+                          widget.onSelectTab!(1);
+                        } else {
+                          Navigator.of(context, rootNavigator: true).push(
+                            MaterialPageRoute(
+                              builder: (_) => const BatchListPage(),
+                            ),
+                          );
+                        }
+                      },
                     ),
                     RecentActivityList(activities: provider.recentBatches),
                   ],
@@ -86,30 +222,81 @@ class _DashboardPageState extends State<DashboardPage> {
     final auth = context.watch<AuthProvider>();
     final l10n = AppLocalizations.of(context)!;
     final firstName = (auth.user?.fullName ?? '').trim().split(' ').first;
+    final businessName = auth.businesses
+            .where((b) => b.id == auth.businessId)
+            .map((b) => b.name)
+            .firstOrNull ??
+        'My Business';
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _MenuButton(onPressed: widget.onMenu),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                firstName.isEmpty
-                    ? l10n.dashboardGreetingFallback
-                    : l10n.dashboardGreeting(firstName),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.headlineMedium,
+        Row(
+          children: [
+            _MenuButton(onPressed: widget.onMenu),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    firstName.isEmpty
+                        ? l10n.dashboardGreetingFallback
+                        : l10n.dashboardGreeting(firstName),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                DateFormat('EEEE, d MMMM').format(DateTime.now()),
-                style: theme.textTheme.bodySmall,
+            ),
+            InkWell(
+              onTap: () => _showBusinessSwitcher(context),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      MingCuteIcons.mgc_store_2_line,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 100),
+                      child: Text(
+                        businessName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      MingCuteIcons.mgc_down_line,
+                      size: 14,
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
