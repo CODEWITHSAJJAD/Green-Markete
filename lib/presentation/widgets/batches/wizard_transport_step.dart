@@ -107,7 +107,7 @@ class _WizardTransportStepState extends State<WizardTransportStep> {
               onPressed: () {
                 final next = [
                   ...loads,
-                  {
+                  <String, dynamic>{
                     'vehicle_id': null,
                     'packing_index': null,
                     'unit_count': '0',
@@ -176,13 +176,17 @@ class _WizardTransportStepState extends State<WizardTransportStep> {
           ),
           if (packing.isNotEmpty) ...[
             const SizedBox(height: 12),
-            AppDropdown<int>(
+            AppDropdown<int?>(
               value: load['packing_index'] as int?,
               labelText: 'Packing record (optional)',
               items: [
+                const DropdownItem<int?>(
+                  value: null,
+                  child: Text('None (general load)'),
+                ),
                 for (var i = 0; i < packing.length; i++)
                   if (_packingRemaining(i) > 0 || load['packing_index'] == i)
-                    DropdownItem(
+                    DropdownItem<int?>(
                       value: i,
                       child: Text(
                         '${_packingLabel(i)}'

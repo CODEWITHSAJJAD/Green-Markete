@@ -249,7 +249,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     setState(
       () => _expensesByGroup[g] = [
         ..._expensesFor(g),
-        {
+        <String, dynamic>{
           'expense_side': _transportPaidBy == 'purchaser'
               ? 'purchaser'
               : 'transport',
