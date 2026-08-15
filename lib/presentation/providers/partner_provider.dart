@@ -23,6 +23,7 @@ class PartnerProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> load(String businessId, {bool showLoading = true}) async {
+    await Future<void>.value();
     if (showLoading && _partners.isEmpty) {
       _isLoading = true;
       notifyListeners();

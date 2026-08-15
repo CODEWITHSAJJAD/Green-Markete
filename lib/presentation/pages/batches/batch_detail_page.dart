@@ -46,19 +46,22 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     super.initState();
     _tabCtrl = TabController(length: 8, vsync: this);
     _tabCtrl.addListener(() => setState(() {}));
-    final detail = context.read<BatchDetailProvider>();
-    final pl = context.read<BatchPLProvider>();
-    final expenses = context.read<ExpenseProvider>();
-    final sales = context.read<SaleProvider>();
-    detail.load(batchId);
-    pl.load(batchId);
-    expenses.load(batchId);
-    sales.loadByBatch(batchId);
-    _subscribeRealtime(detail, pl, expenses, sales);
-    final businessId = context.read<AuthProvider>().businessId;
-    if (businessId != null && businessId.isNotEmpty) {
-      context.read<PartnerProvider>().load(businessId);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final detail = context.read<BatchDetailProvider>();
+      final pl = context.read<BatchPLProvider>();
+      final expenses = context.read<ExpenseProvider>();
+      final sales = context.read<SaleProvider>();
+      detail.load(batchId);
+      pl.load(batchId);
+      expenses.load(batchId);
+      sales.loadByBatch(batchId);
+      _subscribeRealtime(detail, pl, expenses, sales);
+      final businessId = context.read<AuthProvider>().businessId;
+      if (businessId != null && businessId.isNotEmpty) {
+        context.read<PartnerProvider>().load(businessId);
+      }
+    });
   }
 
   void _subscribeRealtime(
