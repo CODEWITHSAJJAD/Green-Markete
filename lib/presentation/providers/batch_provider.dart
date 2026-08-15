@@ -242,9 +242,12 @@ class BatchDetailProvider extends ChangeNotifier {
   Future<bool> updateStatus(String status, {String? id}) async {
     final batchId = id ?? _batch?.id;
     if (batchId == null) return false;
+    if (_batch != null && _batch!.id == batchId) {
+      _batch = _batch!.copyWith(status: status);
+      notifyListeners();
+    }
     try {
       await _repo.updateStatus(batchId, status);
-      if (_batch?.id == batchId) await load(batchId);
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');

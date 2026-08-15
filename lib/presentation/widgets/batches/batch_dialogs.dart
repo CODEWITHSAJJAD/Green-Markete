@@ -889,25 +889,42 @@ Future<void> advanceBatchStatus(
   final nextStatus = batchStatusFlow[index + 1];
   final auth = context.read<AuthProvider>();
 
-  if (nextStatus == 'closed' && !auth.canEditSellerSide && !auth.capabilities.isOwner) {
+  // Purchaser can advance up to 'delivered'. 'selling' and 'closed' are managed by Seller or Owner.
+  if ((nextStatus == 'selling' || nextStatus == 'closed') &&
+      !auth.canEditSellerSide &&
+      !auth.capabilities.isOwner) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Only the seller or business owner can close a batch.'),
+      SnackBar(
+        content: Text(
+          nextStatus == 'selling'
+              ? 'Batch is delivered. Only the seller or business owner can start selling.'
+              : 'Only the seller or business owner can close a batch.',
+        ),
       ),
     );
     return;
   }
+
+  if (nextStatus == 'closed') {
+    await confirmCloseBatch(context, batchId);
+    return;
+  }
+
   try {
-    await context.read<BatchDetailProvider>().updateStatus(nextStatus);
+    final success = await context.read<BatchDetailProvider>().updateStatus(nextStatus);
     if (!context.mounted) return;
-    context.read<BatchPLProvider>().load(batchId);
-    final businessId = context.read<AuthProvider>().businessId;
-    if (businessId != null && businessId.isNotEmpty) {
-      DataRefreshNotifier.instance.refresh(businessId);
+    if (success) {
+      context.read<BatchPLProvider>().load(batchId);
+      final businessId = context.read<AuthProvider>().businessId;
+      if (businessId != null && businessId.isNotEmpty) {
+        DataRefreshNotifier.instance.refresh(businessId);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Batch status updated to ${nextStatus.replaceAll('_', ' ')}'),
+        ),
+      );
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Batch moved to $nextStatus')));
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

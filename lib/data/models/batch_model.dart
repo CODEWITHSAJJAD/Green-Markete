@@ -84,6 +84,60 @@ class BatchModel {
       margin: (json['margin'] as num?)?.toDouble(),
     );
   }
+
+  BatchModel copyWith({
+    String? id,
+    String? businessId,
+    String? productId,
+    String? productName,
+    String? batchCode,
+    String? sourceMarketId,
+    String? destinationMarketId,
+    String? purchaseDate,
+    double? totalQuantity,
+    String? quantityUnit,
+    double? purchasePricePerUnit,
+    double? totalPurchaseCost,
+    String? status,
+    String? transportPaidBy,
+    String? notes,
+    String? supplierName,
+    String? purchasePaymentMode,
+    double? purchaseAmountPaid,
+    String? createdAt,
+    String? startDate,
+    String? endDate,
+    double? totalAmount,
+    double? expenseAmount,
+    double? margin,
+  }) {
+    return BatchModel(
+      id: id ?? this.id,
+      businessId: businessId ?? this.businessId,
+      productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
+      batchCode: batchCode ?? this.batchCode,
+      sourceMarketId: sourceMarketId ?? this.sourceMarketId,
+      destinationMarketId: destinationMarketId ?? this.destinationMarketId,
+      purchaseDate: purchaseDate ?? this.purchaseDate,
+      totalQuantity: totalQuantity ?? this.totalQuantity,
+      quantityUnit: quantityUnit ?? this.quantityUnit,
+      purchasePricePerUnit: purchasePricePerUnit ?? this.purchasePricePerUnit,
+      totalPurchaseCost: totalPurchaseCost ?? this.totalPurchaseCost,
+      status: status ?? this.status,
+      transportPaidBy: transportPaidBy ?? this.transportPaidBy,
+      notes: notes ?? this.notes,
+      supplierName: supplierName ?? this.supplierName,
+      purchasePaymentMode: purchasePaymentMode ?? this.purchasePaymentMode,
+      purchaseAmountPaid: purchaseAmountPaid ?? this.purchaseAmountPaid,
+      createdAt: createdAt ?? this.createdAt,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      totalAmount: totalAmount ?? this.totalAmount,
+      expenseAmount: expenseAmount ?? this.expenseAmount,
+      margin: margin ?? this.margin,
+    );
+  }
 }
 
 class BatchCreateRequest {

@@ -153,26 +153,74 @@ class BatchOverviewTab extends StatelessWidget {
                   ],
                 ),
               ],
-              if (batch.status != 'closed' &&
-                  context.read<AuthProvider>().capabilities.can(
-                        Capability.editBatch,
-                      )) ...[
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.tonalIcon(
-                    onPressed: () =>
-                        advanceBatchStatus(context, batch.id, batch.status),
-                    icon: const Icon(MingCuteIcons.mgc_route_line),
-                    label: const Text('Advance Status'),
+              if (batch.status != 'closed') ...[
+                if (batch.status == 'delivered' &&
+                    !context.read<AuthProvider>().canEditSellerSide &&
+                    !context.read<AuthProvider>().capabilities.isOwner) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          MingCuteIcons.mgc_truck_line,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Batch delivered. Awaiting seller to start selling.',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ] else if (context.read<AuthProvider>().capabilities.can(
+                      Capability.editBatch,
+                    )) ...[
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () =>
+                          advanceBatchStatus(context, batch.id, batch.status),
+                      icon: const Icon(MingCuteIcons.mgc_route_line),
+                      label: Text(_nextStatusButtonLabel(batch.status)),
+                    ),
+                  ),
+                ],
               ],
             ],
           ),
         ),
       ],
     );
+  }
+
+  String _nextStatusButtonLabel(String currentStatus) {
+    final idx = batchStatusFlow.indexOf(currentStatus);
+    if (idx < 0 || idx >= batchStatusFlow.length - 1) return 'Advance Status';
+    final next = batchStatusFlow[idx + 1];
+    return switch (next) {
+      'packed' => 'Mark as Packed',
+      'in_transit' => 'Dispatch (In Transit)',
+      'delivered' => 'Mark as Delivered',
+      'selling' => 'Start Selling',
+      'closed' => 'Close Batch',
+      _ => 'Advance to ${next.replaceAll('_', ' ')}',
+    };
   }
 
   Widget _buildQuantityProgress(BuildContext context, BatchModel batch) {
