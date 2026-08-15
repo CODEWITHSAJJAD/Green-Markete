@@ -79,6 +79,7 @@ class PartnerProvider extends ChangeNotifier {
             phone: p.phone,
             city: p.city,
             role: p.role,
+            memberType: p.memberType,
             accessLevel: accessLevel,
             isClaimed: p.isClaimed,
             manageOtherSide: p.manageOtherSide,
@@ -109,6 +110,7 @@ class PartnerProvider extends ChangeNotifier {
             phone: p.phone,
             city: p.city,
             role: p.role,
+            memberType: p.memberType,
             accessLevel: p.accessLevel,
             isClaimed: p.isClaimed,
             manageOtherSide: value,
@@ -139,6 +141,38 @@ class PartnerProvider extends ChangeNotifier {
             phone: p.phone,
             city: p.city,
             role: role,
+            memberType: p.memberType,
+            accessLevel: p.accessLevel,
+            isClaimed: p.isClaimed,
+            manageOtherSide: p.manageOtherSide,
+            businessId: p.businessId,
+            userId: p.userId,
+            permissions: p.permissions,
+          );
+        }
+        return p;
+      }).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateMemberType(String partnerId, String memberType, String businessId) async {
+    try {
+      await _repo.updateMemberType(partnerId, memberType, businessId);
+      _partners = _partners.map((p) {
+        if (p.id == partnerId) {
+          return PartnerModel(
+            id: p.id,
+            fullName: p.fullName,
+            phone: p.phone,
+            city: p.city,
+            role: p.role,
+            memberType: memberType,
             accessLevel: p.accessLevel,
             isClaimed: p.isClaimed,
             manageOtherSide: p.manageOtherSide,
@@ -176,6 +210,7 @@ class PartnerProvider extends ChangeNotifier {
             phone: p.phone,
             city: p.city,
             role: p.role,
+            memberType: p.memberType,
             accessLevel: permissionKey == 'can_close_batch'
                 ? (value ? 'editor' : 'viewer')
                 : p.accessLevel,

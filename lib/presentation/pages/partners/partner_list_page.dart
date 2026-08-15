@@ -64,13 +64,13 @@ class _PartnerListPageState extends State<PartnerListPage> {
     final allPartners = search.isEmpty ? partnerProvider.partners : partnerProvider.searchResults;
 
     final filteredPartners = allPartners.where((p) {
-      if (_filter == 'employees') return p.role != 'partner';
-      if (_filter == 'partners') return p.role == 'partner';
+      if (_filter == 'employees') return p.isEmployee;
+      if (_filter == 'partners') return p.isPartner;
       return true;
     }).toList();
 
-    final employeeCount = allPartners.where((p) => p.role != 'partner').length;
-    final partnerCount = allPartners.where((p) => p.role == 'partner').length;
+    final employeeCount = allPartners.where((p) => p.isEmployee).length;
+    final partnerCount = allPartners.where((p) => p.isPartner).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -191,7 +191,7 @@ class _PartnerListPageState extends State<PartnerListPage> {
               children: filteredPartners
                   .map(
                     (partner) {
-                      final isEmployee = partner.role != 'partner' && partner.role != 'owner';
+                      final isEmployee = partner.isEmployee;
                       return GreenCard(
                         margin: const EdgeInsets.only(bottom: AppSpacing.md),
                         padding: const EdgeInsets.all(AppSpacing.lg),

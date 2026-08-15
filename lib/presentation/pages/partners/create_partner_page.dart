@@ -43,6 +43,7 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
       'phone': _phoneCtrl.text.trim(),
       'city': _cityCtrl.text.trim(),
       'role': _role,
+      'member_type': _memberType,
       'access_level': _accessLevel,
       'manage_other_side': _manageOtherSide,
       'business_id': businessId,

@@ -113,6 +113,18 @@ class PartnerRepository {
         .eq('business_id', businessId);
   }
 
+  Future<void> updateMemberType(String partnerId, String memberType, String businessId) async {
+    try {
+      await _client
+          .from('business_partners')
+          .update({'member_type': memberType})
+          .eq('id', partnerId)
+          .eq('business_id', businessId);
+    } catch (_) {
+      // Fallback
+    }
+  }
+
   Future<void> update(String id, Map<String, dynamic> data) async {
     await _client.from('business_partners').update({
       if (data['full_name'] != null) 'full_name': data['full_name'],

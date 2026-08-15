@@ -187,6 +187,41 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                Text('Member Type', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      avatar: const Icon(MingCuteIcons.mgc_user_3_line, size: 16),
+                      label: const Text('Staff / Employee'),
+                      selected: partner.memberType == 'employee',
+                      onSelected: (_) => _updateMemberType(context, partner, businessId, 'employee'),
+                    ),
+                    ChoiceChip(
+                      avatar: const Icon(MingCuteIcons.mgc_group_line, size: 16),
+                      label: const Text('Business Partner'),
+                      selected: partner.memberType == 'partner',
+                      onSelected: (_) => _updateMemberType(context, partner, businessId, 'partner'),
+                    ),
+                  ],
+                ),
+                if (partner.role != 'owner') ...[
+                  const Divider(height: 28),
+                  Text('Assigned Role', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _roleChip(context, partner, businessId, 'purchaser', 'Purchaser'),
+                      _roleChip(context, partner, businessId, 'seller', 'Seller'),
+                      _roleChip(context, partner, businessId, 'both', 'Both (Purchaser & Seller)'),
+                      _roleChip(context, partner, businessId, 'accountant', 'Accountant'),
+                    ],
+                  ),
+                ],
+                const Divider(height: 28),
                 Text('Access Level', style: theme.textTheme.titleSmall),
                 const SizedBox(height: 8),
                 Wrap(
@@ -205,20 +240,6 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                   ],
                 ),
                 if (partner.role != 'owner') ...[
-                  const Divider(height: 28),
-                  Text('Role', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _roleChip(context, partner, businessId, 'purchaser', 'Purchaser'),
-                      _roleChip(context, partner, businessId, 'seller', 'Seller'),
-                      _roleChip(context, partner, businessId, 'both', 'Both'),
-                      _roleChip(context, partner, businessId, 'accountant', 'Accountant'),
-                      _roleChip(context, partner, businessId, 'partner', 'Partner'),
-                    ],
-                  ),
                   const Divider(height: 28),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -508,7 +529,32 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     final ok = await context.read<PartnerProvider>().updateRole(partner.id, role, businessId);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ok ? 'Role updated to $role' : 'Role update failed')),
+        SnackBar(
+          content: Text(ok ? 'Role updated to $role' : 'Role update failed'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  Future<void> _updateMemberType(
+    BuildContext context,
+    PartnerModel partner,
+    String businessId,
+    String memberType,
+  ) async {
+    if (partner.memberType == memberType) return;
+    final ok = await context.read<PartnerProvider>().updateMemberType(partner.id, memberType, businessId);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Member type set to ${memberType == 'employee' ? 'Staff / Employee' : 'Business Partner'}'
+                : 'Failed to update member type',
+          ),
+          duration: const Duration(seconds: 1),
+        ),
       );
     }
   }
