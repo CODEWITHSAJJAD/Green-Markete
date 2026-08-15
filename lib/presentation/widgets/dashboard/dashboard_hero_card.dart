@@ -129,47 +129,62 @@ class DashboardHeroCard extends StatelessWidget {
                       color: isProfit ? const Color(0xFF4ADE80) : const Color(0xFFF87171),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      isProfit ? 'Lifetime Net Profit:' : 'Lifetime Net Loss:',
-                      style: TextStyle(
-                        color: isProfit
-                            ? const Color(0xFF86EFAC)
-                            : const Color(0xFFFCA5A5),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      CurrencyFormatter.format(provider.totalProfitLoss.abs()),
-                      style: TextStyle(
-                        color: isProfit
-                            ? const Color(0xFF4ADE80)
-                            : const Color(0xFFF87171),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    if (marginPct != 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
+                    Expanded(
+                      child: Text(
+                        isProfit ? 'Lifetime Profit:' : 'Lifetime Loss:',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
                           color: isProfit
-                              ? const Color(0xFF4ADE80).withValues(alpha: 0.2)
-                              : const Color(0xFFF87171).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${isProfit ? '+' : ''}${marginPct.toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            color: isProfit ? const Color(0xFF4ADE80) : const Color(0xFFF87171),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
+                              ? const Color(0xFF86EFAC)
+                              : const Color(0xFFFCA5A5),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                CurrencyFormatter.format(provider.totalProfitLoss.abs()),
+                                style: TextStyle(
+                                  color: isProfit
+                                      ? const Color(0xFF4ADE80)
+                                      : const Color(0xFFF87171),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (marginPct != 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isProfit
+                                    ? const Color(0xFF4ADE80).withValues(alpha: 0.2)
+                                    : const Color(0xFFF87171).withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${isProfit ? '+' : ''}${marginPct.toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  color: isProfit ? const Color(0xFF4ADE80) : const Color(0xFFF87171),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

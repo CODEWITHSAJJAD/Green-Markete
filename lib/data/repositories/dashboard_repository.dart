@@ -32,7 +32,7 @@ class DashboardRepository {
     // 1. Fetch batches belonging to this business
     final batchesRows = await _client
         .from('product_batches')
-        .select('id, batch_code, status, total_cost, total_revenue, created_at, products(name)')
+        .select('*, products(name)')
         .eq('business_id', businessId)
         .order('created_at', ascending: false);
 
