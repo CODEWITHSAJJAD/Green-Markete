@@ -153,13 +153,13 @@ class BatchOverviewTab extends StatelessWidget {
                   ],
                 ),
               ],
-              const SizedBox(height: 18),
               if (batch.status != 'closed' &&
                   context.read<AuthProvider>().capabilities.can(
                         Capability.editBatch,
-                      ))
-                Align(
-                  alignment: Alignment.centerRight,
+                      )) ...[
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
                   child: FilledButton.tonalIcon(
                     onPressed: () =>
                         advanceBatchStatus(context, batch.id, batch.status),
@@ -167,6 +167,7 @@ class BatchOverviewTab extends StatelessWidget {
                     label: const Text('Advance Status'),
                   ),
                 ),
+              ],
             ],
           ),
         ),

@@ -136,17 +136,20 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
                         Capability.createSettlement,
                       )) ...[
                 const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => showSettleSellerDialog(
-                    context,
-                    batch: batch,
-                    sellerId: sellerId,
-                    sellerName: sellerName,
-                    remaining: remaining,
-                    settledForBatch: settledForBatch,
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => showSettleSellerDialog(
+                      context,
+                      batch: batch,
+                      sellerId: sellerId,
+                      sellerName: sellerName,
+                      remaining: remaining,
+                      settledForBatch: settledForBatch,
+                    ),
+                    icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
+                    label: const Text('Settle Seller'),
                   ),
-                  icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
-                  label: const Text('Settle Seller'),
                 ),
               ],
             ],
