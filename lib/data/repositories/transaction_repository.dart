@@ -26,15 +26,60 @@ class TransactionRepository {
   }
 
   Future<Map<String, dynamic>> getPartnerLedger(String partnerId) async {
-    final transactions = await _client
+    final List<dynamic> transactions = await _client
         .from('partner_transactions')
         .select()
         .or('from_partner_id.eq.$partnerId,to_partner_id.eq.$partnerId')
         .order('transaction_date', ascending: false);
+
+    double totalSent = 0;
+    double totalReceived = 0;
+    final entries = <Map<String, dynamic>>[];
+
+    for (final raw in transactions) {
+      if (raw is Map<String, dynamic>) {
+        final amount = (raw['amount'] as num?)?.toDouble() ?? 0.0;
+        final fromId = raw['from_partner_id'] as String?;
+        final toId = raw['to_partner_id'] as String?;
+        final isSent = fromId == partnerId;
+        final isReceived = toId == partnerId;
+
+        if (isSent) totalSent += amount;
+        if (isReceived) totalReceived += amount;
+
+        entries.add({
+          'id': raw['id'],
+          'description': raw['notes'] ??
+              raw['reference'] ??
+              raw['transaction_type'] ??
+              'Payment',
+          'date': raw['transaction_date'] ?? raw['created_at'] ?? '',
+          'amount': amount,
+          'type': isReceived ? 'received' : 'sent',
+          'is_credit': isReceived,
+          'notes': raw['notes'],
+          'reference': raw['reference'],
+        });
+      }
+    }
+
+    final balanceMap = {
+      'total_sent': totalSent,
+      'total_received': totalReceived,
+      'net_balance': totalReceived - totalSent,
+    };
+
     return {
       'transactions': transactions,
-      'total_in': 0,
-      'total_out': 0,
+      'total_in': totalReceived,
+      'total_out': totalSent,
+      'balance': balanceMap,
+      'entries': entries,
+      'data': {
+        'balance': balanceMap,
+        'entries': entries,
+        'transactions': transactions,
+      },
     };
   }
 

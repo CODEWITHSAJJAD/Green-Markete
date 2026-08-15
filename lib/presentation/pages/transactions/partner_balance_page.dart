@@ -64,16 +64,21 @@ class _PartnerBalancePageState extends State<PartnerBalancePage> {
   }
 
   Widget _buildLedger(BuildContext context, ThemeData theme, TransactionProvider transactionProvider) {
-    final ledger = transactionProvider.ledger;
-    final data = ledger?['data'] as Map<String, dynamic>? ?? {};
-    final entries = (data['entries'] as List<dynamic>? ?? []).where((entry) {
+    final ledger = transactionProvider.ledger ?? {};
+    final data = (ledger['data'] as Map<String, dynamic>?) ?? ledger;
+    final entries = ((data['entries'] as List<dynamic>?) ??
+            (ledger['entries'] as List<dynamic>?) ??
+            [])
+        .where((entry) {
       if (_range == null) return true;
       final dateStr = entry['date']?.toString() ?? '';
       final d = DateTime.tryParse(dateStr);
       if (d == null) return true;
       return !d.isBefore(_range!.start) && !d.isAfter(_range!.end);
     }).toList();
-    final balance = data['balance'] as Map<String, dynamic>? ?? {};
+    final balance = (data['balance'] as Map<String, dynamic>?) ??
+        (ledger['balance'] as Map<String, dynamic>?) ??
+        {};
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [

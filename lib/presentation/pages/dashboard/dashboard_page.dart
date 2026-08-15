@@ -232,39 +232,19 @@ class _DashboardPageState extends State<DashboardPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _MenuButton(onPressed: widget.onMenu),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    firstName.isEmpty
-                        ? l10n.dashboardGreetingFallback
-                        : l10n.dashboardGreeting(firstName),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    DateFormat('EEEE, d MMMM').format(DateTime.now()),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
             InkWell(
               onTap: () => _showBusinessSwitcher(context),
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.12),
                   ),
                 ),
                 child: Row(
@@ -272,12 +252,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Icon(
                       MingCuteIcons.mgc_store_2_line,
-                      size: 16,
+                      size: 15,
                       color: theme.colorScheme.primary,
                     ),
                     const SizedBox(width: 6),
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 100),
+                      constraints: const BoxConstraints(maxWidth: 140),
                       child: Text(
                         businessName,
                         maxLines: 1,
@@ -290,13 +270,29 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(width: 4),
                     const Icon(
                       MingCuteIcons.mgc_down_line,
-                      size: 14,
+                      size: 13,
                     ),
                   ],
                 ),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          firstName.isEmpty
+              ? l10n.dashboardGreetingFallback
+              : l10n.dashboardGreeting(firstName),
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          DateFormat('EEEE, d MMMM').format(DateTime.now()),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

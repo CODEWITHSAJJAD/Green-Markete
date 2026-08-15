@@ -228,10 +228,14 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     TransactionProvider transactionProvider,
     PartnerModel partner,
   ) {
-    final ledger = transactionProvider.ledger;
-    final data = ledger?['data'] as Map<String, dynamic>? ?? {};
-    final balance = data['balance'] as Map<String, dynamic>? ?? {};
-    final entries = data['entries'] as List<dynamic>? ?? [];
+    final ledger = transactionProvider.ledger ?? {};
+    final data = (ledger['data'] as Map<String, dynamic>?) ?? ledger;
+    final balance = (data['balance'] as Map<String, dynamic>?) ??
+        (ledger['balance'] as Map<String, dynamic>?) ??
+        {};
+    final entries = (data['entries'] as List<dynamic>?) ??
+        (ledger['entries'] as List<dynamic>?) ??
+        [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
