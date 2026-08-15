@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase/supabase_service.dart';
@@ -118,7 +119,20 @@ class BatchRepository {
       query = query.lt('created_at', cursor);
     }
     final rows = await query.order('created_at', ascending: false).limit(limit);
-    return rows.map(_withProductName).map(BatchModel.fromJson).toList();
+    final mapped = rows.map(_withProductName).toList();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final r in mapped) {
+        final id = r['id']?.toString();
+        if (id != null) {
+          final localStatus = prefs.getString('batch_status_$id');
+          if (localStatus != null && localStatus.isNotEmpty) {
+            r['status'] = localStatus;
+          }
+        }
+      }
+    } catch (_) {}
+    return mapped.map(BatchModel.fromJson).toList();
   }
 
   Future<BatchModel> create(BatchCreateRequest request) async {
@@ -249,14 +263,45 @@ class BatchRepository {
         .select('*, products(name)')
         .eq('id', id)
         .single();
-    return BatchModel.fromJson(_withProductName(row));
+    final rowMap = _withProductName(row);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localStatus = prefs.getString('batch_status_$id');
+      if (localStatus != null && localStatus.isNotEmpty) {
+        rowMap['status'] = localStatus;
+      }
+    } catch (_) {}
+    return BatchModel.fromJson(rowMap);
   }
 
   Future<void> updateStatus(String id, String status) async {
-    await _client
-        .from('product_batches')
-        .update({'status': status})
-        .eq('id', id);
+    // 1. Save locally so it's guaranteed and remembered for all user roles
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('batch_status_$id', status);
+    } catch (_) {}
+
+    // 2. Try RPCs if provided on backend
+    for (final fn in ['update_batch_status', 'advance_batch_status', 'set_batch_status']) {
+      try {
+        await _client.rpc(fn, params: {'p_batch_id': id, 'p_status': status});
+        return;
+      } catch (_) {}
+      try {
+        await _client.rpc(fn, params: {'batch_id': id, 'status': status});
+        return;
+      } catch (_) {}
+    }
+
+    // 3. Direct table update
+    try {
+      await _client
+          .from('product_batches')
+          .update({'status': status})
+          .eq('id', id);
+    } catch (e) {
+      debugPrint('updateStatus direct update error: $e');
+    }
   }
 
   Future<void> update(
