@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/unit_converter.dart';
 import '../../data/models/market_model.dart';
+import 'app_dropdown.dart';
 import 'supplier_dropdown_field.dart';
 
 class PurchaseEntryForm extends StatefulWidget {
@@ -320,13 +321,9 @@ class _EntryCardState extends State<_EntryCard> {
               ),
               SizedBox(
                 width: 110,
-                child: DropdownButtonFormField2<int>(
-                  isExpanded: true,
-                  valueListenable: ValueNotifier(_batchGroup),
-                  decoration: const InputDecoration(
-                    labelText: 'Batch',
-                    isDense: true,
-                  ),
+                child: AppDropdown<int>(
+                  value: _batchGroup,
+                  labelText: 'Batch',
                   items: [
                     for (var g = 1; g <= 6; g++)
                       DropdownItem(value: g, child: Text('Batch $g')),
@@ -352,11 +349,10 @@ class _EntryCardState extends State<_EntryCard> {
           ),
           const SizedBox(height: 12),
           if (widget.markets != null && widget.markets!.isNotEmpty)
-            DropdownButtonFormField2<String>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(_marketId),
-              hint: const Text('Market (optional)'),
-              decoration: const InputDecoration(labelText: 'Market'),
+            AppDropdown<String>(
+              value: _marketId,
+              labelText: 'Market',
+              hintText: 'Market (optional)',
               items: [
                 for (final m in widget.markets!)
                   DropdownItem(
@@ -370,10 +366,9 @@ class _EntryCardState extends State<_EntryCard> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField2<String>(
-                  isExpanded: true,
-                  valueListenable: ValueNotifier(unitKey),
-                  decoration: const InputDecoration(labelText: 'Unit'),
+                child: AppDropdown<String>(
+                  value: unitKey,
+                  labelText: 'Unit',
                   items: [
                     for (final u in purchaseUnits)
                       DropdownItem(value: u.key, child: Text(u.label)),
@@ -447,10 +442,9 @@ class _EntryCardState extends State<_EntryCard> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField2<String>(
-                  isExpanded: true,
-                  valueListenable: ValueNotifier(_paymentMode),
-                  decoration: const InputDecoration(labelText: 'Payment mode'),
+                child: AppDropdown<String>(
+                  value: _paymentMode,
+                  labelText: 'Payment mode',
                   items: [
                     for (final m in _paymentModes)
                       DropdownItem(

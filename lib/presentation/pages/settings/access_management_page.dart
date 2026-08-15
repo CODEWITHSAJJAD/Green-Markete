@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +7,7 @@ import '../../../core/config/theme.dart';
 import '../../../data/models/partner_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
+import '../../widgets/app_dropdown.dart';
 
 class AccessManagementPage extends StatefulWidget {
   const AccessManagementPage({super.key});
@@ -18,35 +20,39 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final businessId = context.read<AuthProvider>().businessId ?? '';
+      context.read<PartnerProvider>().load(businessId);
+    });
   }
 
-  void _load() {
-    final businessId = context.read<AuthProvider>().businessId ?? '';
-    context.read<PartnerProvider>().load(businessId);
+  Future<void> _update(
+    PartnerModel partner,
+    String businessId,
+    String? accessLevel,
+  ) async {
+    if (accessLevel == null) return;
+    await context.read<PartnerProvider>().updateAccess(
+      partner.id,
+      accessLevel,
+      businessId,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final partnersProvider = context.watch<PartnerProvider>();
     final businessId = context.watch<AuthProvider>().businessId ?? '';
+    final provider = context.watch<PartnerProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Access Management')),
-      body: partnersProvider.error != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(partnersProvider.error!),
-                  const SizedBox(height: 8),
-                  TextButton(onPressed: _load, child: const Text('Retry')),
-                ],
-              ),
-            )
-          : partnersProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _buildList(partnersProvider.partners, businessId),
+      body: provider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : provider.error != null
+          ? Center(child: Text(provider.error!))
+          : provider.partners.isEmpty
+          ? const Center(child: Text('No partners found'))
+          : _buildList(provider.partners, businessId),
     );
   }
 
@@ -59,22 +65,30 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
         final access = partner.accessLevel ?? 'viewer';
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            title: Text(partner.fullName),
-            subtitle: Text(partner.role),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: DropdownButton<String>(
-                value: access,
-                underline: const SizedBox.shrink(),
-                icon: const Icon(MingCuteIcons.mgc_arrow_down_line, size: 18),
-                items: _roleItems(access),
-                onChanged: (value) => _update(partner, businessId, value),
-              ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(partner.fullName, style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 2),
+                      Text(partner.role, style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 140,
+                  child: AppDropdown<String>(
+                    value: access,
+                    items: _roleItems(access),
+                    onChanged: (value) => _update(partner, businessId, value),
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -82,14 +96,14 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
     );
   }
 
-  List<DropdownMenuItem<String>> _roleItems(String current) {
+  List<DropdownItem<String>> _roleItems(String current) {
     const selectable = ['viewer', 'editor'];
     final options = selectable.contains(current)
         ? selectable
         : [...selectable, current];
     return [
       for (final option in options)
-        DropdownMenuItem(
+        DropdownItem(
           value: option,
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -119,7 +133,7 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
       case 'owner':
         return const Color(0xFF8B5CF6);
       case 'editor':
-        return AppColors.primary;
+        return AppColors.secondary;
       default:
         return AppColors.textSecondary;
     }
@@ -133,14 +147,6 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
         return 'Editor';
       default:
         return 'Viewer';
-    }
-  }
-
-  Future<void> _update(PartnerModel partner, String businessId, String? value) async {
-    if (value == null) return;
-    await context.read<PartnerProvider>().updateAccess(partner.id, value, businessId);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${partner.fullName} updated to ${_roleLabel(value)}')));
     }
   }
 }

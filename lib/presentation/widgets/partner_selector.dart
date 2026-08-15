@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/partner_model.dart';
 import '../providers/partner_provider.dart';
+import 'app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class PartnerSelector extends StatefulWidget {
@@ -225,12 +226,9 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                 Row(
                   children: [
                     Expanded(
-                      child: DropdownButtonFormField2<String>(
-                        isExpanded: true,
-                        valueListenable: ValueNotifier(
-                          _partners[i]['role'] as String,
-                        ),
-                        decoration: const InputDecoration(labelText: 'Role'),
+                      child: AppDropdown<String>(
+                        value: _partners[i]['role'] as String,
+                        labelText: 'Role',
                         items: const [
                           DropdownItem(
                             value: 'purchaser',
@@ -258,9 +256,7 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                           ),
                         ],
                         onChanged: (v) {
-                          setState(
-                            () => _partners[i]['role'] = v ?? 'purchaser',
-                          );
+                          setState(() => _partners[i]['role'] = v ?? 'purchaser');
                           _emit();
                         },
                       ),

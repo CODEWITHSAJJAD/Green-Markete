@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/market_model.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+import 'app_dropdown.dart';
 
 class CityMarketDropdown extends StatefulWidget {
   final List<MarketModel> markets;
@@ -38,27 +38,24 @@ class _CityMarketDropdownState extends State<CityMarketDropdown> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButtonFormField2<String>(
-          isExpanded: true,
-          valueListenable: ValueNotifier(widget.selectedCity),
-          decoration: InputDecoration(labelText: '${widget.label} City'),
-          items: _cities
-              .map((city) => DropdownItem(value: city, child: Text(city)))
-              .toList(),
+        AppDropdown<String>.fromList(
+          value: widget.selectedCity,
+          labelText: '${widget.label} City',
+          items: _cities,
           onChanged: (city) {
             widget.onCityChanged(city);
             widget.onMarketChanged(null);
           },
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField2<String>(
-          isExpanded: true,
-          valueListenable: ValueNotifier(widget.selectedMarketId),
-          decoration: InputDecoration(labelText: widget.label),
-          items: _filteredMarkets
-              .map((m) => DropdownItem(value: m.id, child: Text(m.name)))
-              .toList(),
-          onChanged: widget.onMarketChanged,
+        AppDropdown<MarketModel>.fromList(
+          value: _filteredMarkets
+              .where((m) => m.id == widget.selectedMarketId)
+              .firstOrNull,
+          labelText: widget.label,
+          items: _filteredMarkets,
+          itemLabel: (m) => m.name,
+          onChanged: (m) => widget.onMarketChanged(m?.id),
         ),
       ],
     );

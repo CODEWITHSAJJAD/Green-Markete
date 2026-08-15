@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../data/models/market_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
+import '../../widgets/app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreateMarketPage extends StatefulWidget {
@@ -128,10 +129,9 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
                 decoration: const InputDecoration(labelText: 'Stall number'),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_marketType),
-                decoration: const InputDecoration(labelText: 'Market type'),
+              AppDropdown<String>(
+                value: _marketType,
+                labelText: 'Market type',
                 items: const [
                   DropdownItem(value: 'wholesale', child: Text('Wholesale')),
                   DropdownItem(value: 'retail', child: Text('Retail')),

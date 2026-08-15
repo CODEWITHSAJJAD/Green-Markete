@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../widgets/green_card.dart';
+import '../../widgets/app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreditReportPage extends StatefulWidget {
@@ -88,12 +89,9 @@ class _CreditReportPageState extends State<CreditReportPage> {
           child: Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField2<String?>(
-                  isExpanded: true,
-                  valueListenable: ValueNotifier(_cityFilter),
-                  decoration: const InputDecoration(
-                    labelText: 'Filter by city',
-                  ),
+                child: AppDropdown<String?>(
+                  value: _cityFilter,
+                  labelText: 'Filter by city',
                   items: [
                     const DropdownItem<String?>(
                       value: null,
@@ -108,16 +106,15 @@ class _CreditReportPageState extends State<CreditReportPage> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: DropdownButtonFormField2<String>(
-                  isExpanded: true,
-                  valueListenable: ValueNotifier(_sortKey),
-                  decoration: const InputDecoration(labelText: 'Sort by'),
+                child: AppDropdown<String>(
+                  value: _sortKey,
+                  labelText: 'Sort by',
                   items: const [
                     DropdownItem(
                       value: 'outstanding',
-                      child: Text('Outstanding (high â†’ low)'),
+                      child: Text('Outstanding (high → low)'),
                     ),
-                    DropdownItem(value: 'name', child: Text('Name (A â†’ Z)')),
+                    DropdownItem(value: 'name', child: Text('Name (A → Z)')),
                   ],
                   onChanged: (v) =>
                       setState(() => _sortKey = v ?? 'outstanding'),

@@ -6,6 +6,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../widgets/app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class PartnerSettlementPage extends StatefulWidget {
@@ -74,37 +75,21 @@ class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(_fromPartnerId),
-                    decoration: const InputDecoration(
-                      labelText: 'From Partner',
-                    ),
-                    items: partnerProvider.partners
-                        .map(
-                          (p) => DropdownItem(
-                            value: p.id,
-                            child: Text(p.fullName),
-                          ),
-                        )
-                        .toList(),
+                  AppDropdown<String>.fromList(
+                    value: _fromPartnerId,
+                    labelText: 'From Partner',
+                    items: partnerProvider.partners.map((p) => p.id).toList(),
+                    itemLabel: (id) => partnerProvider.partners.firstWhere((p) => p.id == id).fullName,
                     onChanged: (value) =>
                         setState(() => _fromPartnerId = value),
                     validator: (value) => value == null ? 'Required' : null,
                   ),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(_toPartnerId),
-                    decoration: const InputDecoration(labelText: 'To Partner'),
-                    items: partnerProvider.partners
-                        .map(
-                          (p) => DropdownItem(
-                            value: p.id,
-                            child: Text(p.fullName),
-                          ),
-                        )
-                        .toList(),
+                  AppDropdown<String>.fromList(
+                    value: _toPartnerId,
+                    labelText: 'To Partner',
+                    items: partnerProvider.partners.map((p) => p.id).toList(),
+                    itemLabel: (id) => partnerProvider.partners.firstWhere((p) => p.id == id).fullName,
                     onChanged: (value) => setState(() => _toPartnerId = value),
                     validator: (value) => value == null ? 'Required' : null,
                   ),
@@ -119,12 +104,9 @@ class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
                         Validators.positiveNumber(value, 'Amount'),
                   ),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(_transactionType),
-                    decoration: const InputDecoration(
-                      labelText: 'Transaction Type',
-                    ),
+                  AppDropdown<String>(
+                    value: _transactionType,
+                    labelText: 'Transaction Type',
                     items: const [
                       DropdownItem(
                         value: 'settlement',
@@ -141,12 +123,9 @@ class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    valueListenable: ValueNotifier(_paymentMode),
-                    decoration: const InputDecoration(
-                      labelText: 'Payment Mode',
-                    ),
+                  AppDropdown<String>(
+                    value: _paymentMode,
+                    labelText: 'Payment Mode',
                     items: const [
                       DropdownItem(value: 'cash', child: Text('Cash')),
                       DropdownItem(

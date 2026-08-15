@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
+import '../../widgets/app_dropdown.dart';
 import '../../widgets/error_snackbar.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 class BusinessSettingsPage extends StatefulWidget {
   const BusinessSettingsPage({super.key});
@@ -146,18 +146,12 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(
-                  _currencyOptions.contains(_currencyCode)
-                      ? _currencyCode
-                      : _currencyOptions.first,
-                ),
-                decoration: InputDecoration(labelText: l10n.settingsCurrency),
-                items: [
-                  for (final c in _currencyOptions)
-                    DropdownItem(value: c, child: Text(c)),
-                ],
+              AppDropdown<String>.fromList(
+                value: _currencyOptions.contains(_currencyCode)
+                    ? _currencyCode
+                    : _currencyOptions.first,
+                labelText: l10n.settingsCurrency,
+                items: _currencyOptions,
                 onChanged: (v) {
                   if (v != null) setState(() => _currencyCode = v);
                 },

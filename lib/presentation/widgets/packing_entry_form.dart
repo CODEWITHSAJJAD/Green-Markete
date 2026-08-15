@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 import '../../core/utils/unit_converter.dart';
+import 'app_dropdown.dart';
 
 class PackingEntryForm extends StatefulWidget {
   final List<Map<String, dynamic>> entries;
@@ -285,12 +286,9 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField2<String>(
-                  isExpanded: true,
-                  valueListenable: _unitTypeNotifier,
-                  decoration: const InputDecoration(
-                    labelText: 'Packing type',
-                  ),
+                child: AppDropdown<String>(
+                  value: _unitType,
+                  labelText: 'Packing type',
                   items: [
                     for (final t in packingTypes)
                       DropdownItem(

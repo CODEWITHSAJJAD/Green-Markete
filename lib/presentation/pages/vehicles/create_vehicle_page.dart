@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
+import '../../widgets/app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreateVehiclePage extends StatefulWidget {
@@ -144,10 +145,9 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
                 decoration: const InputDecoration(labelText: 'Capacity value'),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_capacityUnit),
-                decoration: const InputDecoration(labelText: 'Capacity unit'),
+              AppDropdown<String>(
+                value: _capacityUnit,
+                labelText: 'Capacity unit',
                 items: const [
                   DropdownItem(value: 'bag', child: Text('Bags')),
                   DropdownItem(value: 'kg', child: Text('Kilograms')),

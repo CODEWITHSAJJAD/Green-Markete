@@ -6,6 +6,7 @@ import '../../data/models/sale_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
 import '../providers/customer_provider.dart';
+import 'app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 /// Returns `true` when a sale was actually saved, `null`/`false` otherwise.
@@ -222,10 +223,9 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
                 },
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_paymentMode),
-                decoration: const InputDecoration(labelText: 'Payment mode'),
+              AppDropdown<String>(
+                value: _paymentMode,
+                labelText: 'Payment mode',
                 items: const [
                   DropdownItem(value: 'cash', child: Text('Cash')),
                   DropdownItem(value: 'credit', child: Text('Credit')),

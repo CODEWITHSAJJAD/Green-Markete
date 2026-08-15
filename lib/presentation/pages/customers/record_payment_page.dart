@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
 import '../../widgets/green_card.dart';
+import '../../widgets/app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class RecordPaymentPage extends StatefulWidget {
@@ -192,10 +193,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_paymentMode),
-                decoration: const InputDecoration(labelText: 'Payment mode'),
+              AppDropdown<String>(
+                value: _paymentMode,
+                labelText: 'Payment mode',
                 items: const [
                   DropdownItem(value: 'cash', child: Text('Cash')),
                   DropdownItem(

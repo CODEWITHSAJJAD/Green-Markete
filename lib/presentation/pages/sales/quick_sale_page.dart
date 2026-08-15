@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
+import '../../widgets/app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class QuickSalePage extends StatefulWidget {
@@ -146,28 +147,18 @@ class _QuickSalePageState extends State<QuickSalePage> {
         key: _formKey,
         child: Column(
           children: [
-            DropdownButtonFormField2<BatchModel>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(_selectedBatch),
-              decoration: const InputDecoration(labelText: 'Batch'),
-              items: batchList
-                  .map(
-                    (batch) => DropdownItem(
-                      value: batch,
-                      child: Text(
-                        '${batch.batchCode} • ${batch.productName ?? 'Batch'}',
-                      ),
-                    ),
-                  )
-                  .toList(),
+            AppDropdown<BatchModel>.fromList(
+              value: _selectedBatch,
+              labelText: 'Batch',
+              items: batchList,
+              itemLabel: (batch) => '${batch.batchCode} • ${batch.productName ?? 'Batch'}',
               onChanged: (value) => setState(() => _selectedBatch = value),
               validator: (value) => value == null ? 'Select a batch' : null,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField2<CustomerModel?>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(_selectedCustomer),
-              decoration: const InputDecoration(labelText: 'Customer'),
+            AppDropdown<CustomerModel?>(
+              value: _selectedCustomer,
+              labelText: 'Customer',
               items: [
                 const DropdownItem<CustomerModel?>(
                   value: null,
@@ -203,10 +194,9 @@ class _QuickSalePageState extends State<QuickSalePage> {
                   value == null || value.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField2<String>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(_paymentMode),
-              decoration: const InputDecoration(labelText: 'Payment mode'),
+            AppDropdown<String>(
+              value: _paymentMode,
+              labelText: 'Payment mode',
               items: const [
                 DropdownItem(value: 'cash', child: Text('Cash')),
                 DropdownItem(value: 'credit', child: Text('Credit')),

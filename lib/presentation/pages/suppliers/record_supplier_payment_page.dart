@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
+import '../../widgets/app_dropdown.dart';
 
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -180,10 +181,9 @@ class _RecordSupplierPaymentPageState extends State<RecordSupplierPaymentPage> {
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_paymentMode),
-                decoration: const InputDecoration(labelText: 'Payment mode'),
+              AppDropdown<String>(
+                value: _paymentMode,
+                labelText: 'Payment mode',
                 items: const [
                   DropdownItem(value: 'cash', child: Text('Cash')),
                   DropdownItem(

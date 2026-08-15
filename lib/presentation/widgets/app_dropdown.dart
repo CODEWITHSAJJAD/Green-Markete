@@ -57,7 +57,7 @@ class AppDropdown<T> extends StatelessWidget {
     Key? key,
     required T? value,
     required List<T> items,
-    required String Function(T) itemLabel,
+    String Function(T)? itemLabel,
     required ValueChanged<T?>? onChanged,
     Widget Function(T)? leadingBuilder,
     String? labelText,
@@ -72,6 +72,7 @@ class AppDropdown<T> extends StatelessWidget {
     Color? fillColor,
     bool filled = true,
   }) {
+    final getLabel = itemLabel ?? (T item) => item.toString();
     return AppDropdown<T>(
       key: key,
       value: value,
@@ -86,14 +87,14 @@ class AppDropdown<T> extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        itemLabel(item),
+                        getLabel(item),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 )
               : Text(
-                  itemLabel(item),
+                  getLabel(item),
                   overflow: TextOverflow.ellipsis,
                 ),
         );

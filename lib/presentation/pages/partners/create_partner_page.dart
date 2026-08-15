@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
+import '../../widgets/app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreatePartnerPage extends StatefulWidget {
@@ -95,10 +96,9 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
                 decoration: const InputDecoration(labelText: 'City'),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_role),
-                decoration: const InputDecoration(labelText: 'Business role'),
+              AppDropdown<String>(
+                value: _role,
+                labelText: 'Business role',
                 items: const [
                   DropdownItem(value: 'purchaser', child: Text('Purchaser')),
                   DropdownItem(value: 'seller', child: Text('Seller')),
@@ -110,14 +110,11 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
                     setState(() => _role = value ?? 'partner'),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField2<String>(
-                isExpanded: true,
-                valueListenable: ValueNotifier(_accessLevel),
-                decoration: const InputDecoration(
-                  labelText: 'Access level',
-                  helperText:
-                      'Editor can change batch status; Viewer writes their own side only',
-                ),
+              AppDropdown<String>(
+                value: _accessLevel,
+                labelText: 'Access level',
+                hintText:
+                    'Editor can change batch status; Viewer writes their own side only',
                 items: const [
                   DropdownItem(value: 'viewer', child: Text('Viewer')),
                   DropdownItem(value: 'editor', child: Text('Editor')),

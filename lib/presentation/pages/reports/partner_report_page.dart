@@ -6,7 +6,7 @@ import '../../../data/models/batch_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/report_provider.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+import '../../widgets/app_dropdown.dart';
 
 class PartnerReportPage extends StatefulWidget {
   final String partnerId;
@@ -86,22 +86,16 @@ class _PartnerReportPageState extends State<PartnerReportPage> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        DropdownButtonFormField2<String>(
-          isExpanded: true,
-          valueListenable: ValueNotifier(selectedBatchId),
-          decoration: const InputDecoration(labelText: 'Select Batch'),
-          items: batches
-              .map(
-                (batch) => DropdownItem(
-                  value: batch.id,
-                  child: Text(
-                    batch.batchCode.isNotEmpty
-                        ? batch.batchCode
-                        : (batch.productName ?? batch.id),
-                  ),
-                ),
-              )
-              .toList(),
+        AppDropdown<String>.fromList(
+          value: selectedBatchId,
+          labelText: 'Select Batch',
+          items: batches.map((b) => b.id).toList(),
+          itemLabel: (id) {
+            final batch = batches.firstWhere((b) => b.id == id);
+            return batch.batchCode.isNotEmpty
+                ? batch.batchCode
+                : (batch.productName ?? batch.id);
+          },
           onChanged: (value) {
             setState(() => _selectedBatchId = value);
             if (value != null) _loadPartnerPL(value);

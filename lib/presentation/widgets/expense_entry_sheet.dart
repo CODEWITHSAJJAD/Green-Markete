@@ -4,6 +4,7 @@ import '../../data/models/batch_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
 import '../providers/partner_provider.dart';
+import 'app_dropdown.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 Future<void> showExpenseEntrySheet(
@@ -140,10 +141,9 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
               ),
             ],
             const SizedBox(height: 16),
-            DropdownButtonFormField2<String>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(_type),
-              decoration: const InputDecoration(labelText: 'Type'),
+            AppDropdown<String>(
+              value: _type,
+              labelText: 'Type',
               items: const [
                 DropdownItem(
                   value: 'daily_charge',
@@ -185,10 +185,9 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
               decoration: const InputDecoration(labelText: 'Description'),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField2<String?>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(_paidBy),
-              decoration: const InputDecoration(labelText: 'Paid by (partner)'),
+            AppDropdown<String?>(
+              value: _paidBy,
+              labelText: 'Paid by (partner)',
               items: [
                 const DropdownItem<String?>(value: null, child: Text('—')),
                 ...partners.map(
@@ -201,10 +200,9 @@ class _ExpenseEntrySheetState extends State<_ExpenseEntrySheet> {
               onChanged: (v) => setState(() => _paidBy = v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField2<String>(
-              isExpanded: true,
-              valueListenable: ValueNotifier(_paymentMode),
-              decoration: const InputDecoration(labelText: 'Payment mode'),
+            AppDropdown<String>(
+              value: _paymentMode,
+              labelText: 'Payment mode',
               items: const [
                 DropdownItem(value: 'cash', child: Text('Cash')),
                 DropdownItem(
