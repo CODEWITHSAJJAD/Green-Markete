@@ -7,6 +7,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../../data/models/payment_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
 import '../../widgets/app_dropdown.dart';
@@ -87,7 +88,10 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
 
       if (!mounted) return;
       if (success) {
-        DataRefreshNotifier.instance.refresh(businessId);
+        if (businessId.isNotEmpty) {
+          context.read<SaleProvider>().loadByBusiness(businessId);
+          DataRefreshNotifier.instance.refresh(businessId);
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment recorded successfully')),
         );

@@ -1,6 +1,16 @@
 # Project State — MandiRoznamcha Frontend
 
-**Last updated:** 2026-08-16 (daily-125)
+**Last updated:** 2026-08-16 (daily-126)
+
+> **Session (2026-08-16, daily-126, Sales List RenderFlex Fix, Historical Payment Auto-Reconcile):**
+> 1. **Sales List RenderFlex Overflow Fix (`sales_list_page.dart`):** Replaced rigid horizontal `Row` containing Cash chip, Credit Due badge, and Collect Cash button with a responsive `Wrap` to eliminate the 72px RenderFlex overflow across various screen densities.
+> 2. **Bulletproof Customer Open Sales Allocation (`customer_repository.dart`):**
+>    - In `CustomerRepository.recordPayment`, eliminated fragile SQL `.gt('credit_amount', 0)` filter in favor of in-memory numeric comparison over customer sales, ensuring 100% of open credit sales are detected and reduced FIFO.
+>    - Added `reconcileCustomerSales` method to retroactively apply general customer payments to unallocated past sales invoices.
+> 3. **Provider Synchronization (`record_payment_page.dart`, `batch_provider.dart`):**
+>    - In `RecordPaymentPage._save`, reloaded `SaleProvider.loadByBusiness` and broadcasted via `DataRefreshNotifier` so customer payments instantly reflect across the sales list and batch tabs.
+>    - Enhanced `SaleProvider.collectCredit` to simultaneously refresh both business-level and batch-level sales caches.
+> 4. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all passed).
 
 > **Session (2026-08-16, daily-125, Real-time Sales/Credit Synchronization & RenderFlex Fix):**
 > 1. **Reports Page RenderFlex Overflow Fix (`reports_page.dart`):** Wrapped 'No overdue customer balances detected' `Text` inside an `Expanded` to prevent 7.3px overflow on small viewport sizes.

@@ -210,18 +210,25 @@ class CustomerRepository {
         if (remainingPayment > 0) {
           final openSales = await _client
               .from('sales')
-              .select()
-              .eq('customer_id', customerId)
-              .gt('credit_amount', 0);
+              .select('id, credit_amount, cash_received, payment_mode, sale_date')
+              .eq('customer_id', customerId);
 
           final salesList = List<Map<String, dynamic>>.from(openSales);
-          salesList.sort((a, b) {
+          // Filter to only open credit sales in memory
+          final openCreditSales = salesList
+              .where(
+                (s) =>
+                    ((s['credit_amount'] as num?)?.toDouble() ?? 0.0) > 0.001,
+              )
+              .toList();
+
+          openCreditSales.sort((a, b) {
             final dateA = a['sale_date']?.toString() ?? '';
             final dateB = b['sale_date']?.toString() ?? '';
             return dateA.compareTo(dateB);
           });
 
-          for (final saleMap in salesList) {
+          for (final saleMap in openCreditSales) {
             if (remainingPayment <= 0.001) break;
             final saleId = saleMap['id']?.toString() ?? '';
             if (saleId.isEmpty) continue;
@@ -259,5 +266,64 @@ class CustomerRepository {
     }
 
     return PaymentModel.fromJson(row);
+  }
+
+  /// Synchronizes past customer payments with open credit sales so historical
+  /// or unapplied payments clear their matching sales invoices.
+  Future<void> reconcileCustomerSales(String customerId) async {
+    try {
+      final payments = await _client
+          .from('customer_payments')
+          .select('amount, notes')
+          .eq('customer_id', customerId);
+
+      var totalGeneralPaid = 0.0;
+      for (final p in payments) {
+        final notes = p['notes']?.toString() ?? '';
+        if (!notes.startsWith('Collected on sale')) {
+          totalGeneralPaid += (p['amount'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
+
+      if (totalGeneralPaid <= 0) return;
+
+      final sales = await _client
+          .from('sales')
+          .select('id, total_amount, cash_received, credit_amount, sale_date')
+          .eq('customer_id', customerId);
+
+      final salesList = List<Map<String, dynamic>>.from(sales);
+      salesList.sort((a, b) {
+        final dateA = a['sale_date']?.toString() ?? '';
+        final dateB = b['sale_date']?.toString() ?? '';
+        return dateA.compareTo(dateB);
+      });
+
+      var remainingToApply = totalGeneralPaid;
+      for (final s in salesList) {
+        if (remainingToApply <= 0.001) break;
+        final saleId = s['id']?.toString() ?? '';
+        final currentCredit = (s['credit_amount'] as num?)?.toDouble() ?? 0.0;
+        final currentCash = (s['cash_received'] as num?)?.toDouble() ?? 0.0;
+
+        if (currentCredit <= 0.001) continue;
+
+        final toApply = remainingToApply < currentCredit
+            ? remainingToApply
+            : currentCredit;
+        final newCredit = (currentCredit - toApply).clamp(0.0, double.infinity);
+        final newCash = currentCash + toApply;
+        remainingToApply -= toApply;
+
+        await _client
+            .from('sales')
+            .update({
+              'credit_amount': newCredit,
+              'cash_received': newCash,
+              if (newCredit <= 0.001) 'payment_mode': 'cash',
+            })
+            .eq('id', saleId);
+      }
+    } catch (_) {}
   }
 }

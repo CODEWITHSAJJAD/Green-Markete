@@ -571,56 +571,64 @@ class _SalesListPageState extends State<SalesListPage> {
           ),
           if (isCredit || isCash) ...[
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: WrapAlignment.spaceBetween,
               children: [
-                if (isCash)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.emeraldSurface,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: AppColors.emerald.withValues(alpha: 0.2),
-                        width: 0.8,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isCash)
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.emeraldSurface,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.emerald.withValues(alpha: 0.2),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          'Cash: ${CurrencyFormatter.format(sale.cashReceived)}',
+                          style: GoogleFonts.inter(
+                            color: AppColors.emeraldDark,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Cash: ${CurrencyFormatter.format(sale.cashReceived)}',
-                      style: GoogleFonts.inter(
-                        color: AppColors.emeraldDark,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    if (isCredit)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.roseSurface,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.rose.withValues(alpha: 0.2),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          'Credit Due: ${CurrencyFormatter.format(sale.creditAmount)}',
+                          style: GoogleFonts.inter(
+                            color: AppColors.rose,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                if (isCredit)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.roseSurface,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: AppColors.rose.withValues(alpha: 0.2),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Text(
-                      'Credit Due: ${CurrencyFormatter.format(sale.creditAmount)}',
-                      style: GoogleFonts.inter(
-                        color: AppColors.rose,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                const Spacer(),
+                  ],
+                ),
                 if (isCredit && canSell)
                   InkWell(
                     onTap: () => showCollectCreditDialog(
