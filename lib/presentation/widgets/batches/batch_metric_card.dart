@@ -51,14 +51,17 @@ Widget buildBatchCostLine(
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 13.5,
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-            color: bold ? AppColors.textPrimary : AppColors.textSecondary,
+        Expanded(
+          child: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 13.5,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: bold ? AppColors.textPrimary : AppColors.textSecondary,
+            ),
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           CurrencyFormatter.format(value),
           style: GoogleFonts.inter(
