@@ -121,7 +121,7 @@ pw.Widget _pdfContent(BillModel bill) {
     children: [
       pw.Center(
         child: pw.Text(
-          'GREEN MARKET',
+          'MANDI ROZNAMCHA',
           style: pw.TextStyle(
             fontSize: 16,
             fontWeight: pw.FontWeight.bold,

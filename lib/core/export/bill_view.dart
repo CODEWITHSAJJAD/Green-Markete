@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../presentation/widgets/brand_logo.dart';
 import 'bill_model.dart';
 
 /// Renders a [BillModel] as a widget. Used both for on-screen preview and as
@@ -116,30 +117,18 @@ class BillView extends StatelessWidget {
   }
 
   Widget _brand(ThemeData theme) {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1F5E3B),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.eco,
-            color: Colors.white,
-            size: 18,
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          'GREEN MARKET',
+        BrandLogo(size: 28, isDarkBackground: true),
+        SizedBox(width: 10),
+        Text(
+          'MANDI ROZNAMCHA',
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2,
-            color: Color(0xFF1F5E3B),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+            color: Color(0xFF0F172A),
           ),
         ),
       ],

@@ -1,6 +1,11 @@
 # Project State — MandiRoznamcha Frontend
 
-**Last updated:** 2026-08-16 (daily-121)
+**Last updated:** 2026-08-16 (daily-122)
+
+> **Session (2026-08-16, daily-122, Bill Preview & PDF Branding Update):**
+> 1. **Bill Previews & Image Sharing (`bill_view.dart`):** Replaced legacy 'GREEN MARKET' and placeholder eco icon with official vector `BrandLogo` and `MANDI ROZNAMCHA` header.
+> 2. **PDF Bill Export Document (`bill_export.dart`):** Updated print-ready PDF generator header to `MANDI ROZNAMCHA`.
+> 3. **Verification:** 0 occurrences of 'Green Market' or legacy placeholder icons in `lib/`. `dart analyze lib` clean (0 errors), `flutter test` green (all tests passed).
 
 > **Session (2026-08-16, daily-121, Streamlined English Terminology with MandiRoznamcha Brand Assets):** Per user request to maintain 100% app-wide consistency:
 > 1. **Reverted Ad-Hoc Terminology Overhaul:** Cleaned and reverted all navigation, form, and localization strings back to standard, professional English terms (`Batches`, `Sales`, `Customers`, `Suppliers`, `Settlements`, `Purchased`, `Selling`, `Closed`, `Cash`, `Credit`).
