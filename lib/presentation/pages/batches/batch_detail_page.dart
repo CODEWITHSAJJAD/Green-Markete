@@ -46,22 +46,33 @@ class _BatchDetailPageState extends State<BatchDetailPage>
     super.initState();
     _tabCtrl = TabController(length: 8, vsync: this);
     _tabCtrl.addListener(() => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final detail = context.read<BatchDetailProvider>();
-      final pl = context.read<BatchPLProvider>();
-      final expenses = context.read<ExpenseProvider>();
-      final sales = context.read<SaleProvider>();
-      detail.load(batchId);
-      pl.load(batchId);
-      expenses.load(batchId);
-      sales.loadByBatch(batchId);
-      _subscribeRealtime(detail, pl, expenses, sales);
-      final businessId = context.read<AuthProvider>().businessId;
-      if (businessId != null && businessId.isNotEmpty) {
-        context.read<PartnerProvider>().load(businessId);
-      }
-    });
+    DataRefreshNotifier.instance.addListener(_onSharedRefresh);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll());
+  }
+
+  void _loadAll() {
+    if (!mounted) return;
+    final detail = context.read<BatchDetailProvider>();
+    final pl = context.read<BatchPLProvider>();
+    final expenses = context.read<ExpenseProvider>();
+    final sales = context.read<SaleProvider>();
+    detail.load(batchId);
+    pl.load(batchId);
+    expenses.load(batchId);
+    sales.loadByBatch(batchId);
+    _subscribeRealtime(detail, pl, expenses, sales);
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId != null && businessId.isNotEmpty) {
+      context.read<PartnerProvider>().load(businessId);
+    }
+  }
+
+  void _onSharedRefresh() {
+    if (!mounted) return;
+    context.read<BatchDetailProvider>().load(batchId);
+    context.read<BatchPLProvider>().load(batchId);
+    context.read<ExpenseProvider>().load(batchId);
+    context.read<SaleProvider>().loadByBatch(batchId);
   }
 
   void _subscribeRealtime(
@@ -142,6 +153,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
 
   @override
   void dispose() {
+    DataRefreshNotifier.instance.removeListener(_onSharedRefresh);
     _tabCtrl.dispose();
     if (_expensesChannel != null) {
       SupabaseService.instance.client.removeChannel(_expensesChannel!);

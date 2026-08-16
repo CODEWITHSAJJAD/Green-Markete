@@ -203,48 +203,59 @@ class CustomerRepository {
         .single();
 
     // Auto-reconcile open sales with credit for this customer (FIFO order)
-    try {
-      var remainingPayment = payment.amount;
-      if (remainingPayment > 0) {
-        final openSales = await _client
-            .from('sales')
-            .select()
-            .eq('customer_id', customerId)
-            .gt('credit_amount', 0)
-            .order('sale_date', ascending: true);
-
-        for (final saleMap in openSales) {
-          if (remainingPayment <= 0.001) break;
-          final saleId = saleMap['id'] as String;
-          final currentCredit =
-              (saleMap['credit_amount'] as num?)?.toDouble() ?? 0.0;
-          final currentCash =
-              (saleMap['cash_received'] as num?)?.toDouble() ?? 0.0;
-
-          if (currentCredit <= 0.001) continue;
-
-          final toDeduct = remainingPayment < currentCredit
-              ? remainingPayment
-              : currentCredit;
-          final newCredit = (currentCredit - toDeduct).clamp(
-            0.0,
-            double.infinity,
-          );
-          final newCash = currentCash + toDeduct;
-          remainingPayment -= toDeduct;
-
-          await _client
+    if (payment.notes == null ||
+        !payment.notes!.startsWith('Collected on sale')) {
+      try {
+        var remainingPayment = payment.amount;
+        if (remainingPayment > 0) {
+          final openSales = await _client
               .from('sales')
-              .update({
-                'credit_amount': newCredit,
-                'cash_received': newCash,
-                if (newCredit <= 0.001) 'payment_mode': payment.paymentMode,
-              })
-              .eq('id', saleId);
+              .select()
+              .eq('customer_id', customerId)
+              .gt('credit_amount', 0);
+
+          final salesList = List<Map<String, dynamic>>.from(openSales);
+          salesList.sort((a, b) {
+            final dateA = a['sale_date']?.toString() ?? '';
+            final dateB = b['sale_date']?.toString() ?? '';
+            return dateA.compareTo(dateB);
+          });
+
+          for (final saleMap in salesList) {
+            if (remainingPayment <= 0.001) break;
+            final saleId = saleMap['id']?.toString() ?? '';
+            if (saleId.isEmpty) continue;
+
+            final currentCredit =
+                (saleMap['credit_amount'] as num?)?.toDouble() ?? 0.0;
+            final currentCash =
+                (saleMap['cash_received'] as num?)?.toDouble() ?? 0.0;
+
+            if (currentCredit <= 0.001) continue;
+
+            final toDeduct = remainingPayment < currentCredit
+                ? remainingPayment
+                : currentCredit;
+            final newCredit = (currentCredit - toDeduct).clamp(
+              0.0,
+              double.infinity,
+            );
+            final newCash = currentCash + toDeduct;
+            remainingPayment -= toDeduct;
+
+            await _client
+                .from('sales')
+                .update({
+                  'credit_amount': newCredit,
+                  'cash_received': newCash,
+                  if (newCredit <= 0.001) 'payment_mode': payment.paymentMode,
+                })
+                .eq('id', saleId);
+          }
         }
+      } catch (_) {
+        // Non-critical if auto-allocation fails
       }
-    } catch (_) {
-      // Non-critical if auto-allocation fails on non-standard schema
     }
 
     return PaymentModel.fromJson(row);

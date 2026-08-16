@@ -451,6 +451,7 @@ class SaleProvider extends ChangeNotifier {
     required double amount,
     String paymentMode = 'cash',
     String? bankReference,
+    String? businessId,
   }) async {
     try {
       final updated = await _repo.collectCredit(
@@ -459,7 +460,9 @@ class SaleProvider extends ChangeNotifier {
         paymentMode: paymentMode,
         bankReference: bankReference,
       );
-      if (updated != null) {
+      if (businessId != null && businessId.isNotEmpty) {
+        await loadByBusiness(businessId);
+      } else if (updated != null) {
         await loadByBatch(updated.batchId);
       }
       return true;

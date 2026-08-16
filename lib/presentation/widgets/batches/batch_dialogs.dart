@@ -5,6 +5,7 @@ import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
 import '../../../data/models/packing_return_model.dart';
+import '../../../data/models/payment_model.dart';
 import '../../../data/models/sale_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
@@ -589,11 +590,11 @@ Future<void> showPayTransportDialog(
   );
 }
 
-Future<void> showCollectWalkInCreditDialog(
+Future<void> showCollectCreditDialog(
   BuildContext context,
-  SaleModel sale,
-) async {
-  final theme = Theme.of(context);
+  SaleModel sale, {
+  String? customerName,
+}) async {
   final businessId = context.read<AuthProvider>().businessId ?? '';
   final remaining = sale.creditAmount;
   final amountCtrl = TextEditingController(
@@ -607,14 +608,32 @@ Future<void> showCollectWalkInCreditDialog(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setSt) {
         return AlertDialog(
-          title: const Text('Collect Walk-in Credit'),
+          title: Text(customerName != null ? 'Collect Credit ($customerName)' : 'Collect Credit'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Outstanding credit: ${CurrencyFormatter.format(remaining)}',
-                  style: theme.textTheme.bodyMedium,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Outstanding credit:', style: TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        CurrencyFormatter.format(remaining),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.rose,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -623,7 +642,7 @@ Future<void> showCollectWalkInCreditDialog(
                     decimal: true,
                   ),
                   autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Amount'),
+                  decoration: const InputDecoration(labelText: 'Amount to Collect (Rs)'),
                 ),
                 const SizedBox(height: 12),
                 AppDropdown<String>(
@@ -673,23 +692,48 @@ Future<void> showCollectWalkInCreditDialog(
                   return;
                 }
                 final saleProvider = context.read<SaleProvider>();
+                final bankRef = bankRefCtrl.text.trim().isEmpty
+                    ? null
+                    : bankRefCtrl.text.trim();
                 final ok = await saleProvider.collectCredit(
                   sale.id,
                   amount: amount,
                   paymentMode: paymentMode,
-                  bankReference: bankRefCtrl.text.trim().isEmpty
-                      ? null
-                      : bankRefCtrl.text.trim(),
+                  bankReference: bankRef,
+                  businessId: businessId,
                 );
+
+                if (ok && sale.customerId != null && sale.customerId!.isNotEmpty) {
+                  try {
+                    await context.read<CustomerProvider>().recordPayment(
+                      sale.customerId!,
+                      PaymentCreateRequest(
+                        customerId: sale.customerId!,
+                        businessId: businessId,
+                        amount: amount,
+                        paymentMode: paymentMode,
+                        bankReference: bankRef,
+                        notes: 'Collected on sale #${sale.id.substring(0, sale.id.length > 8 ? 8 : sale.id.length)}',
+                        paymentDate: DateTime.now().toIso8601String().split('T').first,
+                      ),
+                    );
+                  } catch (_) {}
+                }
+
                 if (!ctx.mounted) return;
                 if (ok) {
                   Navigator.pop(ctx);
-                  context.read<BatchPLProvider>().load(sale.batchId);
+                  if (sale.batchId.isNotEmpty) {
+                    context.read<BatchPLProvider>().load(sale.batchId);
+                    context.read<SaleProvider>().loadByBatch(sale.batchId);
+                  }
                   if (businessId.isNotEmpty) {
+                    context.read<SaleProvider>().loadByBusiness(businessId);
+                    context.read<CustomerProvider>().load(businessId);
                     DataRefreshNotifier.instance.refresh(businessId);
                   }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Credit collected')),
+                    const SnackBar(content: Text('Credit collected successfully')),
                   );
                 } else {
                   ScaffoldMessenger.of(ctx).showSnackBar(
@@ -709,6 +753,13 @@ Future<void> showCollectWalkInCreditDialog(
     ),
   );
 }
+
+// Backward-compatible alias
+Future<void> showCollectWalkInCreditDialog(
+  BuildContext context,
+  SaleModel sale,
+) =>
+    showCollectCreditDialog(context, sale);
 
 Future<void> showSettleSellerDialog(
   BuildContext context, {

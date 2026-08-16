@@ -9,6 +9,7 @@ import '../../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../providers/data_refresh.dart';
 import '../../widgets/batches/batch_dialogs.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
@@ -30,13 +31,21 @@ class _SalesListPageState extends State<SalesListPage> {
   @override
   void initState() {
     super.initState();
+    DataRefreshNotifier.instance.addListener(_onSharedRefresh);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   @override
   void dispose() {
+    DataRefreshNotifier.instance.removeListener(_onSharedRefresh);
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _onSharedRefresh() {
+    if (mounted) {
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -608,6 +617,51 @@ class _SalesListPageState extends State<SalesListPage> {
                         color: AppColors.rose,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                const Spacer(),
+                if (isCredit && canSell)
+                  InkWell(
+                    onTap: () => showCollectCreditDialog(
+                      context,
+                      sale,
+                      customerName: customerName != 'Direct Customer'
+                          ? customerName
+                          : null,
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.emeraldSurface,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppColors.emerald.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            HeroIcons.banknotes,
+                            size: 14,
+                            color: AppColors.emeraldDark,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Collect Cash',
+                            style: GoogleFonts.inter(
+                              color: AppColors.emeraldDark,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

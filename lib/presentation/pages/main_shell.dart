@@ -71,7 +71,12 @@ class _MainShellState extends State<MainShell> {
         context.read<BatchListProvider>().load(businessId);
         break;
       case 2:
-        context.read<SellingBatchesProvider>().load(businessId, status: 'selling');
+        context.read<SellingBatchesProvider>().load(
+          businessId,
+          status: 'selling',
+        );
+        context.read<SaleProvider>().loadByBusiness(businessId);
+        context.read<CustomerProvider>().load(businessId);
         break;
       case 3:
         context.read<CustomerProvider>().load(businessId);

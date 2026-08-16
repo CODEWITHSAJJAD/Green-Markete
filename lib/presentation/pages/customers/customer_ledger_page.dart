@@ -370,6 +370,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
           ? FloatingActionButton.extended(
               heroTag: null,
               backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
               onPressed: _openRecordPayment,
               icon: const Icon(HeroIcons.banknotes, size: 20),
               label: Text(

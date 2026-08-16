@@ -1,6 +1,18 @@
 # Project State — MandiRoznamcha Frontend
 
-**Last updated:** 2026-08-16 (daily-124)
+**Last updated:** 2026-08-16 (daily-125)
+
+> **Session (2026-08-16, daily-125, Real-time Sales/Credit Synchronization & RenderFlex Fix):**
+> 1. **Reports Page RenderFlex Overflow Fix (`reports_page.dart`):** Wrapped 'No overdue customer balances detected' `Text` inside an `Expanded` to prevent 7.3px overflow on small viewport sizes.
+> 2. **Batch Detail & Sales Real-time Synchronization (`batch_detail_page.dart`, `sales_list_page.dart`, `main_shell.dart`):**
+>    - Subscribed `BatchDetailPage` to `DataRefreshNotifier` to automatically reload batch details, P&L, expenses, and sales whenever payment or credit collection occurs anywhere in the app.
+>    - Added `SaleProvider.loadByBusiness` and `CustomerProvider.load` to tab index 2 in `MainShell._reloadTabData`.
+>    - Subscribed `SalesListPage` to `DataRefreshNotifier` so the global sales ledger updates instantly on payment without manual refresh.
+> 3. **Collect Cash on All Sales (`sales_list_page.dart`, `batch_sales_tab.dart`, `batch_dialogs.dart`):**
+>    - Added prominent 'Collect Cash' button to `SalesListPage` on all sales with outstanding credit.
+>    - Updated `BatchSalesTab` so 'Collect Cash' appears on both named customer sales and walk-in sales.
+>    - Streamlined `showCollectCreditDialog` to update the specific sale and keep customer balance/ledger in exact alignment without duplicate deduction.
+> 4. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all passed).
 
 > **Session (2026-08-16, daily-124, Sales Edit/Delete, Credit Reconciliation & Landed Purchase Cost):**
 > 1. **Customer Credit Auto-Reconciliation (`customer_repository.dart`):** Updated `CustomerRepository.recordPayment` to automatically allocate recorded payments against the customer's open sales (FIFO order), reducing `credit_amount` and increasing `cash_received` so the sales list ledger reflects credit collections immediately without stale due balances.

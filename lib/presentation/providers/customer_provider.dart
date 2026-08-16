@@ -134,6 +134,12 @@ class CustomerProvider extends ChangeNotifier {
   Future<bool> recordPayment(String customerId, PaymentCreateRequest payment) async {
     try {
       await _repo.recordPayment(customerId, payment);
+      if (payment.businessId.isNotEmpty) {
+        await load(payment.businessId);
+      }
+      if (_ledger.isNotEmpty) {
+        await loadLedger(customerId);
+      }
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');

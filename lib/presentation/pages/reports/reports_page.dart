@@ -364,11 +364,13 @@ class _ReportsPageState extends State<ReportsPage> {
               size: 20,
             ),
             const SizedBox(width: 10),
-            Text(
-              'No overdue customer balances detected.',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: AppColors.textSecondary,
+            Expanded(
+              child: Text(
+                'No overdue customer balances detected.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -404,6 +406,7 @@ class _ReportsPageState extends State<ReportsPage> {
                             fontSize: 14,
                             color: AppColors.textPrimary,
                           ),
+                            overflow: TextOverflow.ellipsis
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -416,12 +419,19 @@ class _ReportsPageState extends State<ReportsPage> {
                       ],
                     ),
                   ),
-                  Text(
-                    CurrencyFormatter.format(customer.outstandingBalance),
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14.5,
-                      color: AppColors.rose,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        CurrencyFormatter.format(customer.outstandingBalance),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: AppColors.rose,
+                        ),
+                      ),
                     ),
                   ),
                 ],

@@ -84,8 +84,8 @@ class BatchSalesTab extends StatelessWidget {
   }
 
   Widget _saleTile(BuildContext context, SaleModel sale, String unit) {
-    final walkInCredit = sale.customerId == null && sale.creditAmount > 0;
-    final canCollect = walkInCredit && context.read<AuthProvider>().canEditSellerSide;
+    final hasCredit = sale.creditAmount > 0;
+    final canCollect = hasCredit && context.read<AuthProvider>().canEditSellerSide;
     final modeColor = getPaymentModeColor(Theme.of(context), sale.paymentMode);
 
     return GreenCard(
@@ -124,12 +124,12 @@ class BatchSalesTab extends StatelessWidget {
                   [
                     sale.saleDate,
                     sale.paymentMode.toUpperCase(),
-                    if (walkInCredit) 'Due: ${CurrencyFormatter.format(sale.creditAmount)}',
+                    if (hasCredit) 'Due: ${CurrencyFormatter.format(sale.creditAmount)}',
                   ].join(' • '),
                   style: GoogleFonts.inter(
                     fontSize: 11.5,
-                    color: walkInCredit ? AppColors.rose : AppColors.textSecondary,
-                    fontWeight: walkInCredit ? FontWeight.w700 : FontWeight.normal,
+                    color: hasCredit ? AppColors.rose : AppColors.textSecondary,
+                    fontWeight: hasCredit ? FontWeight.w700 : FontWeight.normal,
                   ),
                 ),
               ],
@@ -207,7 +207,7 @@ class BatchSalesTab extends StatelessWidget {
               if (canCollect) ...[
                 const SizedBox(height: 4),
                 InkWell(
-                  onTap: () => showCollectWalkInCreditDialog(context, sale),
+                  onTap: () => showCollectCreditDialog(context, sale),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
