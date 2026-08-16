@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -43,26 +44,38 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const BrandMark(size: 84),
-                  const SizedBox(height: 24),
-                  Text('Welcome back', style: theme.textTheme.displayMedium, textAlign: TextAlign.center),
+                  const BrandMark(size: 76),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Welcome back',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 6),
                   Text(
-                    'Sign in to manage your produce business',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                    'Sign in to manage your wholesale vegetable operations',
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 28),
@@ -73,56 +86,127 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         TextFormField(
                           controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: Icon(MingCuteIcons.mgc_mail_line),
-                          ),
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
-                          validator: (v) => v == null || v.isEmpty ? 'Email is required' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Email address',
+                            hintText: 'name@business.com',
+                            prefixIcon: Icon(HeroIcons.envelope, size: 20),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!val.contains('@') || !val.contains('.')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _login(),
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            prefixIcon: const Icon(MingCuteIcons.mgc_lock_line),
+                            prefixIcon: const Icon(HeroIcons.lock_closed, size: 20),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? MingCuteIcons.mgc_eye_line : MingCuteIcons.mgc_eye_close_line),
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              icon: Icon(
+                                _obscurePassword ? HeroIcons.eye_slash : HeroIcons.eye,
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setState(() => _obscurePassword = !_obscurePassword);
+                              },
                             ),
                           ),
-                          obscureText: _obscurePassword,
-                          onFieldSubmitted: (_) => _login(),
-                          validator: (v) => v == null || v.isEmpty ? 'Password is required' : null,
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
                         ),
                         if (auth.error != null) ...[
                           const SizedBox(height: 14),
-                          _errorBanner(theme, auth.error!),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.roseSurface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.rose.withValues(alpha: 0.25), width: 1),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(HeroIcons.exclamation_triangle, color: AppColors.rose, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    auth.error!,
+                                    style: GoogleFonts.inter(fontSize: 12.5, color: AppColors.rose, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: auth.isLoading ? null : _login,
-                          child: auth.isLoading
-                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                              : const Text('Sign In'),
+                        const SizedBox(height: 22),
+                        SizedBox(
+                          height: 50,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: auth.isLoading ? null : _login,
+                            child: auth.isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Sign In',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                        'Don\'t have an account? ',
+                        style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 13.5),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SignupPage()),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SignupPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Register now',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.emeraldDark,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                          ),
                         ),
-                        child: const Text('Sign Up'),
                       ),
                     ],
                   ),
@@ -131,23 +215,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _errorBanner(ThemeData theme, String message) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Row(
-        children: [
-          Icon(MingCuteIcons.mgc_information_line, size: 20, color: theme.colorScheme.error),
-          const SizedBox(width: 10),
-          Expanded(child: Text(message, style: TextStyle(color: theme.colorScheme.error, fontSize: 13, fontWeight: FontWeight.w500))),
-        ],
       ),
     );
   }

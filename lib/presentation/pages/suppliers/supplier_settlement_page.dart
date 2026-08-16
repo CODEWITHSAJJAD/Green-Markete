@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -250,10 +250,10 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: 'Search suppliers by name',
-                prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 20),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(MingCuteIcons.mgc_close_line),
+                        icon: const Icon(HeroIcons.x_mark, size: 20),
                         onPressed: () => setState(() => _searchCtrl.clear()),
                       )
                     : null,
@@ -292,7 +292,7 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 32),
                 child: EmptyState(
-                  icon: MingCuteIcons.mgc_store_line,
+                  icon: HeroIcons.building_storefront,
                   title: query.isNotEmpty ? 'No matching suppliers' : 'No suppliers yet',
                   subtitle: query.isNotEmpty
                       ? 'Try modifying your search query.'
@@ -397,7 +397,7 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
         child: EmptyState(
-          icon: MingCuteIcons.mgc_inbox_line,
+          icon: HeroIcons.inbox,
           title: 'No purchases',
           subtitle: 'No batch purchases found for the selected range.',
         ),

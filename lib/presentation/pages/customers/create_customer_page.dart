@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/models/customer_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
+import '../../widgets/green_card.dart';
 
 class CreateCustomerPage extends StatefulWidget {
   final CustomerModel? customer;
@@ -69,7 +74,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
         DataRefreshNotifier.instance.refresh(businessId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditing ? 'Customer updated successfully' : 'Customer created successfully'),
+            content: Text(_isEditing ? 'Buyer updated successfully' : 'Buyer created successfully'),
           ),
         );
         Navigator.of(context).pop();
@@ -92,48 +97,109 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Customer' : 'Create Customer')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          _isEditing ? 'Edit Buyer Profile' : 'Register New Buyer',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              TextFormField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Full name'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Phone'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return null;
-                  return Validators.phone(v);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cityCtrl,
-                decoration: const InputDecoration(labelText: 'City'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _shopCtrl,
-                decoration: const InputDecoration(labelText: 'Shop / stall'),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _saving ? null : _submit,
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(_isEditing ? 'Save Changes' : 'Save Customer'),
+              GreenCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Buyer Information',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name (required)',
+                        hintText: 'e.g. Haji Rashid Ahmed',
+                        prefixIcon: Icon(HeroIcons.user, size: 20),
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty ? 'Please enter buyer name' : null,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number',
+                        hintText: '03001234567',
+                        prefixIcon: Icon(HeroIcons.phone, size: 20),
+                      ),
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          return Validators.phone(value);
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _shopCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Shop / Business Name',
+                        hintText: 'e.g. Rashid Sabzi Stall #42',
+                        prefixIcon: Icon(HeroIcons.building_storefront, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _cityCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'City / Wholesale Mandi',
+                        hintText: 'e.g. Badami Bagh, Lahore',
+                        prefixIcon: Icon(HeroIcons.map_pin, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 50,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _saving ? null : _submit,
+                        child: _saving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                _isEditing ? 'Save Changes' : 'Create Buyer',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

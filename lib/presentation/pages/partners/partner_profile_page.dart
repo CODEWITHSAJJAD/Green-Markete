@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -44,21 +45,35 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     final transactionProvider = context.watch<TransactionProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Partner Profile')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          'Member Profile',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
+      ),
       body: partnerProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : partnerProvider.error != null
               ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(partnerProvider.error.toString()),
-                      const SizedBox(height: 12),
-                      FilledButton(
-                        onPressed: () => context.read<PartnerProvider>().load(businessId),
-                        child: const Text('Retry'),
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(HeroIcons.wifi, size: 44, color: AppColors.rose),
+                        const SizedBox(height: 12),
+                        Text(partnerProvider.error.toString(), style: GoogleFonts.inter(color: AppColors.rose)),
+                        const SizedBox(height: 14),
+                        FilledButton(
+                          onPressed: () => context.read<PartnerProvider>().load(businessId),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : _buildContent(
@@ -93,7 +108,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     final isEmployee = partner.memberType == 'employee';
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         GreenCard(
           padding: const EdgeInsets.all(20),
@@ -104,20 +119,38 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    child: Text(partner.fullName.substring(0, 1).toUpperCase()),
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      partner.fullName.isNotEmpty ? partner.fullName[0].toUpperCase() : 'P',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(partner.fullName, style: theme.textTheme.headlineSmall),
-                        const SizedBox(height: 4),
+                        Text(
+                          partner.fullName,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 17.5,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
                         Text(
                           [partner.role.toUpperCase(), partner.city, partner.phone]
                               .where((item) => item != null && item.isNotEmpty)
-                              .join('  •  '),
-                          style: theme.textTheme.bodyMedium,
+                              .join(' • '),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -126,27 +159,37 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
               ),
               const SizedBox(height: 16),
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  _chip(theme, isEmployee ? 'Type: Staff / Employee' : 'Type: Business Partner'),
-                  _chip(theme, 'Access: ${partner.accessLevel ?? 'viewer'}'),
-                  _chip(theme, partner.isClaimed ? 'Claimed profile' : 'Invitation pending'),
+                  _chip(isEmployee ? 'Staff / Employee' : 'Business Partner', isPrimary: true),
+                  _chip('Access: ${(partner.accessLevel ?? 'viewer').toUpperCase()}'),
+                  _chip(
+                    partner.isClaimed ? 'Account Linked' : 'Invitation Pending',
+                    isSuccess: partner.isClaimed,
+                  ),
                 ],
               ),
               if (!partner.isClaimed) ...[
                 const SizedBox(height: 16),
-                FilledButton.tonalIcon(
-                  onPressed: () async {
-                    await PartnerRepository().invite(partner.id);
-                    if (!context.mounted) return;
-                    context.read<PartnerProvider>().load(businessId);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invitation sent')),
-                    );
-                  },
-                  icon: const Icon(MingCuteIcons.mgc_send_line),
-                  label: const Text('Resend Invitation'),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () async {
+                      await PartnerRepository().invite(partner.id);
+                      if (!context.mounted) return;
+                      context.read<PartnerProvider>().load(businessId);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invitation SMS resent to partner')),
+                      );
+                    },
+                    icon: const Icon(HeroIcons.paper_airplane, size: 18),
+                    label: Text(
+                      'Resend Invite Link',
+                      style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -155,51 +198,56 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
         const SizedBox(height: 16),
         if (isOwner)
           GreenCard(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Access & Role Management',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    Text(
+                      'Access & Role Controls',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.primarySurface,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppColors.divider, width: 1),
                       ),
                       child: Text(
-                        'Owner Controls',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                        'Owner Settings',
+                        style: GoogleFonts.inter(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text('Member Type', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 16),
+                Text(
+                  'Member Classification',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
+                Row(
                   children: [
                     ChoiceChip(
-                      avatar: const Icon(MingCuteIcons.mgc_user_3_line, size: 16),
+                      avatar: const Icon(HeroIcons.user, size: 16),
                       label: const Text('Staff / Employee'),
                       selected: partner.memberType == 'employee',
                       onSelected: (_) => _updateMemberType(context, partner, businessId, 'employee'),
                     ),
+                    const SizedBox(width: 8),
                     ChoiceChip(
-                      avatar: const Icon(MingCuteIcons.mgc_briefcase_line, size: 16),
+                      avatar: const Icon(HeroIcons.briefcase, size: 16),
                       label: const Text('Business Partner'),
                       selected: partner.memberType == 'partner',
                       onSelected: (_) => _updateMemberType(context, partner, businessId, 'partner'),
@@ -207,7 +255,10 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text('Assigned Role', style: theme.textTheme.titleSmall),
+                Text(
+                  'Assigned Role',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -215,12 +266,15 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                   children: [
                     _roleChip(context, partner, businessId, 'purchaser', 'Purchaser'),
                     _roleChip(context, partner, businessId, 'seller', 'Seller'),
-                    _roleChip(context, partner, businessId, 'both', 'Both (Purchaser & Seller)'),
+                    _roleChip(context, partner, businessId, 'both', 'Manager (Both)'),
                     _roleChip(context, partner, businessId, 'accountant', 'Accountant'),
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text('Access Level', style: theme.textTheme.titleSmall),
+                Text(
+                  'Access Authority Level',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -240,16 +294,17 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                 if (partner.role != 'owner') ...[
                   const SizedBox(height: 20),
                   const Divider(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
-                      Icon(MingCuteIcons.mgc_safe_lock_line, size: 18, color: theme.colorScheme.primary),
+                      const Icon(HeroIcons.shield_check, size: 20, color: AppColors.primary),
                       const SizedBox(width: 8),
                       Text(
                         'Fine-Grained Permissions',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -263,17 +318,21 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                         manageOtherSide: partner.manageOtherSide,
                         customPermissions: partner.permissions,
                       );
-                      final hasPurchasing = partner.permissions?['can_purchase'] ?? (caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase));
-                      final hasSelling = partner.permissions?['can_sell'] ?? (caps.can(Capability.recordSale) || caps.can(Capability.createCustomer));
-                      final hasExpenses = partner.permissions?['can_expense'] ?? (caps.can(Capability.addExpense) || caps.can(Capability.createSettlement));
-                      final hasTransport = partner.permissions?['can_transport'] ?? caps.can(Capability.manageTransport);
-                      final hasBatchControl = partner.permissions?['can_close_batch'] ?? (caps.isEditor && caps.can(Capability.closeBatch));
+                      final hasPurchasing = partner.permissions?['can_purchase'] ??
+                          (caps.can(Capability.createBatch) || caps.can(Capability.recordPurchase));
+                      final hasSelling = partner.permissions?['can_sell'] ??
+                          (caps.can(Capability.recordSale) || caps.can(Capability.createCustomer));
+                      final hasExpenses = partner.permissions?['can_expense'] ??
+                          (caps.can(Capability.addExpense) || caps.can(Capability.createSettlement));
+                      final hasTransport =
+                          partner.permissions?['can_transport'] ?? caps.can(Capability.manageTransport);
+                      final hasBatchControl = partner.permissions?['can_close_batch'] ??
+                          (caps.isEditor && caps.can(Capability.closeBatch));
 
                       return Column(
                         children: [
                           _permissionToggleRow(
-                            theme,
-                            MingCuteIcons.mgc_shopping_bag_2_line,
+                            HeroIcons.shopping_bag,
                             'Batches & Purchases',
                             'Create new batches & log purchases',
                             hasPurchasing,
@@ -281,8 +340,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
-                            theme,
-                            MingCuteIcons.mgc_bill_line,
+                            HeroIcons.document_text,
                             'Sales & Customers',
                             'Record sales, create customers & invoices',
                             hasSelling,
@@ -290,8 +348,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
-                            theme,
-                            MingCuteIcons.mgc_wallet_3_line,
+                            HeroIcons.wallet,
                             'Expenses & Settlements',
                             'Log expenses & record partner/supplier settlements',
                             hasExpenses,
@@ -299,8 +356,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
-                            theme,
-                            MingCuteIcons.mgc_truck_line,
+                            HeroIcons.truck,
                             'Transport & Vehicles',
                             'Create & assign vehicle transport loads',
                             hasTransport,
@@ -308,8 +364,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
-                            theme,
-                            MingCuteIcons.mgc_route_line,
+                            HeroIcons.arrow_path,
                             'Batch Status & Closure Control',
                             hasBatchControl
                                 ? 'Elevated access (can advance & close batches)'
@@ -319,8 +374,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                           ),
                           const SizedBox(height: 8),
                           _permissionToggleRow(
-                            theme,
-                            MingCuteIcons.mgc_transfer_line,
+                            HeroIcons.arrows_right_left,
                             'Cross-Side Operations',
                             'Grants full write access on both business sides',
                             partner.manageOtherSide,
@@ -375,41 +429,53 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Ledger Snapshot', style: theme.textTheme.titleLarge),
+            Text(
+              'Ledger Snapshot',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+            ),
             TextButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => PartnerBalancePage(partnerId: widget.partnerId, partner: partner),
                 ),
               ),
-              child: const Text('Full Ledger'),
+              child: Text(
+                'Full Statement',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _stat(theme, 'Sent', (balance['total_sent'] as num?)?.toDouble() ?? 0)),
-            const SizedBox(width: 12),
-            Expanded(child: _stat(theme, 'Received', (balance['total_received'] as num?)?.toDouble() ?? 0)),
+            Expanded(child: _stat('Total Sent', (balance['total_sent'] as num?)?.toDouble() ?? 0)),
+            const SizedBox(width: 10),
+            Expanded(child: _stat('Total Received', (balance['total_received'] as num?)?.toDouble() ?? 0)),
           ],
         ),
-        const SizedBox(height: 12),
-        _stat(theme, 'Net Balance', (balance['net_balance'] as num?)?.toDouble() ?? 0, fullWidth: true),
+        const SizedBox(height: 10),
+        _stat('Net Outstanding Balance', (balance['net_balance'] as num?)?.toDouble() ?? 0, fullWidth: true),
         const SizedBox(height: 12),
         if (entries.isEmpty)
           GreenCard(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(MingCuteIcons.mgc_history_line, color: theme.colorScheme.onSurfaceVariant),
+                const Icon(HeroIcons.clock, color: AppColors.textTertiary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'No ledger entries yet. Payments, advances, and batch settlements recorded for this partner will appear here.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    'No ledger entries yet. Settlements and transactions recorded for this partner will appear here.',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ),
               ],
@@ -418,32 +484,52 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
         else
           ...entries.take(5).map(
                 (entry) => GreenCard(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  padding: EdgeInsets.zero,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: (entry['type'] == 'received' ? theme.colorScheme.primary : theme.colorScheme.error)
-                            .withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: (entry['type'] == 'received' ? AppColors.emeraldSurface : AppColors.roseSurface),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          entry['type'] == 'received' ? HeroIcons.arrow_down_left : HeroIcons.arrow_up_right,
+                          size: 16,
+                          color: entry['type'] == 'received' ? AppColors.emeraldDark : AppColors.rose,
+                        ),
                       ),
-                      child: Icon(
-                        entry['type'] == 'received' ? MingCuteIcons.mgc_arrow_down_line : MingCuteIcons.mgc_arrow_up_line,
-                        size: 16,
-                        color: entry['type'] == 'received' ? theme.colorScheme.primary : theme.colorScheme.error,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry['description']?.toString() ?? 'Transaction',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13.5,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              entry['date']?.toString() ?? '-',
+                              style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    title: Text(entry['description']?.toString() ?? '-'),
-                    subtitle: Text(entry['date']?.toString() ?? '-'),
-                    trailing: Text(
-                      '${entry['type'] == 'received' ? '+' : '-'} ${CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: entry['type'] == 'received' ? theme.colorScheme.primary : theme.colorScheme.error,
-                        fontWeight: FontWeight.w700,
+                      Text(
+                        '${entry['type'] == 'received' ? '+' : '-'} ${CurrencyFormatter.format((entry['amount'] as num?)?.toDouble() ?? 0)}',
+                        style: GoogleFonts.inter(
+                          color: entry['type'] == 'received' ? AppColors.emeraldDark : AppColors.rose,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.5,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -477,7 +563,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            ok ? 'Other-side access ${value ? 'granted' : 'revoked'}' : 'Update failed',
+            ok ? 'Cross-side write access ${value ? 'granted' : 'revoked'}' : 'Update failed',
           ),
         ),
       );
@@ -491,12 +577,11 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     String role,
     String label,
   ) {
-    final theme = Theme.of(context);
+    final isSelected = partner.role == role;
     return ChoiceChip(
       label: Text(label),
-      selected: partner.role == role,
+      selected: isSelected,
       onSelected: (_) => _updateRole(context, partner, businessId, role),
-      selectedColor: theme.colorScheme.secondary.withValues(alpha: 0.18),
     );
   }
 
@@ -540,51 +625,70 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
     }
   }
 
-  Widget _chip(ThemeData theme, String text) {
+  Widget _chip(String text, {bool isPrimary = false, bool isSuccess = false}) {
+    Color bg = AppColors.surfaceAlt;
+    Color fg = AppColors.textSecondary;
+    if (isPrimary) {
+      bg = AppColors.primarySurface;
+      fg = AppColors.primary;
+    } else if (isSuccess) {
+      bg = AppColors.emeraldSurface;
+      fg = AppColors.emeraldDark;
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.divider, width: 1),
       ),
-      child: Text(text),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          color: fg,
+        ),
+      ),
     );
   }
 
-  Widget _stat(ThemeData theme, String title, double value, {bool fullWidth = false}) {
+  Widget _stat(String title, double value, {bool fullWidth = false}) {
     return GreenCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 8),
-          Text(CurrencyFormatter.format(value), style: theme.textTheme.titleMedium),
+          Text(title, style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textTertiary)),
+          const SizedBox(height: 4),
+          Text(
+            CurrencyFormatter.format(value),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _permissionToggleRow(
-    ThemeData theme,
     IconData icon,
     String title,
     String subtitle,
     bool isGranted,
     ValueChanged<bool> onToggle,
   ) {
-    final color = isGranted ? theme.colorScheme.primary : theme.colorScheme.outline;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isGranted
-            ? theme.colorScheme.primary.withValues(alpha: 0.07)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(16),
+        color: isGranted ? AppColors.primarySurface : AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isGranted
-              ? theme.colorScheme.primary.withValues(alpha: 0.25)
-              : theme.colorScheme.outline.withValues(alpha: 0.1),
+          color: isGranted ? AppColors.primary.withValues(alpha: 0.25) : AppColors.divider,
         ),
       ),
       child: Row(
@@ -592,10 +696,10 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: (isGranted ? AppColors.primary : AppColors.textTertiary).withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 18, color: color),
+            child: Icon(icon, size: 18, color: isGranted ? AppColors.primary : AppColors.textTertiary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -604,16 +708,17 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
               children: [
                 Text(
                   title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isGranted ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: isGranted ? AppColors.textPrimary : AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  style: GoogleFonts.inter(
+                    color: AppColors.textTertiary,
                     fontSize: 11,
                   ),
                 ),
@@ -624,7 +729,7 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
           Switch.adaptive(
             value: isGranted,
             onChanged: onToggle,
-            activeTrackColor: theme.colorScheme.primary,
+            activeTrackColor: AppColors.primary,
           ),
         ],
       ),

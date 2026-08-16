@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
+
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
@@ -8,9 +11,8 @@ import '../../../data/models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
-import '../../widgets/green_card.dart';
 import '../../widgets/app_dropdown.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+import '../../widgets/green_card.dart';
 
 class RecordPaymentPage extends StatefulWidget {
   final CustomerModel customer;
@@ -58,45 +60,53 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
     final businessId = auth.businessId;
-    if (businessId == null || businessId.isEmpty) return;
+    if (businessId == null || businessId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No active business selected')),
+      );
+      return;
+    }
 
     setState(() => _saving = true);
     try {
-      final ok = await context.read<CustomerProvider>().recordPayment(
-        widget.customer.id,
-        PaymentCreateRequest(
-          customerId: widget.customer.id,
-          businessId: businessId,
-          amount: double.parse(_amountCtrl.text.trim()),
-          paymentMode: _paymentMode,
-          bankReference: _referenceCtrl.text.trim().isEmpty
-              ? null
-              : _referenceCtrl.text.trim(),
-          paymentDate: DateTime.now().toIso8601String().split('T').first,
-          receivedBy: auth.user?.id,
-          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-        ),
+      final customerProv = context.read<CustomerProvider>();
+      final payload = PaymentCreateRequest(
+        customerId: widget.customer.id,
+        businessId: businessId,
+        amount: amount,
+        paymentMode: _paymentMode,
+        bankReference: _referenceCtrl.text.trim().isEmpty ? null : _referenceCtrl.text.trim(),
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        paymentDate: DateTime.now().toIso8601String().split('T').first,
       );
+
+      final success = await customerProv.recordPayment(
+        widget.customer.id,
+        payload,
+      );
+
       if (!mounted) return;
-      if (ok) {
+      if (success) {
         DataRefreshNotifier.instance.refresh(businessId);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment recorded successfully')),
         );
-        Navigator.of(context).pop(true);
+        Navigator.pop(context, true);
       } else {
-        final err = context.read<CustomerProvider>().error;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(err?.toString() ?? 'Failed to record payment'),
+            content: Text(
+              customerProv.error ?? 'Failed to record payment',
+            ),
           ),
         );
       }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -104,15 +114,23 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
     final outstanding = widget.customer.outstandingBalance;
     final overLimit = amount > outstanding + 0.01;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Record Payment')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          'Record Buyer Payment',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
@@ -122,45 +140,38 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                 child: Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color:
-                            (outstanding > 0
-                                    ? AppColors.error
-                                    : AppColors.success)
-                                .withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        color: (outstanding > 0 ? AppColors.roseSurface : AppColors.emeraldSurface),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (outstanding > 0 ? AppColors.rose : AppColors.emerald).withValues(alpha: 0.25),
+                          width: 1,
+                        ),
                       ),
                       child: Icon(
-                        outstanding > 0
-                            ? MingCuteIcons.mgc_wallet_3_line
-                            : MingCuteIcons.mgc_check_circle_fill,
-                        color: outstanding > 0
-                            ? AppColors.error
-                            : AppColors.success,
-                        size: 20,
+                        outstanding > 0 ? HeroIcons.banknotes : HeroIcons.check_badge,
+                        color: outstanding > 0 ? AppColors.rose : AppColors.emeraldDark,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            outstanding > 0
-                                ? 'Outstanding balance'
-                                : 'No balance owed',
-                            style: theme.textTheme.labelMedium,
+                            outstanding > 0 ? 'Outstanding Buyer Credit' : 'No Outstanding Dues',
+                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             CurrencyFormatter.format(outstanding),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: outstanding > 0
-                                  ? AppColors.error
-                                  : AppColors.success,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: outstanding > 0 ? AppColors.rose : AppColors.emeraldDark,
                             ),
                           ),
                         ],
@@ -169,67 +180,101 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _amountCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Amount',
-                  helperText: outstanding > 0
-                      ? 'Must not exceed ${CurrencyFormatter.format(outstanding)}'
-                      : 'No balance owed',
-                  errorText: overLimit ? 'Exceeds outstanding balance' : null,
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Required';
-                  final v = double.tryParse(value.trim());
-                  if (v == null || v <= 0) return 'Enter a positive number';
-                  if (v > outstanding + 0.01)
-                    return 'Exceeds outstanding balance';
-                  return null;
-                },
-                onChanged: (_) => setState(() {}),
-              ),
               const SizedBox(height: 16),
-              AppDropdown<String>(
-                value: _paymentMode,
-                labelText: 'Payment mode',
-                items: const [
-                  DropdownItem(value: 'cash', child: Text('Cash')),
-                  DropdownItem(
-                    value: 'bank_transfer',
-                    child: Text('Bank transfer'),
-                  ),
-                ],
-                onChanged: (value) =>
-                    setState(() => _paymentMode = value ?? 'cash'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _referenceCtrl,
-                decoration: const InputDecoration(labelText: 'Bank reference'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _notesCtrl,
-                decoration: const InputDecoration(labelText: 'Notes'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: (_saving || overLimit) ? null : _submit,
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+              GreenCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Payment Entry Details',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15.5,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _amountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Payment Amount',
+                        prefixIcon: const Icon(HeroIcons.banknotes, size: 20),
+                        helperText: outstanding > 0
+                            ? 'Maximum limit: ${CurrencyFormatter.format(outstanding)}'
+                            : 'No balance owed',
+                        errorText: overLimit ? 'Exceeds outstanding balance' : null,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return 'Required';
+                        final v = double.tryParse(value.trim());
+                        if (v == null || v <= 0) return 'Enter a positive number';
+                        if (v > outstanding + 0.01) {
+                          return 'Exceeds outstanding balance';
+                        }
+                        return null;
+                      },
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 14),
+                    AppDropdown<String>(
+                      value: _paymentMode,
+                      labelText: 'Payment Mode',
+                      items: const [
+                        DropdownItem(value: 'cash', child: Text('Cash Received')),
+                        DropdownItem(value: 'bank_transfer', child: Text('Bank Transfer / Deposit')),
+                        DropdownItem(value: 'cheque', child: Text('Cheque / PDC')),
+                      ],
+                      onChanged: (v) => setState(() => _paymentMode = v ?? 'cash'),
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _referenceCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Transaction Reference / Bank Slip #',
+                        prefixIcon: Icon(HeroIcons.document_text, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _notesCtrl,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Notes (optional)',
+                        hintText: 'e.g. Cleared partial dues for last week purchase',
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      height: 50,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                      )
-                    : const Text('Save Payment'),
+                        onPressed: _saving ? null : _submit,
+                        child: _saving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Record Payment',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

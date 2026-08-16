@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -51,121 +52,218 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: true),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(HeroIcons.arrow_left, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             child: Form(
               key: _formKey,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const BrandMark(size: 68),
-                  const SizedBox(height: 20),
-                  Text('Create your account', style: theme.textTheme.displayMedium, textAlign: TextAlign.center),
-                  const SizedBox(height: 6),
+                  const BrandMark(size: 64),
+                  const SizedBox(height: 16),
                   Text(
-                    'Join Green Market to manage your business',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                    'Create an account',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Join the Green Market wholesale produce network',
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   GreenCard(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(22),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         TextFormField(
                           controller: _nameController,
+                          textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
                             labelText: 'Full Name',
-                            prefixIcon: Icon(MingCuteIcons.mgc_user_2_line),
+                            hintText: 'e.g. Tariq Mehmood',
+                            prefixIcon: Icon(HeroIcons.user, size: 20),
                           ),
-                          textInputAction: TextInputAction.next,
-                          validator: (v) => v == null || v.isEmpty ? 'Name is required' : null,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Please enter your name';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: Icon(MingCuteIcons.mgc_mail_line),
-                          ),
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
-                          validator: (v) => v == null || v.isEmpty ? 'Email is required' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            hintText: 'name@example.com',
+                            prefixIcon: Icon(HeroIcons.envelope, size: 20),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!val.contains('@') || !val.contains('.')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _phoneController,
-                          decoration: const InputDecoration(
-                            labelText: 'Phone (e.g., 03001234567)',
-                            prefixIcon: Icon(MingCuteIcons.mgc_phone_line),
-                          ),
                           keyboardType: TextInputType.phone,
                           textInputAction: TextInputAction.next,
-                          validator: Validators.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Phone (optional)',
+                            hintText: '03001234567',
+                            prefixIcon: Icon(HeroIcons.phone, size: 20),
+                          ),
+                          validator: (val) {
+                            if (val != null && val.isNotEmpty) {
+                              return Validators.phone(val);
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _cityController,
-                          decoration: const InputDecoration(
-                            labelText: 'City',
-                            prefixIcon: Icon(MingCuteIcons.mgc_building_2_line),
-                          ),
                           textInputAction: TextInputAction.next,
-                          validator: (v) => v == null || v.isEmpty ? 'City is required' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'City / Mandi (optional)',
+                            hintText: 'e.g. Lahore, Faisalabad',
+                            prefixIcon: Icon(HeroIcons.building_storefront, size: 20),
+                          ),
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _signup(),
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            prefixIcon: const Icon(MingCuteIcons.mgc_lock_line),
+                            prefixIcon: const Icon(HeroIcons.lock_closed, size: 20),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? MingCuteIcons.mgc_eye_line : MingCuteIcons.mgc_eye_close_line),
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              icon: Icon(
+                                _obscurePassword ? HeroIcons.eye_slash : HeroIcons.eye,
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setState(() => _obscurePassword = !_obscurePassword);
+                              },
                             ),
                           ),
-                          obscureText: _obscurePassword,
-                          onFieldSubmitted: (_) => _signup(),
-                          validator: (v) => v == null || v.isEmpty ? 'Password is required' : null,
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return 'Please enter a password';
+                            }
+                            if (val.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
                         ),
                         if (auth.error != null) ...[
                           const SizedBox(height: 14),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.error.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              color: AppColors.roseSurface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.rose.withValues(alpha: 0.25), width: 1),
                             ),
                             child: Row(
                               children: [
-                                Icon(MingCuteIcons.mgc_information_line, size: 20, color: theme.colorScheme.error),
-                                const SizedBox(width: 10),
+                                const Icon(HeroIcons.exclamation_triangle, color: AppColors.rose, size: 18),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     auth.error!,
-                                    style: TextStyle(color: theme.colorScheme.error, fontSize: 13, fontWeight: FontWeight.w500),
+                                    style: GoogleFonts.inter(fontSize: 12.5, color: AppColors.rose, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: auth.isLoading ? null : _signup,
-                          child: auth.isLoading
-                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                              : const Text('Create Account'),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          height: 50,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: auth.isLoading ? null : _signup,
+                            child: auth.isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Create Account',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                          ),
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account? ',
+                        style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 13.5),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Sign in',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.emeraldDark,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

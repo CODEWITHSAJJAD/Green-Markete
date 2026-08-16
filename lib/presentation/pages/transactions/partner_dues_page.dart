@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -53,79 +54,101 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final provider = context.watch<PartnerDuesProvider>();
     context.watch<PartnerProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Partner Dues')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          'Partner Dues',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.secondary.withValues(alpha: 0.10),
-                    theme.colorScheme.surface,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.08),
-                ),
-              ),
+            GreenCard(
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Dues to partners', style: theme.textTheme.headlineMedium),
-                  const SizedBox(height: 8),
                   Text(
-                    'Purchaser-side bills owed to seller partners for purchases, paid fully or in splits. Open a partner to see each batch.',
-                    style: theme.textTheme.bodyMedium,
+                    'Partner Settlement Dues',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Purchaser-side procurement bills owed to seller partners, payable in full or split installments.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
                     children: [
-                      _metric(
-                        theme,
-                        'Total bill',
-                        CurrencyFormatter.format(provider.totalBill),
+                      Expanded(
+                        child: _metricTile(
+                          'Total Bill Basis',
+                          CurrencyFormatter.format(provider.totalBill),
+                          AppColors.textPrimary,
+                        ),
                       ),
-                      _metric(
-                        theme,
-                        'Paid',
-                        CurrencyFormatter.format(provider.totalPaid),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _metricTile(
+                          'Total Settled',
+                          CurrencyFormatter.format(provider.totalPaid),
+                          AppColors.emeraldDark,
+                        ),
                       ),
-                      _metric(
-                        theme,
-                        'Outstanding',
-                        CurrencyFormatter.format(provider.totalOutstanding),
-                        color: provider.totalOutstanding > 0
-                            ? AppColors.error
-                            : AppColors.success,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _metricTile(
+                          'Outstanding',
+                          CurrencyFormatter.format(provider.totalOutstanding),
+                          provider.totalOutstanding > 0 ? AppColors.rose : AppColors.emeraldDark,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PartnerSettlementPage(),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.divider, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const PartnerSettlementPage(),
+                          ),
+                        );
+                        if (mounted) _reload();
+                      },
+                      icon: const Icon(HeroIcons.banknotes, size: 18, color: AppColors.primary),
+                      label: Text(
+                        'Record Partner Settlement',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.5,
+                          color: AppColors.primary,
                         ),
-                      );
-                      if (mounted) _reload();
-                    },
-                    icon: const Icon(MingCuteIcons.mgc_exchange_dollar_line),
-                    label: const Text('Record Settlement'),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -133,7 +156,7 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
             const SizedBox(height: 16),
             if (provider.isLoading)
               const Padding(
-                padding: EdgeInsets.all(24),
+                padding: EdgeInsets.all(32),
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (provider.error != null)
@@ -141,7 +164,7 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    Text(provider.error.toString()),
+                    Text(provider.error.toString(), style: GoogleFonts.inter(color: AppColors.rose)),
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: _reload,
@@ -152,76 +175,61 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
               )
             else if (provider.dues.isEmpty)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 32),
                 child: EmptyState(
-                  icon: MingCuteIcons.mgc_wallet_3_line,
+                  icon: HeroIcons.wallet,
                   title: 'No dues to partners',
-                  subtitle:
-                      'Add a seller partner to a batch purchase and its purchaser-side bill will appear here.',
+                  subtitle: 'Add seller partners to batch purchases and their calculated bill splits will appear here.',
                 ),
               )
             else
-              ...provider.dues.map((d) => _dueCard(theme, d)),
+              ...provider.dues.map((d) => _dueCard(d)),
           ],
         ),
       ),
     );
   }
 
-  Widget _dueCard(ThemeData theme, PartnerDueModel due) {
+  Widget _dueCard(PartnerDueModel due) {
     final name = _partnerName(due.partnerId);
     final remaining = due.totalRemaining;
     final settled = remaining <= 0.01;
+
     return GreenCard(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.zero,
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: 4,
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          AppSpacing.lg,
-        ),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         shape: const Border(),
         collapsedShape: const Border(),
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: settled
-                  ? AppColors.success.withValues(alpha: 0.12)
-                  : AppColors.error.withValues(alpha: 0.12),
-              child: Icon(
-                settled
-                    ? MingCuteIcons.mgc_check_circle_fill
-                    : MingCuteIcons.mgc_time_line,
-                color: settled ? AppColors.success : AppColors.error,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                name,
-                style: theme.textTheme.titleMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(left: 48),
-          child: Text(
-            'Bill ${CurrencyFormatter.format(due.totalBill)} · Paid ${CurrencyFormatter.format(due.totalPaid)}',
-            style: theme.textTheme.bodySmall,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        leading: CircleAvatar(
+          radius: 18,
+          backgroundColor: settled ? AppColors.emeraldSurface : AppColors.roseSurface,
+          child: Icon(
+            settled ? HeroIcons.check_circle : HeroIcons.clock,
+            color: settled ? AppColors.emeraldDark : AppColors.rose,
+            size: 20,
           ),
+        ),
+        title: Text(
+          name,
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 14.5,
+            color: AppColors.textPrimary,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          'Bill ${CurrencyFormatter.format(due.totalBill)} • Paid ${CurrencyFormatter.format(due.totalPaid)}',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -229,28 +237,34 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
           children: [
             Text(
               CurrencyFormatter.format(due.totalRemaining),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: settled ? AppColors.success : AppColors.error,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+                color: settled ? AppColors.emeraldDark : AppColors.rose,
               ),
             ),
             Text(
-              settled ? 'Settled' : 'Outstanding',
-              style: theme.textTheme.bodySmall,
+              settled ? 'Settled' : 'Payable Due',
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: settled ? AppColors.emeraldDark : AppColors.rose,
+              ),
             ),
           ],
         ),
         children: [
+          const Divider(height: 16),
           for (final b in due.batches) ...[
-            if (b != due.batches.first) const Divider(height: 16),
-            _batchDueRow(theme, b),
+            if (b != due.batches.first) const Divider(height: 14),
+            _batchDueRow(b),
           ],
         ],
       ),
     );
   }
 
-  Widget _batchDueRow(ThemeData theme, BatchDueModel due) {
+  Widget _batchDueRow(BatchDueModel due) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -262,14 +276,16 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
                 children: [
                   Text(
                     due.batchCode,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   if (due.productName != null && due.productName!.isNotEmpty)
                     Text(
                       due.productName!,
-                      style: theme.textTheme.bodySmall,
+                      style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -282,26 +298,31 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
                   builder: (_) => BatchDetailPage(batchId: due.batchId),
                 ),
               ),
-              child: const Text('Open'),
+              child: Text(
+                'Open Batch',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: Text(
-                'Bill ${CurrencyFormatter.format(due.bill)} · Paid ${CurrencyFormatter.format(due.paid)}',
-                style: theme.textTheme.bodySmall,
-              ),
+            Text(
+              'Bill: ${CurrencyFormatter.format(due.bill)} • Paid: ${CurrencyFormatter.format(due.paid)}',
+              style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textTertiary),
             ),
             Text(
               CurrencyFormatter.format(due.remaining),
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: due.isFullySettled
-                    ? AppColors.success
-                    : AppColors.error,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: due.isFullySettled ? AppColors.emeraldDark : AppColors.rose,
               ),
             ),
           ],
@@ -310,27 +331,34 @@ class _PartnerDuesPageState extends State<PartnerDuesPage> {
     );
   }
 
-  Widget _metric(ThemeData theme, String label, String value, {Color? color}) {
+  Widget _metricTile(String label, String value, Color valueColor) {
     return Container(
-      width: 165,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.08),
-        ),
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.divider, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
           Text(
             value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: color,
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: valueColor,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
+
+import '../../../core/config/theme.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../widgets/app_dropdown.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+import '../../widgets/green_card.dart';
 
 class CreatePartnerPage extends StatefulWidget {
   const CreatePartnerPage({super.key});
@@ -62,11 +67,11 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
       );
       Navigator.of(context).pop();
     } else {
+      final err = context.read<PartnerProvider>().error;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            context.read<PartnerProvider>().error ?? 'Failed to add member',
-          ),
+          content: Text(err ?? 'Could not create partner'),
+          backgroundColor: AppColors.rose,
         ),
       );
     }
@@ -74,178 +79,232 @@ class _CreatePartnerPageState extends State<CreatePartnerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final auth = context.watch<AuthProvider>();
     final currentBusiness =
         auth.businesses.where((b) => b.id == auth.businessId).firstOrNull;
     final isSoloBusiness = currentBusiness?.businessType == 'single';
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(isSoloBusiness ? 'Add Employee' : 'Add Member (Employee / Partner)'),
+        title: Text(
+          isSoloBusiness ? 'Add Team Member' : 'Add Team / Partner',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!isSoloBusiness) ...[
-                Text('Member Classification', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Row(
+              GreenCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('Staff / Employee'),
-                        selected: _memberType == 'employee',
-                        onSelected: (_) => setState(() {
-                          _memberType = 'employee';
-                          if (_role == 'partner') _role = 'purchaser';
-                        }),
+                    Text(
+                      'Member Information & Role',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('Business Partner'),
-                        selected: _memberType == 'partner',
-                        onSelected: (_) => setState(() {
-                          _memberType = 'partner';
-                          _role = 'partner';
-                        }),
+                    const SizedBox(height: 16),
+                    if (!isSoloBusiness) ...[
+                      Text(
+                        'Member Classification',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('Staff / Employee'),
+                              selected: _memberType == 'employee',
+                              onSelected: (_) => setState(() {
+                                _memberType = 'employee';
+                                if (_role == 'partner') _role = 'purchaser';
+                              }),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('Business Partner'),
+                              selected: _memberType == 'partner',
+                              onSelected: (_) => setState(() {
+                                _memberType = 'partner';
+                                _role = 'partner';
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ] else ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySurface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.divider, width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(HeroIcons.information_circle, size: 20, color: AppColors.primary),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Single-Owner Business: Members are created as Staff / Employees with scoped operational permissions.',
+                                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    TextFormField(
+                      controller: _nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name (required)',
+                        hintText: 'e.g. Aslam Khan',
+                        prefixIcon: Icon(HeroIcons.user, size: 20),
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty ? 'Please enter member name' : null,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number (required)',
+                        hintText: '03001234567',
+                        prefixIcon: Icon(HeroIcons.phone, size: 20),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Phone is required for linking account';
+                        return Validators.phone(v);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _cityCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'City / Station',
+                        hintText: 'e.g. Sargodha, Multan',
+                        prefixIcon: Icon(HeroIcons.map_pin, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    AppDropdown<String>(
+                      value: _role,
+                      labelText: _memberType == 'employee' ? 'Operational Role' : 'Partner Role',
+                      items: _memberType == 'employee'
+                          ? const [
+                              DropdownItem(
+                                value: 'purchaser',
+                                child: Text('Purchaser (Procurement & Transport)'),
+                              ),
+                              DropdownItem(
+                                value: 'seller',
+                                child: Text('Seller (Sales & Customer Dues)'),
+                              ),
+                              DropdownItem(
+                                value: 'accountant',
+                                child: Text('Accountant (Expenses & Ledgers)'),
+                              ),
+                              DropdownItem(
+                                value: 'both',
+                                child: Text('Manager (Both Purchasing & Selling)'),
+                              ),
+                            ]
+                          : const [
+                              DropdownItem(
+                                value: 'partner',
+                                child: Text('Partner (Equity Co-Owner)'),
+                              ),
+                              DropdownItem(
+                                value: 'purchaser',
+                                child: Text('Purchaser Partner (Managing Sourcing)'),
+                              ),
+                              DropdownItem(
+                                value: 'seller',
+                                child: Text('Seller Partner (Managing Mandi Sales)'),
+                              ),
+                              DropdownItem(
+                                value: 'both',
+                                child: Text('Active Executive Partner (Full Access)'),
+                              ),
+                            ],
+                      onChanged: (value) => setState(() =>
+                          _role = value ?? (_memberType == 'employee' ? 'purchaser' : 'partner')),
+                    ),
+                    const SizedBox(height: 14),
+                    AppDropdown<String>(
+                      value: _accessLevel,
+                      labelText: 'Access Authority Level',
+                      items: const [
+                        DropdownItem(value: 'viewer', child: Text('Viewer (Scoped Operations)')),
+                        DropdownItem(value: 'editor', child: Text('Editor (Full Edit & Advance)')),
+                      ],
+                      onChanged: (value) => setState(() => _accessLevel = value ?? 'viewer'),
+                    ),
+                    const SizedBox(height: 10),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Allow cross-side editing',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      ),
+                      subtitle: Text(
+                        'Grants write access on both Purchaser & Seller operations.',
+                        style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textSecondary),
+                      ),
+                      value: _manageOtherSide,
+                      onChanged: (value) => setState(() => _manageOtherSide = value),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      height: 50,
+                      width: double.infinity,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _saving ? null : _submit,
+                        child: _saving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Save Member Profile',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-              ] else ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.12)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, size: 18, color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Single Owner Business: All members are added as Staff / Employees.',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              TextFormField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Full name'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Phone'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return null;
-                  return Validators.phone(v);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cityCtrl,
-                decoration: const InputDecoration(labelText: 'City'),
-              ),
-              const SizedBox(height: 16),
-              AppDropdown<String>(
-                value: _role,
-                labelText: _memberType == 'employee' ? 'Employee Role' : 'Partner Role',
-                items: _memberType == 'employee'
-                    ? const [
-                        DropdownItem(
-                          value: 'purchaser',
-                          child: Text('Purchaser (Purchases, Transport & Suppliers)'),
-                        ),
-                        DropdownItem(
-                          value: 'seller',
-                          child: Text('Seller (Sales, Customers & Settlements)'),
-                        ),
-                        DropdownItem(
-                          value: 'accountant',
-                          child: Text('Accountant (Expenses, Dues & Ledgers)'),
-                        ),
-                        DropdownItem(
-                          value: 'both',
-                          child: Text('Manager (Both Purchasing & Selling)'),
-                        ),
-                      ]
-                    : const [
-                        DropdownItem(
-                          value: 'partner',
-                          child: Text('Partner (Investor / Equity Co-Owner)'),
-                        ),
-                        DropdownItem(
-                          value: 'purchaser',
-                          child: Text('Purchaser Partner (Managing Purchases)'),
-                        ),
-                        DropdownItem(
-                          value: 'seller',
-                          child: Text('Seller Partner (Managing Sales)'),
-                        ),
-                        DropdownItem(
-                          value: 'both',
-                          child: Text('Active Partner (Managing Both Sides)'),
-                        ),
-                      ],
-                onChanged: (value) =>
-                    setState(() => _role = value ?? (_memberType == 'employee' ? 'purchaser' : 'partner')),
-              ),
-              const SizedBox(height: 16),
-              AppDropdown<String>(
-                value: _accessLevel,
-                labelText: 'Access level',
-                hintText:
-                    'Editor can change batch status; Viewer writes their own side only',
-                items: const [
-                  DropdownItem(value: 'viewer', child: Text('Viewer')),
-                  DropdownItem(value: 'editor', child: Text('Editor')),
-                ],
-                onChanged: (value) =>
-                    setState(() => _accessLevel = value ?? 'viewer'),
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Allow editing the other side'),
-                subtitle: const Text(
-                  'Grant write access on both sides '
-                  '(e.g. a purchaser can also manage sales).',
-                ),
-                value: _manageOtherSide,
-                onChanged: (value) =>
-                    setState(() => _manageOtherSide = value),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _saving ? null : _submit,
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Save Partner'),
               ),
             ],
           ),

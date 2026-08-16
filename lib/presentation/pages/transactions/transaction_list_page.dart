@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -31,56 +32,76 @@ class _TransactionListPageState extends State<TransactionListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final businessId = context.watch<AuthProvider>().businessId ?? '';
     final partnerProvider = context.watch<PartnerProvider>();
     final partners = partnerProvider.partners;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Partner Settlements')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          'Settlements Center',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.secondary.withValues(alpha: 0.10),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
+          GreenCard(
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Settlement center', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
                 Text(
-                  'Review partner balances and record inter-partner cash or bank settlements.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PartnerSettlementPage()),
+                  'Partner Settlement Ledger',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
                   ),
-                  icon: const Icon(MingCuteIcons.mgc_exchange_dollar_line),
-                  label: const Text('Record Settlement'),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Audit partner balance sheets and record cash or bank settlements across partners and equity holders.',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PartnerSettlementPage()),
+                    ),
+                    icon: const Icon(HeroIcons.banknotes, size: 19),
+                    label: Text(
+                      'Record New Settlement',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xl),
-          const SectionHeader(title: 'Partner ledgers'),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 20),
+          const SectionHeader(title: 'Partner Ledgers & Accounts'),
+          const SizedBox(height: 10),
           if (partnerProvider.isLoading)
             const Padding(
-              padding: EdgeInsets.all(24),
+              padding: EdgeInsets.all(32),
               child: Center(child: CircularProgressIndicator()),
             )
           else if (partnerProvider.error != null)
@@ -88,7 +109,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Text(partnerProvider.error.toString()),
+                  Text(partnerProvider.error.toString(), style: GoogleFonts.inter(color: AppColors.rose)),
                   const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () => context.read<PartnerProvider>().load(businessId),
@@ -98,50 +119,80 @@ class _TransactionListPageState extends State<TransactionListPage> {
               ),
             )
           else if (partners.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
               child: EmptyState(
-                icon: MingCuteIcons.mgc_exchange_dollar_line,
-                title: 'No partners yet',
-                subtitle: 'Add partners to track balances and settlements.',
+                icon: HeroIcons.users,
+                title: 'No partners found',
+                subtitle: 'Add team members or partners to begin recording inter-partner balances.',
               ),
             )
           else
-            Column(
-              children: partners
-                  .map(
-                    (partner) => GreenCard(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          radius: 22,
-                          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-                          child: Text(
-                            partner.fullName.substring(0, 1).toUpperCase(),
-                            style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+            ...partners.map(
+              (partner) => GreenCard(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PartnerBalancePage(
+                      partnerId: partner.id,
+                      partner: partner,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySurface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.divider, width: 1),
+                      ),
+                      child: Center(
+                        child: Text(
+                          partner.fullName.isNotEmpty ? partner.fullName[0].toUpperCase() : 'P',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                            color: AppColors.primary,
                           ),
-                        ),
-                        title: Text(partner.fullName, style: theme.textTheme.titleMedium),
-                        subtitle: Text(partner.role, style: theme.textTheme.bodySmall),
-                        trailing: OutlinedButton(
-                          onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => PartnerBalancePage(partnerId: partner.id, partner: partner),
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(0, 44),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: const Text('Ledger'),
                         ),
                       ),
                     ),
-                  )
-                  .toList(),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            partner.fullName,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14.5,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            partner.phone ?? 'No phone number',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      HeroIcons.chevron_right,
+                      size: 16,
+                      color: AppColors.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
             ),
         ],
       ),

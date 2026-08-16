@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -14,6 +15,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/credit_indicator.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
 import '../../widgets/section_header.dart';
 import 'record_payment_page.dart';
@@ -137,58 +139,88 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CustomerProvider>();
-    final theme = Theme.of(context);
 
     Widget ledgerSection;
     if (provider.isLoading) {
       ledgerSection = const Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: EdgeInsets.all(32),
           child: CircularProgressIndicator(),
         ),
       );
     } else if (provider.error != null) {
-      ledgerSection = Text(provider.error!.toString());
+      ledgerSection = Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(provider.error!.toString(), style: GoogleFonts.inter(color: AppColors.rose)),
+      );
     } else if (provider.ledger.isEmpty) {
       ledgerSection = const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Text('No credit or payment activity yet.'),
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: EmptyState(
+          icon: HeroIcons.receipt_percent,
+          title: 'No transaction activity',
+          subtitle: 'Sales invoices and payments recorded for this buyer will appear in this ledger.',
+        ),
       );
     } else {
       ledgerSection = Column(
         children: provider.ledger
             .map(
               (entry) => GreenCard(
-                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                padding: const EdgeInsets.all(AppSpacing.lg),
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor: entry.type == 'payment'
-                          ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                          : theme.colorScheme.secondary.withValues(alpha: 0.12),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: (entry.type == 'payment' ? AppColors.emeraldSurface : AppColors.roseSurface),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Icon(
-                        entry.type == 'payment' ? MingCuteIcons.mgc_arrow_down_line : MingCuteIcons.mgc_arrow_up_line,
-                        color: entry.type == 'payment' ? theme.colorScheme.primary : theme.colorScheme.secondary,
+                        entry.type == 'payment' ? HeroIcons.arrow_down_left : HeroIcons.arrow_up_right,
+                        color: entry.type == 'payment' ? AppColors.emeraldDark : AppColors.rose,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(entry.description, style: theme.textTheme.titleMedium),
-                          const SizedBox(height: 4),
-                          Text(entry.date, style: theme.textTheme.bodySmall),
+                          Text(
+                            entry.description,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            entry.date,
+                            style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textSecondary),
+                          ),
                         ],
                       ),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(CurrencyFormatter.format(entry.amount), style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 4),
-                        Text('Bal: ${CurrencyFormatter.format(entry.runningBalance)}', style: theme.textTheme.bodySmall),
+                        Text(
+                          '${entry.type == 'payment' ? '-' : '+'} ${CurrencyFormatter.format(entry.amount)}',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: entry.type == 'payment' ? AppColors.emeraldDark : AppColors.rose,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Bal: ${CurrencyFormatter.format(entry.runningBalance)}',
+                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textTertiary),
+                        ),
                       ],
                     ),
                   ],
@@ -200,61 +232,84 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Customer Ledger'),
+        title: Text(
+          'Buyer Ledger',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
         actions: [
           IconButton(
             tooltip: 'Share statement',
             onPressed: _shareStatement,
-            icon: const Icon(MingCuteIcons.mgc_share_2_line),
+            icon: const Icon(HeroIcons.share, size: 20),
           ),
           if (context.watch<AuthProvider>().canEditSellerSide)
             IconButton(
+              tooltip: 'Record Payment',
               onPressed: _openRecordPayment,
-              icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
+              icon: const Icon(HeroIcons.banknotes, size: 20),
             ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withValues(alpha: 0.08),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
+          GreenCard(
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.customer.fullName, style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 6),
+                Text(
+                  widget.customer.fullName,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 3),
                 Text(
                   [widget.customer.shopName, widget.customer.city, widget.customer.phone]
                       .where((item) => item != null && item.isNotEmpty)
-                      .join('  •  '),
-                  style: theme.textTheme.bodyMedium,
+                      .join(' • '),
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                const SizedBox(height: 16),
+                Row(
                   children: [
-                    _metric(theme, 'Purchased', CurrencyFormatter.format(widget.customer.totalPurchased)),
-                    _metric(theme, 'Paid', CurrencyFormatter.format(widget.customer.totalPaid)),
-                    _metric(theme, 'Outstanding', CurrencyFormatter.format(widget.customer.outstandingBalance)),
+                    Expanded(
+                      child: _metricTile(
+                        'Total Credit',
+                        CurrencyFormatter.format(widget.customer.totalPurchased),
+                        AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _metricTile(
+                        'Total Cleared',
+                        CurrencyFormatter.format(widget.customer.totalPaid),
+                        AppColors.emeraldDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _metricTile(
+                        'Outstanding Due',
+                        CurrencyFormatter.format(widget.customer.outstandingBalance),
+                        widget.customer.outstandingBalance > 0 ? AppColors.rose : AppColors.emeraldDark,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 CreditIndicator(
                   totalPurchased: widget.customer.totalPurchased,
                   totalPaid: widget.customer.totalPaid,
@@ -263,37 +318,61 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
             ),
           ),
           const SizedBox(height: 20),
-          const SectionHeader(title: 'Transaction history'),
-          const SizedBox(height: 12),
+          const SectionHeader(title: 'Transaction & Payment Timeline'),
+          const SizedBox(height: 10),
           ledgerSection,
         ],
       ),
       floatingActionButton: context.watch<AuthProvider>().canEditSellerSide
           ? FloatingActionButton.extended(
               heroTag: null,
+              backgroundColor: AppColors.primary,
               onPressed: _openRecordPayment,
-              icon: const Icon(MingCuteIcons.mgc_add_line),
-              label: const Text('Record Payment'),
+              icon: const Icon(HeroIcons.banknotes, size: 20),
+              label: Text(
+                'Record Payment',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
             )
           : null,
     );
   }
 
-  Widget _metric(ThemeData theme, String label, String value) {
+  Widget _metricTile(String label, String value, Color valueColor) {
     return Container(
-      width: 150,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.divider, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 8),
-          Text(value, style: theme.textTheme.titleMedium),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: valueColor,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

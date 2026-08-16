@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/green_card.dart';
 import '../../widgets/section_header.dart';
-import 'access_management_page.dart';
 import 'about_page.dart';
+import 'access_management_page.dart';
 import 'audit_log_page.dart';
 import 'business_settings_page.dart';
 import 'business_switcher_page.dart';
@@ -20,98 +21,201 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final authState = context.watch<AuthProvider>();
     final user = authState.user;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          'Settings',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-            ),
+          GreenCard(
+            padding: const EdgeInsets.all(18),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 28,
-                  backgroundColor: theme.colorScheme.primaryContainer,
+                  radius: 26,
+                  backgroundColor: AppColors.primary,
                   child: Text(
                     (user?.fullName?.isNotEmpty == true ? user!.fullName![0] : 'U').toUpperCase(),
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: theme.colorScheme.primary),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user?.fullName ?? 'User', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-                      Text(user?.email ?? '', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                      Text(
+                        user?.fullName ?? 'User Profile',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? '',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.divider, width: 1),
+                  ),
+                  child: Text(
+                    (user?.role ?? 'Owner').toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Account'),
-          const SizedBox(height: 4),
-          _settingTile(theme, MingCuteIcons.mgc_user_1_line, 'Edit Profile', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePage()))),
-          _settingTile(theme, MingCuteIcons.mgc_building_2_line, 'Business Info', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSettingsPage()))),
-          _settingTile(theme, MingCuteIcons.mgc_store_2_line, 'Switch / Add Business', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BusinessSwitcherPage()))),
-          _settingTile(theme, MingCuteIcons.mgc_shield_line, 'Access Management', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccessManagementPage()))),
+          const SizedBox(height: 20),
+          const SectionHeader(title: 'Business & Team Management'),
+          const SizedBox(height: 8),
+          _settingTile(
+            HeroIcons.user_circle,
+            'Personal Profile',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            ),
+          ),
+          _settingTile(
+            HeroIcons.building_office_2,
+            'Business Profile & Info',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BusinessSettingsPage()),
+            ),
+          ),
+          _settingTile(
+            HeroIcons.arrows_right_left,
+            'Switch / Add Enterprise Business',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BusinessSwitcherPage()),
+            ),
+          ),
+          _settingTile(
+            HeroIcons.shield_check,
+            'Access Control & Roles Matrix',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AccessManagementPage()),
+            ),
+          ),
           if (user?.role == 'owner')
-            _settingTile(theme, MingCuteIcons.mgc_history_line, 'Audit Log', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuditLogPage()))),
-          _settingTile(theme, MingCuteIcons.mgc_notification_line, 'Notifications', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationSettingsPage()))),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Support'),
-          const SizedBox(height: 4),
-          _settingTile(theme, MingCuteIcons.mgc_question_line, 'Help Center', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HelpCenterPage()))),
-          _settingTile(theme, MingCuteIcons.mgc_information_line, 'About', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AboutPage()))),
-          const SizedBox(height: 32),
+            _settingTile(
+              HeroIcons.clock,
+              'System Audit Logs',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AuditLogPage()),
+              ),
+            ),
+          _settingTile(
+            HeroIcons.bell,
+            'Push & Alert Notifications',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const SectionHeader(title: 'Help & Knowledge Base'),
+          const SizedBox(height: 8),
+          _settingTile(
+            HeroIcons.question_mark_circle,
+            'Help & Documentation',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const HelpCenterPage()),
+            ),
+          ),
+          _settingTile(
+            HeroIcons.information_circle,
+            'About Green Market',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AboutPage()),
+            ),
+          ),
+          const SizedBox(height: 28),
           SizedBox(
-            height: 48,
+            height: 50,
             child: OutlinedButton.icon(
               onPressed: () => context.read<AuthProvider>().logout(),
-              icon: const Icon(MingCuteIcons.mgc_exit_door_line, size: 18),
-              label: const Text('Sign Out'),
+              icon: const Icon(HeroIcons.arrow_left_on_rectangle, size: 19, color: AppColors.rose),
+              label: Text(
+                'Sign Out of Session',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  color: AppColors.rose,
+                ),
+              ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
-                side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.3)),
+                side: const BorderSide(color: AppColors.rose, width: 1.2),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
+          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _settingTile(ThemeData theme, IconData icon, String title, {VoidCallback? onTap}) {
+  Widget _settingTile(IconData icon, String title, {VoidCallback? onTap}) {
     return GreenCard(
-      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+      margin: const EdgeInsets.only(bottom: 8),
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            color: AppColors.primarySurface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.divider, width: 1),
           ),
-          child: Icon(icon, size: 20, color: AppColors.primary),
+          child: Icon(icon, color: AppColors.primary, size: 18),
         ),
-        title: Text(title, style: theme.textTheme.bodyLarge),
-        trailing: Icon(MingCuteIcons.mgc_arrow_right_line, color: AppColors.textTertiary),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        trailing: const Icon(
+          HeroIcons.chevron_right,
+          size: 16,
+          color: AppColors.textTertiary,
+        ),
       ),
     );
   }
