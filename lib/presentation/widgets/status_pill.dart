@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/config/theme.dart';
 
-/// A compact status indicator with a colored dot and label.
+/// A modern, luxury status indicator with a colored dot and clear label.
 class StatusPill extends StatelessWidget {
   const StatusPill({super.key, required this.status, this.showDot = true});
 
@@ -10,32 +10,52 @@ class StatusPill extends StatelessWidget {
   final bool showDot;
 
   Color get _color {
-    switch (status.toLowerCase()) {
+    switch (status.toLowerCase().trim()) {
       case 'purchased':
         return AppColors.textSecondary;
       case 'packed':
-        return const Color(0xFF2563EB);
+        return AppColors.indigo;
       case 'in_transit':
-        return AppColors.pending;
+        return AppColors.sky;
       case 'delivered':
-        return AppColors.success;
+        return AppColors.emerald;
       case 'selling':
-        return AppColors.primary;
+        return AppColors.secondary;
       case 'closed':
         return AppColors.textTertiary;
+      case 'paid':
+      case 'cleared':
+        return AppColors.emerald;
+      case 'partial':
+      case 'pending':
+        return AppColors.amber;
+      case 'unpaid':
+      case 'overdue':
+        return AppColors.rose;
       default:
         return AppColors.textSecondary;
     }
   }
 
   String get _label {
-    switch (status.toLowerCase()) {
+    final clean = status.toLowerCase().trim();
+    switch (clean) {
       case 'in_transit':
         return 'In Transit';
       case 'purchased':
         return 'Purchased';
+      case 'packed':
+        return 'Packed';
+      case 'delivered':
+        return 'Delivered';
+      case 'selling':
+        return 'Selling in Market';
+      case 'closed':
+        return 'Closed';
       default:
-        return status[0].toUpperCase() + status.substring(1);
+        if (clean.isEmpty) return '';
+        final words = clean.replaceAll('_', ' ').split(' ');
+        return words.map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
     }
   }
 
@@ -44,10 +64,14 @@ class StatusPill extends StatelessWidget {
     final color = _color;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.20),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -56,7 +80,10 @@ class StatusPill extends StatelessWidget {
             Container(
               width: 6,
               height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
             ),
             const SizedBox(width: 6),
           ],
@@ -64,8 +91,9 @@ class StatusPill extends StatelessWidget {
             _label,
             style: TextStyle(
               color: color,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
           ),
         ],

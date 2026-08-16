@@ -1,24 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
+
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 
 Widget buildBatchMetric(ThemeData theme, String label, String value) {
   return Container(
-    width: 155,
-    padding: const EdgeInsets.all(14),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(18),
+      color: AppColors.surfaceAlt,
+      borderRadius: BorderRadius.circular(14),
       border: Border.all(
-        color: theme.colorScheme.outline.withValues(alpha: 0.08),
+        color: AppColors.divider,
+        width: 1,
       ),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: theme.textTheme.bodySmall),
-        const SizedBox(height: 8),
-        Text(value, style: theme.textTheme.titleSmall),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            color: AppColors.textTertiary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            color: AppColors.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ],
     ),
   );
@@ -37,16 +54,18 @@ Widget buildBatchCostLine(
       children: [
         Text(
           title,
-          style: TextStyle(
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+          style: GoogleFonts.inter(
+            fontSize: 13.5,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+            color: bold ? AppColors.textPrimary : AppColors.textSecondary,
           ),
         ),
         Text(
           CurrencyFormatter.format(value),
-          style: TextStyle(
-            fontFamily: 'Roboto Mono',
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-            color: bold ? theme.colorScheme.primary : null,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            color: bold ? AppColors.primary : AppColors.textPrimary,
           ),
         ),
       ],
@@ -55,31 +74,27 @@ Widget buildBatchCostLine(
 }
 
 IconData getPaymentModeIcon(String mode) {
-  switch (mode) {
+  switch (mode.toLowerCase()) {
     case 'cash':
-      return MingCuteIcons.mgc_wallet_3_line;
+      return HeroIcons.banknotes;
     case 'credit':
-      return MingCuteIcons.mgc_time_line;
-    case 'bank_transfer':
-      return MingCuteIcons.mgc_bank_line;
-    case 'partial_credit':
-      return MingCuteIcons.mgc_chart_pie_line;
+      return HeroIcons.credit_card;
+    case 'part_credit':
+      return HeroIcons.wallet;
     default:
-      return MingCuteIcons.mgc_bill_line;
+      return HeroIcons.banknotes;
   }
 }
 
 Color getPaymentModeColor(ThemeData theme, String mode) {
-  switch (mode) {
+  switch (mode.toLowerCase()) {
     case 'cash':
-      return theme.colorScheme.primary;
+      return AppColors.emerald;
     case 'credit':
-      return theme.colorScheme.error;
-    case 'bank_transfer':
-      return Colors.blue;
-    case 'partial_credit':
-      return theme.colorScheme.secondary;
+      return AppColors.rose;
+    case 'part_credit':
+      return AppColors.amber;
     default:
-      return theme.colorScheme.outline;
+      return AppColors.primary;
   }
 }

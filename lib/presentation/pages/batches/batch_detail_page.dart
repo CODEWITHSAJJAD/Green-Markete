@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -100,13 +101,30 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           callback: (_) {
             expenses.load(batchId);
             pl.load(batchId);
+            detail.load(batchId);
           },
         )
         .subscribe();
+
     _salesChannel = client
         .channel('sales_batch_$batchId')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'sales',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'batch_id',
+            value: batchId,
+          ),
+          callback: (_) {
+            sales.loadByBatch(batchId);
+            pl.load(batchId);
+            detail.load(batchId);
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'sales',
           filter: PostgresChangeFilter(
@@ -125,10 +143,13 @@ class _BatchDetailPageState extends State<BatchDetailPage>
 
   @override
   void dispose() {
-    final client = SupabaseService.instance.client;
-    if (_expensesChannel != null) client.removeChannel(_expensesChannel!);
-    if (_salesChannel != null) client.removeChannel(_salesChannel!);
     _tabCtrl.dispose();
+    if (_expensesChannel != null) {
+      SupabaseService.instance.client.removeChannel(_expensesChannel!);
+    }
+    if (_salesChannel != null) {
+      SupabaseService.instance.client.removeChannel(_salesChannel!);
+    }
     super.dispose();
   }
 
@@ -136,38 +157,40 @@ class _BatchDetailPageState extends State<BatchDetailPage>
   Widget build(BuildContext context) {
     final batchProvider = context.watch<BatchDetailProvider>();
     final batch = batchProvider.batch;
-    final canDelete = context.watch<AuthProvider>().capabilities.can(Capability.closeBatch);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Batch Details'),
+        title: Text(
+          batch?.productName ?? 'Batch Details',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           IconButton(
-            tooltip: 'Open P&L report',
-            icon: const Icon(MingCuteIcons.mgc_chart_bar_line),
+            tooltip: 'Profit & Loss Statement',
+            icon: const Icon(HeroIcons.presentation_chart_bar, size: 20),
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => BatchPLPage(batchId: batchId)),
+              MaterialPageRoute(
+                builder: (_) => BatchPLPage(batchId: batchId),
+              ),
             ),
           ),
-          if (canDelete)
+          if (batch != null &&
+              batch.status != 'closed' &&
+              context.watch<AuthProvider>().capabilities.can(Capability.closeBatch))
             IconButton(
-              tooltip: batch?.status == 'closed'
-                  ? 'Batch closed'
-                  : 'Mark as closed',
-              icon: Icon(
-                batch?.status == 'closed'
-                    ? MingCuteIcons.mgc_check_circle_fill
-                    : MingCuteIcons.mgc_archive_line,
-                color: batch?.status == 'closed' ? AppColors.primary : null,
-              ),
-              onPressed: batch?.status == 'closed'
-                  ? null
-                  : () => confirmCloseBatch(context, batchId),
+              tooltip: 'Close Batch',
+              icon: const Icon(HeroIcons.archive_box, size: 20),
+              onPressed: () => confirmCloseBatch(context, batchId),
             ),
         ],
         bottom: TabBar(
           controller: _tabCtrl,
           isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Packing'),
@@ -175,7 +198,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             Tab(text: 'Expenses'),
             Tab(text: 'Transport'),
             Tab(text: 'Sales'),
-            Tab(text: 'Settlements'),
+            Tab(text: 'Settlement'),
             Tab(text: 'P&L'),
           ],
         ),
@@ -199,12 +222,14 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       if (batchProvider.error != null) {
         return Center(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(batchProvider.error!),
+                Icon(HeroIcons.wifi, size: 44, color: AppColors.rose),
                 const SizedBox(height: 12),
+                Text(batchProvider.error!, textAlign: TextAlign.center),
+                const SizedBox(height: 14),
                 OutlinedButton(
                   onPressed: () =>
                       context.read<BatchDetailProvider>().load(batchId),
@@ -215,7 +240,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           ),
         );
       }
-      return const Center(child: Text('No batch data'));
+      return const Center(child: Text('No batch data found'));
     }
     return TabBarView(
       controller: _tabCtrl,
@@ -241,8 +266,10 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       if (!canPurchaser) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         onPressed: () => showAddPackingDialog(context, batchId),
-        icon: const Icon(MingCuteIcons.mgc_add_line),
+        icon: const Icon(HeroIcons.plus, size: 18),
         label: const Text('Packing'),
       );
     }
@@ -250,8 +277,10 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       if (!canPurchaser) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         onPressed: () => showAddReturnDialog(context, batchId),
-        icon: const Icon(MingCuteIcons.mgc_arrow_to_left_line),
+        icon: const Icon(HeroIcons.arrow_uturn_left, size: 18),
         label: const Text('Return'),
       );
     }
@@ -265,6 +294,8 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       if (allowed.isEmpty) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         onPressed: () async {
           await showExpenseEntrySheet(
             context,
@@ -276,7 +307,7 @@ class _BatchDetailPageState extends State<BatchDetailPage>
           context.read<BatchPLProvider>().load(batchId);
           context.read<BatchDetailProvider>().load(batchId);
         },
-        icon: const Icon(MingCuteIcons.mgc_add_line),
+        icon: const Icon(HeroIcons.plus, size: 18),
         label: const Text('Expense'),
       );
     }
@@ -284,9 +315,11 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       if (!canPurchaser) return const SizedBox.shrink();
       return FloatingActionButton.extended(
         heroTag: null,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         onPressed: () => showAddTransportDialog(context, batchId),
-        icon: const Icon(MingCuteIcons.mgc_truck_line),
-        label: const Text('Load'),
+        icon: const Icon(HeroIcons.truck, size: 18),
+        label: const Text('Transport'),
       );
     }
     if (tabIndex == 5) {
@@ -299,6 +332,8 @@ class _BatchDetailPageState extends State<BatchDetailPage>
       );
       return FloatingActionButton.extended(
         heroTag: null,
+        backgroundColor: AppColors.secondary,
+        foregroundColor: Colors.white,
         onPressed: () async {
           final saved = await showSaleEntrySheet(
             context,
@@ -316,8 +351,8 @@ class _BatchDetailPageState extends State<BatchDetailPage>
             }
           }
         },
-        icon: const Icon(MingCuteIcons.mgc_add_line),
-        label: const Text('Sale'),
+        icon: const Icon(HeroIcons.plus, size: 18),
+        label: const Text('Record Sale'),
       );
     }
     return const SizedBox.shrink();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 
 import '../../core/config/theme.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -15,25 +16,24 @@ class RecentActivityList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     if (activities.isEmpty) {
       return Container(
-        padding: const EdgeInsets.symmetric(vertical: 36),
+        padding: const EdgeInsets.symmetric(vertical: 40),
         alignment: Alignment.center,
         child: Column(
           children: [
-            Icon(
-              MingCuteIcons.mgc_inbox_line,
-              size: 44,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
+            const Icon(
+              HeroIcons.inbox,
+              size: 42,
+              color: AppColors.textTertiary,
             ),
             const SizedBox(height: 10),
             Text(
-              'No active batches yet',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                fontWeight: FontWeight.w500,
+              'No active batches in supply chain',
+              style: GoogleFonts.inter(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ],
@@ -49,7 +49,7 @@ class RecentActivityList extends StatelessWidget {
 
         return GreenCard(
           margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => BatchDetailPage(batchId: batch.id),
@@ -61,11 +61,15 @@ class RecentActivityList extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.divider,
+                    width: 1,
+                  ),
                 ),
                 child: const Icon(
-                  MingCuteIcons.mgc_leaf_2_line,
+                  HeroIcons.cube,
                   size: 22,
                   color: AppColors.primary,
                 ),
@@ -82,38 +86,71 @@ class RecentActivityList extends StatelessWidget {
                             title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14.5,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          '#${batch.batchCode}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceAlt,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '#${batch.batchCode}',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10.5,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        StatusPill(status: batch.status),
                         if (batch.supplierName != null && batch.supplierName!.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Expanded(
+                          const Icon(
+                            HeroIcons.building_storefront,
+                            size: 12,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
                             child: Text(
                               batch.supplierName!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            '•',
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
                         ],
+                        Text(
+                          '${batch.totalQuantity.toStringAsFixed(batch.totalQuantity.truncateToDouble() == batch.totalQuantity ? 0 : 1)} ${batch.quantityUnit}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -123,19 +160,14 @@ class RecentActivityList extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
+                  StatusPill(status: batch.status),
+                  const SizedBox(height: 5),
                   Text(
                     CurrencyFormatter.format(batch.totalPurchaseCost),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.5,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],

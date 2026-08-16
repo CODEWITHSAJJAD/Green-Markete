@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/customer_model.dart';
 import '../../pages/batches/create_batch_wizard.dart';
 import '../../pages/customers/record_payment_page.dart';
 import '../../pages/reports/reports_page.dart';
 import '../../pages/sales/quick_sale_page.dart';
+import '../../pages/suppliers/supplier_settlement_page.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/capability.dart';
 import '../../providers/customer_provider.dart';
 import '../green_card.dart';
-
-import '../../pages/suppliers/supplier_settlement_page.dart';
 
 class DashboardQuickActions extends StatelessWidget {
   const DashboardQuickActions({super.key});
@@ -28,9 +29,9 @@ class DashboardQuickActions extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => _CustomerPaymentPicker(
         onCustomerSelected: (customer) {
@@ -59,13 +60,18 @@ class DashboardQuickActions extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         onTap: onTap,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
+                color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.18),
+                  width: 1,
+                ),
               ),
               child: Icon(icon, color: color, size: 20),
             ),
@@ -75,9 +81,10 @@ class DashboardQuickActions extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
+              style: GoogleFonts.plusJakartaSans(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.5,
               ),
             ),
           ],
@@ -89,64 +96,63 @@ class DashboardQuickActions extends StatelessWidget {
       if (canCreate)
         Expanded(
           child: tile(
-            MingCuteIcons.mgc_add_line,
+            HeroIcons.plus,
             'New Batch',
             () => Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (_) => const CreateBatchWizard(),
               ),
             ),
-            theme.colorScheme.primary,
+            AppColors.primary,
           ),
         ),
       if (canSell)
         Expanded(
           child: tile(
-            MingCuteIcons.mgc_bill_line,
-            'New Sale',
+            HeroIcons.shopping_cart,
+            'Quick Sale',
             () => Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (_) => const QuickSalePage(),
               ),
             ),
-            theme.colorScheme.secondary,
+            AppColors.secondary,
           ),
         ),
       if (canRecordPayment)
         Expanded(
           child: tile(
-            MingCuteIcons.mgc_wallet_3_line,
-            'Record Payment',
+            HeroIcons.banknotes,
+            'Collect Cash',
             () => _recordPayment(context),
-            Colors.deepPurple,
+            AppColors.emerald,
           ),
         ),
       if (canManageSupplier && !canSell)
         Expanded(
           child: tile(
-            MingCuteIcons.mgc_store_2_line,
+            HeroIcons.building_storefront,
             'Suppliers',
             () => Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (_) => const SupplierSettlementPage(),
               ),
             ),
-            const Color(0xFFD97706),
+            AppColors.amber,
           ),
         ),
       Expanded(
         child: tile(
-          MingCuteIcons.mgc_chart_bar_line,
+          HeroIcons.chart_bar,
           'Reports',
           () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(builder: (_) => const ReportsPage()),
           ),
-          const Color(0xFF0EA5E9),
+          AppColors.indigo,
         ),
       ),
     ];
 
-    // Build row with 8px spacing between elements
     final spacedItems = <Widget>[];
     for (var i = 0; i < items.length; i++) {
       if (i > 0) spacedItems.add(const SizedBox(width: 8));
@@ -156,7 +162,12 @@ class DashboardQuickActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quick actions', style: theme.textTheme.titleLarge),
+        Text(
+          'Quick Operations',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: 12),
         Row(children: spacedItems),
       ],
@@ -199,131 +210,161 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
             )
             .toList();
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (ctx, scrollController) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+        left: 20,
+        right: 20,
+        top: 20,
+      ),
+      child: SizedBox(
+        height: 520,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
                     'Select Customer for Payment',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _searchCtrl,
-                decoration: InputDecoration(
-                  hintText: 'Search customer by name, phone or city...',
-                  prefixIcon: const Icon(MingCuteIcons.mgc_search_line, size: 18),
-                  suffixIcon: _query.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _query = '');
-                          },
-                        )
-                      : null,
                 ),
-                onChanged: (v) => setState(() => _query = v.trim()),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text(
-                          customers.isEmpty
-                              ? 'No customers found.'
-                              : 'No customers match your search.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(HeroIcons.x_mark, size: 20),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchCtrl,
+              onChanged: (val) => setState(() => _query = val),
+              decoration: InputDecoration(
+                hintText: 'Search buyer by name, phone or city...',
+                prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
+                fillColor: AppColors.surfaceAlt,
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(HeroIcons.x_circle, size: 18),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _query = '');
+                        },
                       )
-                    : ListView.separated(
-                        controller: scrollController,
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final customer = filtered[index];
-                          final hasDebt = customer.outstandingBalance > 0;
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            HeroIcons.user_minus,
+                            size: 40,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'No customers found',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
                             ),
-                            leading: CircleAvatar(
-                              backgroundColor: hasDebt
-                                  ? Colors.red.withValues(alpha: 0.1)
-                                  : Colors.green.withValues(alpha: 0.1),
-                              child: Icon(
-                                MingCuteIcons.mgc_user_3_line,
-                                color: hasDebt ? Colors.red : Colors.green,
-                                size: 20,
-                              ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (ctx, i) {
+                        final c = filtered[i];
+                        final hasCredit = c.outstandingBalance > 0;
+                        return InkWell(
+                          onTap: () => widget.onCustomerSelected(c),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.divider, width: 1),
                             ),
-                            title: Text(
-                              customer.fullName,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              [
-                                if (customer.city != null && customer.city!.isNotEmpty)
-                                  customer.city,
-                                if (customer.phone != null && customer.phone!.isNotEmpty)
-                                  customer.phone,
-                              ].join(' • '),
-                              style: theme.textTheme.bodySmall,
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                            child: Row(
                               children: [
-                                Text(
-                                  CurrencyFormatter.format(
-                                    customer.outstandingBalance,
-                                  ),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: hasDebt ? Colors.red : Colors.green,
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: AppColors.primarySurface,
+                                  child: Text(
+                                    c.fullName.isNotEmpty ? c.fullName[0].toUpperCase() : '?',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  hasDebt ? 'Due balance' : 'Cleared',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: hasDebt
-                                        ? Colors.red.shade700
-                                        : Colors.green.shade700,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        c.fullName,
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14.5,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        [c.phone, c.city].where((e) => e != null && e.isNotEmpty).join(' • '),
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      CurrencyFormatter.format(c.outstandingBalance),
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14,
+                                        color: hasCredit ? AppColors.rose : AppColors.emerald,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      hasCredit ? 'Outstanding Due' : 'Zero Balance',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: hasCredit ? AppColors.rose : AppColors.emerald,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            onTap: () => widget.onCustomerSelected(customer),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        );
-      },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

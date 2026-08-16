@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/config/theme.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
 import '../../../data/models/customer_model.dart';
 import '../../../data/models/sale_model.dart';
@@ -7,11 +12,12 @@ import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
-import '../../widgets/app_dropdown.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+import '../../widgets/green_card.dart';
 
 class QuickSalePage extends StatefulWidget {
-  const QuickSalePage({super.key});
+  final String? preselectedBatchId;
+
+  const QuickSalePage({super.key, this.preselectedBatchId});
 
   @override
   State<QuickSalePage> createState() => _QuickSalePageState();
@@ -38,7 +44,15 @@ class _QuickSalePageState extends State<QuickSalePage> {
   void _load() {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
-      context.read<BatchListProvider>().load(businessId, status: 'selling');
+      context.read<BatchListProvider>().load(businessId, status: 'selling').then((_) {
+        if (widget.preselectedBatchId != null && mounted) {
+          final batches = context.read<BatchListProvider>().batches;
+          final match = batches.where((b) => b.id == widget.preselectedBatchId).firstOrNull;
+          if (match != null) {
+            setState(() => _selectedBatch = match);
+          }
+        }
+      });
       context.read<CustomerProvider>().load(businessId);
     }
   }
@@ -65,8 +79,8 @@ class _QuickSalePageState extends State<QuickSalePage> {
     final creditAmount = _paymentMode == 'partial_credit'
         ? (totalAmount - cashReceived)
         : _paymentMode == 'credit'
-        ? totalAmount
-        : 0.0;
+            ? totalAmount
+            : 0.0;
 
     setState(() => _saving = true);
     final ok = await context.read<SaleProvider>().add(
@@ -80,9 +94,7 @@ class _QuickSalePageState extends State<QuickSalePage> {
         paymentMode: _paymentMode,
         cashReceived: cashReceived,
         creditAmount: creditAmount,
-        bankReference: _bankRefCtrl.text.trim().isEmpty
-            ? null
-            : _bankRefCtrl.text.trim(),
+        bankReference: _bankRefCtrl.text.trim().isEmpty ? null : _bankRefCtrl.text.trim(),
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       ),
     );
@@ -115,7 +127,16 @@ class _QuickSalePageState extends State<QuickSalePage> {
     final customersProvider = context.watch<CustomerProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quick Sale')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          'Record Wholesale Order',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
+      ),
       body: _buildBody(context, batchesProvider, customersProvider),
     );
   }
@@ -125,135 +146,181 @@ class _QuickSalePageState extends State<QuickSalePage> {
     BatchListProvider batchesProvider,
     CustomerProvider customersProvider,
   ) {
-    if (batchesProvider.isLoading) {
+    if (batchesProvider.isLoading || customersProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (batchesProvider.error != null) {
-      return Center(child: Text(batchesProvider.error!));
-    }
-    if (customersProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (customersProvider.error != null) {
-      return Center(child: Text(customersProvider.error!));
-    }
 
-    final batchList = batchesProvider.batches;
-    final customerList = customersProvider.customers;
+    final batches = batchesProvider.batches;
+    final customers = customersProvider.customers;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            AppDropdown<BatchModel>.fromList(
-              value: _selectedBatch,
-              labelText: 'Batch',
-              items: batchList,
-              itemLabel: (batch) => '${batch.batchCode} • ${batch.productName ?? 'Batch'}',
-              onChanged: (value) => setState(() => _selectedBatch = value),
-              validator: (value) => value == null ? 'Select a batch' : null,
-            ),
-            const SizedBox(height: 16),
-            AppDropdown<CustomerModel?>(
-              value: _selectedCustomer,
-              labelText: 'Customer',
-              items: [
-                const DropdownItem<CustomerModel?>(
-                  value: null,
-                  child: Text('Walk-in customer'),
-                ),
-                ...customerList.map(
-                  (customer) => DropdownItem<CustomerModel?>(
-                    value: customer,
-                    child: Text(customer.fullName),
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        children: [
+          GreenCard(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Order Parameters',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ],
-              onChanged: (value) => setState(() => _selectedCustomer = value),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _quantityCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'Quantity sold'),
-              validator: (value) =>
-                  value == null || value.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _priceCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'Price per unit'),
-              validator: (value) =>
-                  value == null || value.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            AppDropdown<String>(
-              value: _paymentMode,
-              labelText: 'Payment mode',
-              items: const [
-                DropdownItem(value: 'cash', child: Text('Cash')),
-                DropdownItem(value: 'credit', child: Text('Credit')),
-                DropdownItem(
-                  value: 'partial_credit',
-                  child: Text('Partial credit'),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<BatchModel>(
+                  value: _selectedBatch,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Selling Batch *',
+                    prefixIcon: Icon(HeroIcons.cube, size: 18),
+                  ),
+                  isExpanded: true,
+                  items: batches
+                      .map(
+                        (b) => DropdownMenuItem(
+                          value: b,
+                          child: Text(
+                            '#${b.batchCode} - ${b.productName ?? 'Product'} (${b.totalQuantity.toStringAsFixed(0)} ${b.quantityUnit})',
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(fontSize: 13),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) => setState(() => _selectedBatch = val),
+                  validator: (v) => v == null ? 'Please select a batch' : null,
                 ),
-                DropdownItem(
-                  value: 'bank_transfer',
-                  child: Text('Bank transfer'),
-                ),
-              ],
-              onChanged: (value) =>
-                  setState(() => _paymentMode = value ?? 'cash'),
-            ),
-            if (_paymentMode == 'partial_credit' ||
-                _paymentMode == 'bank_transfer') ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cashCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: _paymentMode == 'partial_credit'
-                      ? 'Cash received'
-                      : 'Cash received (optional)',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _bankRefCtrl,
-                decoration: const InputDecoration(labelText: 'Bank reference'),
-              ),
-            ],
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _notesCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Notes'),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _saving ? null : _submit,
-              child: _saving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                const SizedBox(height: 14),
+                DropdownButtonFormField<CustomerModel?>(
+                  value: _selectedCustomer,
+                  decoration: const InputDecoration(
+                    labelText: 'Customer / Buyer (Optional for Walk-in)',
+                    prefixIcon: Icon(HeroIcons.user, size: 18),
+                  ),
+                  isExpanded: true,
+                  items: [
+                    DropdownMenuItem<CustomerModel?>(
+                      value: null,
+                      child: Text('Direct Walk-in Buyer', style: GoogleFonts.inter(fontSize: 13)),
+                    ),
+                    ...customers.map(
+                      (c) => DropdownMenuItem<CustomerModel?>(
+                        value: c,
+                        child: Text(
+                          '${c.fullName}${c.shopName != null ? ' (${c.shopName})' : ''}',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 13),
+                        ),
                       ),
-                    )
-                  : const Text('Save Sale'),
+                    ),
+                  ],
+                  onChanged: (val) => setState(() => _selectedCustomer = val),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _quantityCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Quantity Sold *',
+                          suffixText: _selectedBatch?.quantityUnit ?? 'units',
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Required';
+                          if (double.tryParse(v.trim()) == null) return 'Invalid';
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _priceCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Price / Unit *',
+                          prefixText: '${CurrencyFormatter.currentCode} ',
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Required';
+                          if (double.tryParse(v.trim()) == null) return 'Invalid';
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  value: _paymentMode,
+                  decoration: const InputDecoration(
+                    labelText: 'Settlement Terms *',
+                    prefixIcon: Icon(HeroIcons.credit_card, size: 18),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'cash', child: Text('Full Cash Payment')),
+                    DropdownMenuItem(value: 'credit', child: Text('Full Credit (Customer Account)')),
+                    DropdownMenuItem(value: 'partial_credit', child: Text('Split Cash & Credit')),
+                  ],
+                  onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
+                ),
+                if (_paymentMode == 'partial_credit') ...[
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _cashCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Cash Paid Upfront *',
+                      prefixText: '${CurrencyFormatter.currentCode} ',
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Required';
+                      if (double.tryParse(v.trim()) == null) return 'Invalid';
+                      return null;
+                    },
+                  ),
+                ],
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _notesCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Dispatch / Order Notes (Optional)',
+                    prefixIcon: Icon(HeroIcons.document_text, size: 18),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _submit,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Icon(HeroIcons.check_circle, size: 20),
+              label: Text(
+                _saving ? 'Recording...' : 'Confirm & Save Sale',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15.5,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

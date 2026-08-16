@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -61,7 +62,7 @@ class _MarketListPageState extends State<MarketListPage> {
     final ok = await showConfirmDialog(
       context,
       title: 'Delete ${market.name}?',
-      message: 'This market will be permanently deleted. Batches that already reference it keep their records.',
+      message: 'This market will be permanently deleted. Batches referencing it will retain their history.',
       confirmLabel: 'Delete',
       isDestructive: true,
     );
@@ -80,8 +81,6 @@ class _MarketListPageState extends State<MarketListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final businessId = context.watch<AuthProvider>().businessId ?? '';
     final marketProvider = context.watch<MarketProvider>();
     final allMarkets = marketProvider.markets;
 
@@ -96,74 +95,123 @@ class _MarketListPageState extends State<MarketListPage> {
           }).toList();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Markets'),
+        title: Text(
+          'Mandi & Market Terminals',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
         onPressed: _openCreate,
-        icon: const Icon(MingCuteIcons.mgc_store_2_line),
-        label: const Text('New Market'),
+        icon: const Icon(HeroIcons.plus, size: 18),
+        label: Text(
+          'Add Mandi / Market',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.secondary.withValues(alpha: 0.10),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('City & market network', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  'Organize source and destination markets, stalls, and routes for every batch.',
-                  style: theme.textTheme.bodyMedium,
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.divider, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow.withValues(alpha: 0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _searchCtrl,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Search markets by name or city',
-                    prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
-                    suffixIcon: _searchCtrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(MingCuteIcons.mgc_close_line),
-                            onPressed: () => setState(() => _searchCtrl.clear()),
-                          )
-                        : null,
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.indigoSurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.indigo.withValues(alpha: 0.25), width: 1),
+                  ),
+                  child: const Icon(HeroIcons.building_storefront, size: 24, color: AppColors.indigo),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Wholesale Market Directory',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15.5,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Manage wholesale Mandis, trade yards, and delivery destination terminals.',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchCtrl,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Search markets by name, city, or address...',
+              prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
+              suffixIcon: _searchCtrl.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(HeroIcons.x_circle, size: 18),
+                      onPressed: () => setState(() => _searchCtrl.clear()),
+                    )
+                  : null,
+            ),
+          ),
           const SizedBox(height: 20),
           if (marketProvider.isLoading)
             const Padding(
-              padding: EdgeInsets.all(24),
+              padding: EdgeInsets.all(32),
               child: Center(child: CircularProgressIndicator()),
             )
           else if (marketProvider.error != null)
-            Padding(
+            GreenCard(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Text(marketProvider.error.toString()),
+                  Icon(HeroIcons.wifi, size: 44, color: AppColors.rose),
+                  const SizedBox(height: 10),
+                  Text(marketProvider.error!),
                   const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => context.read<MarketProvider>().load(businessId),
+                  OutlinedButton(
+                    onPressed: () {
+                      final bId = context.read<AuthProvider>().businessId ?? '';
+                      if (bId.isNotEmpty) marketProvider.load(bId);
+                    },
                     child: const Text('Retry'),
                   ),
                 ],
@@ -171,78 +219,81 @@ class _MarketListPageState extends State<MarketListPage> {
             )
           else if (filteredMarkets.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 32),
               child: EmptyState(
-                icon: MingCuteIcons.mgc_store_2_line,
-                title: query.isNotEmpty ? 'No matching markets' : 'No markets found',
-                subtitle: 'Add source and destination markets to organise batch routes.',
-                actionLabel: 'New Market',
+                icon: HeroIcons.building_storefront,
+                title: query.isNotEmpty ? 'No matching markets found' : 'No wholesale markets added',
+                subtitle: query.isNotEmpty
+                    ? 'Try a different search keyword.'
+                    : 'Add wholesale grain and vegetable Mandis to assign destination endpoints.',
+                actionLabel: 'Add Market',
                 onAction: _openCreate,
               ),
             )
           else
             Column(
-              children: filteredMarkets
-                  .map(
-                    (market) => Dismissible(
-                      key: ValueKey('market-${market.id}'),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.error.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(AppRadius.md),
+              children: filteredMarkets.map((market) {
+                return Dismissible(
+                  key: ValueKey('market-${market.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.roseSurface,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: AppColors.rose, width: 1),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: const Icon(HeroIcons.trash, color: AppColors.rose),
+                  ),
+                  confirmDismiss: (_) => _confirmDelete(market),
+                  child: GreenCard(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    onTap: () => _openEdit(market),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySurface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.divider, width: 1),
+                          ),
+                          child: const Icon(HeroIcons.building_storefront, size: 22, color: AppColors.primary),
                         ),
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
-                      ),
-                      confirmDismiss: (_) => _confirmDelete(market),
-                      child: GestureDetector(
-                        onTap: () => _openEdit(market),
-                        child: GreenCard(
-                          margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          child: Row(
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.secondary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Icon(MingCuteIcons.mgc_store_2_line, color: theme.colorScheme.secondary),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(market.name, style: theme.textTheme.titleMedium),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      [market.city, market.stallNumber, market.marketType]
-                                          .where((item) => item != null && item.isNotEmpty)
-                                          .join('  •  '),
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                  ],
+                              Text(
+                                market.name,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                MingCuteIcons.mgc_edit_2_line,
-                                size: 20,
-                                color: theme.colorScheme.outline,
+                              const SizedBox(height: 2),
+                              Text(
+                                [market.city, market.address].where((e) => e != null && e.isNotEmpty).join(' • '),
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ),
+                        const Icon(HeroIcons.pencil_square, size: 18, color: AppColors.textSecondary),
+                      ],
                     ),
-                  )
-                  .toList(),
+                  ),
+                );
+              }).toList(),
             ),
         ],
       ),

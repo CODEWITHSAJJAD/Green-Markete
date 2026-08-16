@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -27,48 +28,41 @@ class BatchOverviewTab extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary.withValues(alpha: 0.10),
-                theme.colorScheme.surface,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.08),
-            ),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.divider, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadow.withValues(alpha: 0.03),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (batch.status == 'closed')
                 Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.6,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.divider, width: 1),
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        MingCuteIcons.mgc_lock_line,
-                        size: 16,
-                        color: theme.colorScheme.onSurface,
-                      ),
+                      const Icon(HeroIcons.lock_closed, size: 16, color: AppColors.textPrimary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Closed — read only. Edits, packing, expenses and sales are locked.',
-                          style: theme.textTheme.labelMedium,
+                          'Closed — Read only. Edits, packing, expenses, and sales are locked.',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     ],
@@ -81,13 +75,22 @@ class BatchOverviewTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          batch.productName ?? 'Batch',
-                          style: theme.textTheme.headlineMedium,
+                          batch.productName ?? 'Produce Batch',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 20,
+                            letterSpacing: -0.3,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
-                          batch.batchCode,
-                          style: theme.textTheme.bodyMedium,
+                          'Batch Code: #${batch.batchCode}',
+                          style: GoogleFonts.inter(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -99,7 +102,7 @@ class BatchOverviewTab extends StatelessWidget {
               StatusTimeline(currentStatus: batch.status),
               const SizedBox(height: 18),
               _buildQuantityProgress(context, batch),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -116,41 +119,62 @@ class BatchOverviewTab extends StatelessWidget {
                   ),
                   buildBatchMetric(
                     theme,
-                    'Transport',
-                    batch.transportPaidBy ?? '-',
+                    'Transport Paid By',
+                    batch.transportPaidBy?.toUpperCase() ?? 'NONE',
                   ),
                 ],
               ),
-              if (batch.supplierName != null &&
-                  batch.supplierName!.isNotEmpty) ...[
+              if (batch.supplierName != null && batch.supplierName!.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Icon(MingCuteIcons.mgc_store_line, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Supplier: ${batch.supplierName}',
-                        style: theme.textTheme.bodyMedium,
-                        overflow: TextOverflow.ellipsis,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(HeroIcons.building_storefront, size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Supplier Origin: ${batch.supplierName}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
               if (batch.purchasePaymentMode != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(MingCuteIcons.mgc_wallet_3_line, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _purchasePaymentSummary(batch),
-                        style: theme.textTheme.bodyMedium,
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(HeroIcons.credit_card, size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _purchasePaymentSummary(batch),
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
               if (batch.status != 'closed') ...[
@@ -159,45 +183,52 @@ class BatchOverviewTab extends StatelessWidget {
                     !context.read<AuthProvider>().capabilities.isOwner) ...[
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                      color: AppColors.emeraldSurface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                      ),
+                      border: Border.all(color: AppColors.emerald.withValues(alpha: 0.25), width: 1),
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          MingCuteIcons.mgc_truck_line,
+                        const Icon(
+                          HeroIcons.truck,
                           size: 18,
-                          color: theme.colorScheme.primary,
+                          color: AppColors.emerald,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Batch delivered. Awaiting seller to start selling.',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
+                            'Batch safely delivered. Awaiting seller in market to start selling.',
+                            style: GoogleFonts.inter(
+                              color: AppColors.emeraldDark,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ] else if (context.read<AuthProvider>().capabilities.can(
-                      Capability.editBatch,
-                    )) ...[
+                ] else if (context.read<AuthProvider>().capabilities.can(Capability.editBatch)) ...[
                   const SizedBox(height: 18),
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton.tonalIcon(
-                      onPressed: () =>
-                          advanceBatchStatus(context, batch.id, batch.status),
-                      icon: const Icon(MingCuteIcons.mgc_route_line),
-                      label: Text(_nextStatusButtonLabel(batch.status)),
+                    height: 50,
+                    child: FilledButton.icon(
+                      onPressed: () => advanceBatchStatus(context, batch.id, batch.status),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(HeroIcons.arrow_right_circle, size: 20),
+                      label: Text(
+                        _nextStatusButtonLabel(batch.status),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -217,14 +248,13 @@ class BatchOverviewTab extends StatelessWidget {
       'packed' => 'Mark as Packed',
       'in_transit' => 'Dispatch (In Transit)',
       'delivered' => 'Mark as Delivered',
-      'selling' => 'Start Selling',
+      'selling' => 'Start Selling in Market',
       'closed' => 'Close Batch',
       _ => 'Advance to ${next.replaceAll('_', ' ')}',
     };
   }
 
   Widget _buildQuantityProgress(BuildContext context, BatchModel batch) {
-    final theme = Theme.of(context);
     final sold = context.watch<SaleProvider>().sales.fold<double>(
       0,
       (acc, s) => acc + s.quantitySold,
@@ -235,10 +265,11 @@ class BatchOverviewTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.08),
+          color: AppColors.divider,
+          width: 1,
         ),
       ),
       child: Column(
@@ -248,35 +279,40 @@ class BatchOverviewTab extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Sold vs Remaining',
-                  style: theme.textTheme.bodySmall,
+                  'Sales vs Inventory Remaining',
+                  style: GoogleFonts.inter(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               Text(
-                '${(pct * 100).toStringAsFixed(0)}%',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: pct >= 1 ? AppColors.success : AppColors.primary,
-                  fontWeight: FontWeight.w700,
+                '${(pct * 100).toStringAsFixed(0)}% Sold',
+                style: GoogleFonts.plusJakartaSans(
+                  color: pct >= 1 ? AppColors.emerald : AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: buildBatchMetric(
-                  theme,
-                  'Sold',
-                  '${sold.toStringAsFixed(0)} ${batch.quantityUnit}',
+                  Theme.of(context),
+                  'Sold Out',
+                  '${sold.toStringAsFixed(sold.truncateToDouble() == sold ? 0 : 1)} ${batch.quantityUnit}',
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: buildBatchMetric(
-                  theme,
-                  'Remaining',
-                  '${remaining.toStringAsFixed(0)} ${batch.quantityUnit}',
+                  Theme.of(context),
+                  'Remaining Stock',
+                  '${remaining.toStringAsFixed(remaining.truncateToDouble() == remaining ? 0 : 1)} ${batch.quantityUnit}',
                 ),
               ),
             ],
@@ -286,15 +322,10 @@ class BatchOverviewTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: pct,
-              minHeight: 10,
-              color: pct >= 1 ? AppColors.success : AppColors.primary,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              minHeight: 8,
+              color: pct >= 1 ? AppColors.emerald : AppColors.primary,
+              backgroundColor: AppColors.surfaceAlt,
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Total ${total.toStringAsFixed(0)} ${batch.quantityUnit}',
-            style: theme.textTheme.bodySmall,
           ),
         ],
       ),
@@ -304,18 +335,18 @@ class BatchOverviewTab extends StatelessWidget {
   String _purchasePaymentSummary(BatchModel batch) {
     final mode = batch.purchasePaymentMode ?? 'cash';
     final label = switch (mode) {
-      'credit' => 'Purchase on credit',
-      'part_credit' => 'Part cash / part credit',
-      _ => 'Paid in cash',
+      'credit' => 'Procurement on Credit',
+      'part_credit' => 'Part Cash / Part Credit',
+      _ => 'Paid in Cash',
     };
     final remaining = (batch.totalPurchaseCost - batch.purchaseAmountPaid)
         .clamp(0, double.infinity);
     if (batch.purchaseAmountPaid > 0) {
-      return '$label — paid ${CurrencyFormatter.format(batch.purchaseAmountPaid)}, '
-          'remaining ${CurrencyFormatter.format(remaining)}';
+      return '$label — Paid ${CurrencyFormatter.format(batch.purchaseAmountPaid)}, '
+          'Balance: ${CurrencyFormatter.format(remaining)}';
     }
     if (mode == 'credit') {
-      return '$label — full ${CurrencyFormatter.format(remaining)} outstanding';
+      return '$label — Full ${CurrencyFormatter.format(remaining)} Outstanding';
     }
     return label;
   }

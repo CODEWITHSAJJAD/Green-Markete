@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../core/config/theme.dart';
 
 class GoogleNavItem {
   const GoogleNavItem({
@@ -28,29 +31,32 @@ class GoogleNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: Container(
-        height: 68,
-        padding: const EdgeInsets.all(6),
+        height: 66,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(30),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.divider, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
+              color: AppColors.shadow.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Row(
           children: [
             for (var i = 0; i < items.length; i++)
-              Expanded(child: _NavItem(
-                item: items[i],
-                selected: i == currentIndex,
-                onTap: () => onTap(i),
-              )),
+              Expanded(
+                child: _NavItem(
+                  item: items[i],
+                  selected: i == currentIndex,
+                  onTap: () => onTap(i),
+                ),
+              ),
           ],
         ),
       ),
@@ -71,21 +77,20 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = selected ? scheme.primary : scheme.onSurfaceVariant;
+    final color = selected ? AppColors.primary : AppColors.textTertiary;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 260),
+          duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
-            color: selected ? scheme.primary.withValues(alpha: 0.12) : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
+            color: selected ? AppColors.primarySurface : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -93,19 +98,19 @@ class _NavItem extends StatelessWidget {
             children: [
               Icon(
                 selected ? item.activeIcon : item.icon,
-                size: 24,
+                size: 22,
                 color: color,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 item.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
-                  height: 1.2,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   color: color,
+                  letterSpacing: 0.1,
                 ),
               ),
             ],

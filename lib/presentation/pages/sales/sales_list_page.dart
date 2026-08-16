@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -96,24 +97,32 @@ class _SalesListPageState extends State<SalesListPage> {
     final totalCash = allSales.fold<double>(0, (sum, s) => sum + s.cashReceived);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Sales & Revenue'),
+        title: Text(
+          'Sales & Revenue Ledger',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(MingCuteIcons.mgc_menu_line),
+          icon: const Icon(HeroIcons.bars_3_bottom_left),
           onPressed: widget.onMenu,
         ),
         actions: [
           IconButton(
-            icon: const Icon(MingCuteIcons.mgc_refresh_1_line),
+            icon: const Icon(HeroIcons.arrow_path, size: 20),
             onPressed: _load,
             tooltip: 'Refresh sales',
           ),
         ],
       ),
       body: RefreshIndicator(
+        color: AppColors.primary,
         onRefresh: () async => _load(),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
           children: [
             _heroSummary(theme, totalRevenue, totalCash, totalCredit, allSales.length),
             const SizedBox(height: 16),
@@ -122,12 +131,12 @@ class _SalesListPageState extends State<SalesListPage> {
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: _activeTab == 0
-                    ? 'Search sales by customer, mode, or notes'
-                    : 'Search ready batches by code or product',
-                prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                    ? 'Search sales by buyer, mode, or notes...'
+                    : 'Search ready batches by code or product...',
+                prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(MingCuteIcons.mgc_close_line),
+                        icon: const Icon(HeroIcons.x_circle, size: 18),
                         onPressed: () => setState(() => _searchCtrl.clear()),
                       )
                     : null,
@@ -138,18 +147,54 @@ class _SalesListPageState extends State<SalesListPage> {
               children: [
                 Expanded(
                   child: ChoiceChip(
-                    avatar: const Icon(MingCuteIcons.mgc_history_line, size: 16),
+                    avatar: Icon(
+                      HeroIcons.clock,
+                      size: 16,
+                      color: _activeTab == 0 ? Colors.white : AppColors.textSecondary,
+                    ),
                     label: Text('Sales History (${allSales.length})'),
                     selected: _activeTab == 0,
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.surface,
+                    labelStyle: GoogleFonts.plusJakartaSans(
+                      color: _activeTab == 0 ? Colors.white : AppColors.textSecondary,
+                      fontWeight: _activeTab == 0 ? FontWeight.w800 : FontWeight.w600,
+                      fontSize: 12.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: _activeTab == 0 ? AppColors.primary : AppColors.divider,
+                        width: 1,
+                      ),
+                    ),
                     onSelected: (_) => setState(() => _activeTab = 0),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ChoiceChip(
-                    avatar: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, size: 16),
+                    avatar: Icon(
+                      HeroIcons.cube,
+                      size: 16,
+                      color: _activeTab == 1 ? Colors.white : AppColors.textSecondary,
+                    ),
                     label: Text('Ready Batches (${sellingBatches.length})'),
                     selected: _activeTab == 1,
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.surface,
+                    labelStyle: GoogleFonts.plusJakartaSans(
+                      color: _activeTab == 1 ? Colors.white : AppColors.textSecondary,
+                      fontWeight: _activeTab == 1 ? FontWeight.w800 : FontWeight.w600,
+                      fontSize: 12.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: _activeTab == 1 ? AppColors.primary : AppColors.divider,
+                        width: 1,
+                      ),
+                    ),
                     onSelected: (_) => setState(() => _activeTab = 1),
                   ),
                 ),
@@ -167,9 +212,9 @@ class _SalesListPageState extends State<SalesListPage> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                      Icon(HeroIcons.wifi, size: 44, color: AppColors.rose),
                       const SizedBox(height: 12),
-                      Text(saleProvider.error!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                      Text(saleProvider.error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
                       OutlinedButton(
                         onPressed: _load,
@@ -182,11 +227,11 @@ class _SalesListPageState extends State<SalesListPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: EmptyState(
-                    icon: MingCuteIcons.mgc_bill_line,
+                    icon: HeroIcons.shopping_cart,
                     title: query.isNotEmpty ? 'No matching sales found' : 'No sales recorded yet',
                     subtitle: query.isNotEmpty
                         ? 'Try a different search query.'
-                        : 'Record your first sale against active batches.',
+                        : 'Record your first wholesale sale against ready batches.',
                     actionLabel: canSell ? 'Record Sale' : null,
                     onAction: canSell ? _openCreate : null,
                   ),
@@ -209,9 +254,9 @@ class _SalesListPageState extends State<SalesListPage> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                      Icon(HeroIcons.wifi, size: 44, color: AppColors.rose),
                       const SizedBox(height: 12),
-                      Text(batchesProvider.error!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                      Text(batchesProvider.error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
                       OutlinedButton(
                         onPressed: _load,
@@ -224,9 +269,11 @@ class _SalesListPageState extends State<SalesListPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: EmptyState(
-                    icon: MingCuteIcons.mgc_shopping_bag_2_line,
-                    title: query.isNotEmpty ? 'No matching batches' : 'No batches ready for sale',
-                    subtitle: 'Advance a batch status to "selling" to record sales against it.',
+                    icon: HeroIcons.cube,
+                    title: query.isNotEmpty ? 'No matching ready batches' : 'No batches ready for selling',
+                    subtitle: query.isNotEmpty
+                        ? 'Try modifying your search query.'
+                        : 'Advance your delivered batches to "selling" status to start recording wholesale orders.',
                   ),
                 )
               else
@@ -234,31 +281,53 @@ class _SalesListPageState extends State<SalesListPage> {
                   children: filteredBatches.map((batch) {
                     return GreenCard(
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.secondary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(14),
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.emeraldSurface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.emerald.withValues(alpha: 0.25), width: 1),
+                            ),
+                            child: const Icon(HeroIcons.shopping_bag, size: 22, color: AppColors.emerald),
                           ),
-                          child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, size: 22, color: AppColors.secondary),
-                        ),
-                        title: Text(batch.productName ?? batch.batchCode, style: theme.textTheme.titleMedium),
-                        subtitle: Text('Batch: ${batch.batchCode}'),
-                        trailing: canSell
-                            ? FilledButton.icon(
-                                icon: const Icon(MingCuteIcons.mgc_add_line, size: 16),
-                                label: const Text('Sell'),
-                                onPressed: _openCreate,
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(0, 40),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  batch.productName ?? batch.batchCode,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
-                              )
-                            : null,
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Batch #${batch.batchCode} • ${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit} available',
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (canSell)
+                            FilledButton.tonal(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => QuickSalePage(preselectedBatchId: batch.id),
+                                ),
+                              ),
+                              child: const Text('Sell'),
+                            ),
+                        ],
                       ),
                     );
                   }).toList(),
@@ -270,21 +339,27 @@ class _SalesListPageState extends State<SalesListPage> {
       floatingActionButton: canSell
           ? FloatingActionButton.extended(
               heroTag: null,
+              backgroundColor: AppColors.secondary,
+              foregroundColor: Colors.white,
+              elevation: 4,
               onPressed: _openCreate,
-              icon: const Icon(MingCuteIcons.mgc_add_line),
-              label: const Text('Record Sale'),
+              icon: const Icon(HeroIcons.plus, size: 18),
+              label: Text(
+                'Record Sale',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
             )
           : null,
     );
   }
 
   Widget _saleCard(ThemeData theme, SaleModel sale, String customerName) {
-    String formattedDate = sale.saleDate;
-    try {
-      final dt = DateTime.parse(sale.saleDate);
-      formattedDate = DateFormat('MMM d, yyyy · h:mm a').format(dt);
-    } catch (_) {}
-
+    final formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(
+      DateTime.tryParse(sale.saleDate) ?? DateTime.now(),
+    );
     final isCredit = sale.creditAmount > 0;
     final isCash = sale.cashReceived > 0;
 
@@ -297,56 +372,77 @@ class _SalesListPageState extends State<SalesListPage> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.12),
+                  color: AppColors.primarySurface,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.divider, width: 1),
                 ),
-                child: const Icon(MingCuteIcons.mgc_bill_line, size: 18, color: AppColors.secondary),
+                child: const Icon(HeroIcons.document_text, size: 18, color: AppColors.primary),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       customerName,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       formattedDate,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      style: GoogleFonts.inter(
+                        color: AppColors.textTertiary,
+                        fontSize: 11.5,
+                      ),
                     ),
                   ],
                 ),
               ),
               Text(
                 CurrencyFormatter.format(sale.totalAmount),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15.5,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-          const Divider(height: 20),
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 '${sale.quantitySold.toStringAsFixed(sale.quantitySold.truncateToDouble() == sale.quantitySold ? 0 : 1)} units @ ${CurrencyFormatter.format(sale.pricePerUnit)}/unit',
-                style: theme.textTheme.bodyMedium,
+                style: GoogleFonts.inter(
+                  color: AppColors.textSecondary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
+                  color: AppColors.surfaceAlt,
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.divider, width: 0.8),
                 ),
                 child: Text(
                   sale.paymentMode.toUpperCase(),
-                  style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10.5,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -358,31 +454,35 @@ class _SalesListPageState extends State<SalesListPage> {
                 if (isCash)
                   Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.12),
+                      color: AppColors.emeraldSurface,
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.emerald.withValues(alpha: 0.2), width: 0.8),
                     ),
                     child: Text(
                       'Cash: ${CurrencyFormatter.format(sale.cashReceived)}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.inter(
+                        color: AppColors.emeraldDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                 if (isCredit)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.12),
+                      color: AppColors.roseSurface,
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.rose.withValues(alpha: 0.2), width: 0.8),
                     ),
                     child: Text(
-                      'Due Credit: ${CurrencyFormatter.format(sale.creditAmount)}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.bold,
+                      'Credit Due: ${CurrencyFormatter.format(sale.creditAmount)}',
+                      style: GoogleFonts.inter(
+                        color: AppColors.rose,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -393,7 +493,11 @@ class _SalesListPageState extends State<SalesListPage> {
             const SizedBox(height: 8),
             Text(
               'Note: ${sale.notes}',
-              style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textTertiary,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ],
@@ -409,19 +513,18 @@ class _SalesListPageState extends State<SalesListPage> {
     int salesCount,
   ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          colors: [
-            AppColors.secondary.withValues(alpha: 0.12),
-            AppColors.amberSurface.withValues(alpha: 0.7),
-            theme.colorScheme.surface,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.15)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.divider, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,76 +532,127 @@ class _SalesListPageState extends State<SalesListPage> {
           Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.amberSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.amber.withValues(alpha: 0.25), width: 1),
                 ),
-                child: const Icon(MingCuteIcons.mgc_bill_line, size: 24, color: AppColors.secondary),
+                child: const Icon(HeroIcons.banknotes, size: 22, color: AppColors.amber),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Sales & Revenue Overview', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Total Gross Sales',
+                      style: GoogleFonts.inter(
+                        color: AppColors.textTertiary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text('$salesCount sales recorded across batches', style: theme.textTheme.bodySmall),
+                    Text(
+                      CurrencyFormatter.format(totalRevenue),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 22,
+                        letterSpacing: -0.4,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceAlt,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$salesCount Orders',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
-                child: _metricBox(theme, 'Total Revenue', CurrencyFormatter.format(totalRevenue), AppColors.secondary),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.emeraldSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.emerald.withValues(alpha: 0.2), width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cash Collected',
+                        style: GoogleFonts.inter(
+                          color: AppColors.emeraldDark,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        CurrencyFormatter.format(totalCash),
+                        style: GoogleFonts.inter(
+                          color: AppColors.emeraldDark,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
-                child: _metricBox(theme, 'Cash Collected', CurrencyFormatter.format(totalCash), AppColors.success),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _metricBox(theme, 'Credit Due', CurrencyFormatter.format(totalCredit), AppColors.error),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.roseSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.rose.withValues(alpha: 0.2), width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Credit Due',
+                        style: GoogleFonts.inter(
+                          color: AppColors.rose,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        CurrencyFormatter.format(totalCredit),
+                        style: GoogleFonts.inter(
+                          color: AppColors.rose,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metricBox(ThemeData theme, String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 10,
-            ),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
           ),
         ],
       ),

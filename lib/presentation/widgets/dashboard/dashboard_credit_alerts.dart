@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -25,12 +26,13 @@ class DashboardCreditAlerts extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(
-          title: 'Credit alerts',
-          trailing: 'View all',
+          title: 'Credit & Dues Monitor',
+          trailing: 'View All',
           onTapTrailing: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const OverdueCustomersPage()),
           ),
         ),
+        const SizedBox(height: 4),
         if (report.isLoading)
           const Padding(
             padding: EdgeInsets.all(12),
@@ -40,24 +42,50 @@ class DashboardCreditAlerts extends StatelessWidget {
           Text(report.error!, style: theme.textTheme.bodySmall)
         else if (report.overdue.isEmpty)
           GreenCard(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.emeraldSurface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.emerald.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
                   ),
                   child: const Icon(
-                    MingCuteIcons.mgc_check_circle_line,
+                    HeroIcons.check_circle,
                     size: 20,
-                    color: AppColors.success,
+                    color: AppColors.emerald,
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text('No overdue customers.', style: theme.textTheme.bodyMedium),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'All Receivables In Order',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'No buyers have overdue credit balances',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           )
@@ -66,10 +94,7 @@ class DashboardCreditAlerts extends StatelessWidget {
             children: report.overdue.take(3).map((c) {
               return GreenCard(
                 margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 onTap: () {
                   final cust = CustomerModel(
                     id: c.id,
@@ -91,15 +116,17 @@ class DashboardCreditAlerts extends StatelessWidget {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary.withValues(
-                          alpha: 0.12,
+                        color: AppColors.amberSurface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.amber.withValues(alpha: 0.25),
+                          width: 1,
                         ),
-                        borderRadius: BorderRadius.circular(13),
                       ),
                       child: const Icon(
-                        MingCuteIcons.mgc_wallet_3_line,
+                        HeroIcons.exclamation_triangle,
                         size: 20,
-                        color: AppColors.secondary,
+                        color: AppColors.amber,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -109,20 +136,59 @@ class DashboardCreditAlerts extends StatelessWidget {
                         children: [
                           Text(
                             c.fullName,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14.5,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          Text(c.city ?? '-', style: theme.textTheme.bodySmall),
+                          const SizedBox(height: 2),
+                          Text(
+                            [
+                              if (c.city != null && c.city!.isNotEmpty) c.city,
+                              'Dues pending',
+                            ].join(' • '),
+                            style: GoogleFonts.inter(
+                              color: AppColors.rose,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11.5,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    Text(
-                      CurrencyFormatter.format(c.outstandingBalance),
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          CurrencyFormatter.format(c.outstandingBalance),
+                          style: GoogleFonts.inter(
+                            color: AppColors.rose,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Open Ledger',
+                              style: GoogleFonts.inter(
+                                color: AppColors.textTertiary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              HeroIcons.chevron_right,
+                              size: 11,
+                              color: AppColors.textTertiary,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),

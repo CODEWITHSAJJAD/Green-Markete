@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -8,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/data_refresh.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
 
 class ProductListPage extends StatefulWidget {
@@ -37,7 +39,6 @@ class _ProductListPageState extends State<ProductListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final businessId = context.watch<AuthProvider>().businessId ?? '';
     final provider = context.watch<ProductProvider>();
 
@@ -55,7 +56,7 @@ class _ProductListPageState extends State<ProductListPage> {
     Widget productsSection;
     if (provider.isLoading) {
       productsSection = const Padding(
-        padding: EdgeInsets.all(24),
+        padding: EdgeInsets.all(32),
         child: Center(child: CircularProgressIndicator()),
       );
     } else if (provider.error != null) {
@@ -66,12 +67,14 @@ class _ProductListPageState extends State<ProductListPage> {
     } else if (filteredProducts.isEmpty) {
       productsSection = Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Column(
-          children: [
-            Icon(MingCuteIcons.mgc_package_line, size: 52, color: theme.colorScheme.outline),
-            const SizedBox(height: 12),
-            Text(query.isNotEmpty ? 'No matching products' : 'No products yet', style: theme.textTheme.titleLarge),
-          ],
+        child: EmptyState(
+          icon: HeroIcons.sparkles,
+          title: query.isNotEmpty ? 'No matching produce items' : 'No produce varieties added',
+          subtitle: query.isNotEmpty
+              ? 'Try modifying your search term.'
+              : 'Add vegetables, fruits, and units to build your wholesale produce catalog.',
+          actionLabel: 'Add Variety',
+          onAction: () => _showCreateDialog(context, businessId),
         ),
       );
     } else {
@@ -82,56 +85,79 @@ class _ProductListPageState extends State<ProductListPage> {
                 key: ValueKey('product-${product.id}'),
                 direction: DismissDirection.endToStart,
                 background: Container(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.error.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    color: AppColors.roseSurface,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.rose, width: 1),
                   ),
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Icon(MingCuteIcons.mgc_delete_2_line, color: theme.colorScheme.error),
+                  child: const Icon(HeroIcons.trash, color: AppColors.rose),
                 ),
                 confirmDismiss: (_) => _confirmDelete(product),
                 child: GestureDetector(
                   onTap: () => _showEditDialog(context, businessId, product),
                   child: GreenCard(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
                     child: Row(
                       children: [
                         Container(
-                          width: 48,
-                          height: 48,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(16),
+                            color: AppColors.emeraldSurface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.emerald.withValues(alpha: 0.25), width: 1),
                           ),
-                          child: Icon(MingCuteIcons.mgc_leaf_2_line, color: theme.colorScheme.primary),
+                          child: const Icon(HeroIcons.sparkles, color: AppColors.emerald, size: 22),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(product.name, style: theme.textTheme.titleMedium),
-                              const SizedBox(height: 4),
-                              Text(product.category ?? 'Uncategorized', style: theme.textTheme.bodySmall),
+                              Text(
+                                product.name,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                product.category ?? 'General Produce',
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(999),
+                            color: AppColors.surfaceAlt,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.divider, width: 0.8),
                           ),
-                          child: Text(product.baseUnit, style: theme.textTheme.labelMedium),
+                          child: Text(
+                            product.baseUnit.toUpperCase(),
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          MingCuteIcons.mgc_edit_2_line,
-                          size: 20,
-                          color: theme.colorScheme.outline,
+                        const SizedBox(width: 6),
+                        const Icon(
+                          HeroIcons.pencil_square,
+                          size: 18,
+                          color: AppColors.textSecondary,
                         ),
                       ],
                     ),
@@ -144,57 +170,101 @@ class _ProductListPageState extends State<ProductListPage> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Products'),
+        title: Text(
+          'Produce Varieties & Catalog',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,
-        onPressed:()=> _showCreateDialog(context, businessId),
-        icon: const Icon(MingCuteIcons.mgc_package_line),
-        label: const Text('New Product'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        onPressed: () => _showCreateDialog(context, businessId),
+        icon: const Icon(HeroIcons.plus, size: 18),
+        label: Text(
+          'Add Variety',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withValues(alpha: 0.09),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.08)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Product catalog', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  'Define categories, units, and produce lines used across purchasing, packing, and sales.',
-                  style: theme.textTheme.bodyMedium,
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.divider, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow.withValues(alpha: 0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _searchCtrl,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Search products by name or category',
-                    prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
-                    suffixIcon: _searchCtrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(MingCuteIcons.mgc_close_line),
-                            onPressed: () => setState(() => _searchCtrl.clear()),
-                          )
-                        : null,
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.divider, width: 1),
+                  ),
+                  child: const Icon(HeroIcons.tag, size: 24, color: AppColors.primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Produce Lines & Units',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15.5,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Standardize vegetable & fruit names, categories, and measurement units.',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchCtrl,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Search produce by name, category, or unit...',
+              prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
+              suffixIcon: _searchCtrl.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(HeroIcons.x_circle, size: 18),
+                      onPressed: () => setState(() => _searchCtrl.clear()),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(height: 20),
@@ -204,27 +274,53 @@ class _ProductListPageState extends State<ProductListPage> {
     );
   }
 
-  Future<void> _showCreateDialog(BuildContext context, String businessId) async {
+  Future<bool> _confirmDelete(ProductModel product) async {
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Delete ${product.name}?',
+      message: 'Are you sure you want to remove this product variety from your catalog?',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (ok != true) return false;
+    final businessId = context.read<AuthProvider>().businessId ?? '';
+    final prov = context.read<ProductProvider>();
+    final deleted = await prov.delete(product.id);
+    if (deleted && mounted) {
+      DataRefreshNotifier.instance.refresh(businessId);
+    }
+    return deleted;
+  }
+
+  void _showCreateDialog(BuildContext context, String businessId) {
     final nameCtrl = TextEditingController();
     final catCtrl = TextEditingController();
     final unitCtrl = TextEditingController(text: 'kg');
-
-    await showDialog<void>(
+    showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('New Product'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Add Produce Line',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Product name'),
-              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+              decoration: const InputDecoration(labelText: 'Produce Name (e.g., Tomato)'),
             ),
             const SizedBox(height: 12),
-            TextField(controller: catCtrl, decoration: const InputDecoration(labelText: 'Category')),
+            TextField(
+              controller: catCtrl,
+              decoration: const InputDecoration(labelText: 'Category (e.g., Vegetables)'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: unitCtrl, decoration: const InputDecoration(labelText: 'Base unit')),
+            TextField(
+              controller: unitCtrl,
+              decoration: const InputDecoration(labelText: 'Measurement Unit (e.g., kg, crate, bag)'),
+            ),
           ],
         ),
         actions: [
@@ -232,64 +328,12 @@ class _ProductListPageState extends State<ProductListPage> {
           FilledButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
-              final productProvider = context.read<ProductProvider>();
-              await productProvider.create({
+              await context.read<ProductProvider>().create({
                 'business_id': businessId,
                 'name': nameCtrl.text.trim(),
-                'category': catCtrl.text.trim(),
+                if (catCtrl.text.trim().isNotEmpty) 'category': catCtrl.text.trim(),
                 'base_unit': unitCtrl.text.trim().isEmpty ? 'kg' : unitCtrl.text.trim(),
               });
-              productProvider.load(businessId);
-              DataRefreshNotifier.instance.refresh(businessId);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showEditDialog(BuildContext context, String businessId, ProductModel product) async {
-    final nameCtrl = TextEditingController(text: product.name);
-    final catCtrl = TextEditingController(text: product.category ?? '');
-    final unitCtrl = TextEditingController(text: product.baseUnit);
-    final formKey = GlobalKey<FormState>();
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Product'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Product name'),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextField(controller: catCtrl, decoration: const InputDecoration(labelText: 'Category')),
-              const SizedBox(height: 12),
-              TextField(controller: unitCtrl, decoration: const InputDecoration(labelText: 'Base unit')),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              if (!(formKey.currentState?.validate() ?? false)) return;
-              final productProvider = context.read<ProductProvider>();
-              await productProvider.update(product.id, {
-                'name': nameCtrl.text.trim(),
-                'category': catCtrl.text.trim().isEmpty ? null : catCtrl.text.trim(),
-                'base_unit': unitCtrl.text.trim().isEmpty ? 'kg' : unitCtrl.text.trim(),
-              });
-              productProvider.load(businessId);
-              DataRefreshNotifier.instance.refresh(businessId);
               if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Save'),
@@ -299,30 +343,54 @@ class _ProductListPageState extends State<ProductListPage> {
     );
   }
 
-  Future<bool> _confirmDelete(ProductModel product) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final provider = context.read<ProductProvider>();
-    final businessId = context.read<AuthProvider>().businessId;
-    final ok = await showConfirmDialog(
-      context,
-      title: 'Delete ${product.name}?',
-      message: 'This product will be permanently deleted. Batches that already reference it keep their records.',
-      confirmLabel: 'Delete',
-      isDestructive: true,
-    );
-    if (ok != true) return false;
-    final deleted = await provider.delete(product.id);
-    if (!context.mounted) return deleted;
-    if (businessId != null && businessId.isNotEmpty) {
-      DataRefreshNotifier.instance.refresh(businessId);
-    }
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          deleted ? 'Product deleted' : (provider.error ?? 'Failed to delete product'),
+  void _showEditDialog(BuildContext context, String businessId, ProductModel product) {
+    final nameCtrl = TextEditingController(text: product.name);
+    final catCtrl = TextEditingController(text: product.category ?? '');
+    final unitCtrl = TextEditingController(text: product.baseUnit);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Edit ${product.name}',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Produce Name'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: catCtrl,
+              decoration: const InputDecoration(labelText: 'Category'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: unitCtrl,
+              decoration: const InputDecoration(labelText: 'Measurement Unit'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              await context.read<ProductProvider>().update(product.id, {
+                'business_id': businessId,
+                'name': nameCtrl.text.trim(),
+                if (catCtrl.text.trim().isNotEmpty) 'category': catCtrl.text.trim(),
+                'base_unit': unitCtrl.text.trim().isEmpty ? 'kg' : unitCtrl.text.trim(),
+              });
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Update'),
+          ),
+        ],
       ),
     );
-    return deleted;
   }
 }

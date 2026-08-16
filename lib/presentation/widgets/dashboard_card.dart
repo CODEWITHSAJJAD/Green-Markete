@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/config/theme.dart';
 import 'green_card.dart';
 
-/// A metric tile with a soft icon badge, an emphasized value, an optional subtitle or badge, and interactive tap.
+/// A luxury metric tile with a soft icon badge, emphasized value, and interactive tap.
 class DashboardCard extends StatelessWidget {
   const DashboardCard({
     super.key,
@@ -25,10 +27,8 @@ class DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GreenCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(15),
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,10 +40,14 @@ class DashboardCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.18),
+                    width: 1,
+                  ),
                 ),
-                child: Icon(icon, size: 20, color: color),
+                child: Icon(icon, size: 19, color: color),
               ),
               if (badge != null)
                 Flexible(
@@ -51,8 +55,12 @@ class DashboardCard extends StatelessWidget {
                     margin: const EdgeInsets.only(left: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.10),
+                      color: color.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.15),
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       badge!,
@@ -61,7 +69,7 @@ class DashboardCard extends StatelessWidget {
                       style: TextStyle(
                         color: color,
                         fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -73,8 +81,8 @@ class DashboardCard extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            style: GoogleFonts.inter(
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -85,9 +93,10 @@ class DashboardCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+                color: AppColors.textPrimary,
+                fontSize: 18,
                 letterSpacing: -0.3,
               ),
             ),
@@ -98,9 +107,10 @@ class DashboardCard extends StatelessWidget {
               subtitle!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              style: GoogleFonts.inter(
+                color: AppColors.textTertiary,
                 fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -9,6 +10,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/business_provider.dart';
+import '../../widgets/green_card.dart';
 
 class BatchPLPage extends StatefulWidget {
   final String batchId;
@@ -33,18 +35,24 @@ class _BatchPLPageState extends State<BatchPLPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final batchProvider = context.watch<BatchDetailProvider>();
     final plProvider = context.watch<BatchPLProvider>();
     final expenseProvider = context.watch<ExpenseProvider>();
     final saleProvider = context.watch<SaleProvider>();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Batch P&L'),
+        title: Text(
+          'Batch P&L Statement',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
         actions: [
           IconButton(
-            tooltip: 'Share bill',
+            tooltip: 'Share Bill / Statement',
             onPressed: () => _shareBill(
               context,
               batchProvider,
@@ -52,13 +60,12 @@ class _BatchPLPageState extends State<BatchPLPage> {
               expenseProvider,
               saleProvider,
             ),
-            icon: const Icon(MingCuteIcons.mgc_share_2_line),
+            icon: const Icon(HeroIcons.share, size: 20),
           ),
         ],
       ),
       body: _buildBody(
         context,
-        theme,
         batchProvider,
         plProvider,
         expenseProvider,
@@ -134,71 +141,93 @@ class _BatchPLPageState extends State<BatchPLPage> {
 
     final double totalRevenue = pl?.revenue.totalRevenue ??
         saleProvider.sales.fold<double>(0, (s, e) => s + e.totalAmount);
-    final double cashReceived = pl?.revenue.cashReceived ??
-        saleProvider.sales.fold<double>(
-          0,
-          (s, e) =>
-              s +
-              (e.cashReceived > 0
-                  ? e.cashReceived
-                  : (e.paymentMode == 'cash' ? e.totalAmount : 0.0)),
-        );
-    final double creditOutstanding = pl?.revenue.creditOutstanding ??
-        (totalRevenue - cashReceived).clamp(0, double.infinity).toDouble();
     final double netProfitLoss = pl?.netProfitLoss ?? (totalRevenue - totalCost);
 
     final party = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Bill for'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Share Statement As',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+        ),
         children: [
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'Seller'),
-            child: const Text('Seller — bill of sales with total expenses'),
+            onPressed: () => Navigator.pop(ctx, 'purchaser'),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Text('Purchaser Bill (Procurement & Logistics)'),
+            ),
           ),
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'Purchaser'),
-            child: const Text('Purchaser — purchase bill'),
+            onPressed: () => Navigator.pop(ctx, 'seller'),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Text('Seller Bill (Market Sales & Dues)'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'partner'),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Text('Full Comprehensive P&L Statement'),
+            ),
           ),
         ],
       ),
     );
+
     if (party == null || !context.mounted) return;
-    final businessName = context.read<BusinessProvider>().business?.name;
+
+    final business = context.read<BusinessProvider>().business;
+    final businessName = business?.name ?? 'Green Market';
+
+    final sections = <BillSection>[
+      if (party == 'purchaser' || party == 'partner')
+        BillSection('Purchaser Outlay', [
+          BillLine('Purchase Cost', CurrencyFormatter.format(purchaseCost)),
+          if (purchaserDaily > 0)
+            BillLine('Purchaser Daily Charges', CurrencyFormatter.format(purchaserDaily)),
+          if (purchaserExpenses > 0)
+            BillLine('Purchaser Local Expenses', CurrencyFormatter.format(purchaserExpenses)),
+          if (packingCost > 0)
+            BillLine('Packing & Labor Cost', CurrencyFormatter.format(packingCost)),
+          if (transportCost > 0)
+            BillLine('Freight & Transport Cost', CurrencyFormatter.format(transportCost)),
+        ]),
+      if (party == 'seller' || party == 'partner')
+        BillSection('Seller Realization', [
+          if (sellerDaily > 0)
+            BillLine('Seller Daily Charges', CurrencyFormatter.format(sellerDaily)),
+          if (sellerExpenses > 0)
+            BillLine('Seller Market Expenses', CurrencyFormatter.format(sellerExpenses)),
+          BillLine('Gross Wholesale Revenue', CurrencyFormatter.format(totalRevenue)),
+        ]),
+    ];
+
     final bill = BillModel(
-      documentTitle: '$party Bill',
+      documentTitle: 'Batch Statement (${party.toUpperCase()})',
       businessName: businessName,
       header: [
-        BillHeaderLine('Batch Code', batch.batchCode),
-        BillHeaderLine('Product', batch.productName ?? ''),
-        BillHeaderLine(
-          'Quantity',
-          '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}',
-        ),
-        BillHeaderLine('Status', batch.status),
-        BillHeaderLine('Purchase Date', DateFormatter.display(batch.purchaseDate)),
+        BillHeaderLine('Batch Code', '#${batch.batchCode}'),
+        BillHeaderLine('Product', batch.productName ?? 'Produce'),
+        BillHeaderLine('Date', DateFormatter.toDisplay(DateTime.now())),
       ],
-      sections: [
-        BillSection('Cost Breakdown', [
-          BillLine('Purchase Cost', CurrencyFormatter.format(purchaseCost)),
-          BillLine('Purchaser Daily Charges', CurrencyFormatter.format(purchaserDaily)),
-          BillLine('Purchaser Expenses', CurrencyFormatter.format(purchaserExpenses)),
-          BillLine('Packing Cost', CurrencyFormatter.format(packingCost)),
-          BillLine('Transport Cost', CurrencyFormatter.format(transportCost)),
-          BillLine('Seller Daily Charges', CurrencyFormatter.format(sellerDaily)),
-          BillLine('Seller Expenses', CurrencyFormatter.format(sellerExpenses)),
-          BillLine('Total Cost', CurrencyFormatter.format(totalCost), emphasize: true),
-        ]),
-        BillSection('Revenue', [
-          BillLine('Total Revenue', CurrencyFormatter.format(totalRevenue)),
-          BillLine('Cash Received', CurrencyFormatter.format(cashReceived)),
-          BillLine('Credit Outstanding', CurrencyFormatter.format(creditOutstanding)),
-        ]),
-      ],
-      total: BillLine('Net Profit / Loss', CurrencyFormatter.format(netProfitLoss), emphasize: true),
-      footer: 'Generated by Green Market on ${DateFormatter.toDDMMYYYY(DateTime.now())}. '
-          'Amounts in ${CurrencyFormatter.currentCode}.',
+      sections: sections,
+      total: BillLine(
+        party == 'partner'
+            ? 'Net Profit / Loss'
+            : (party == 'purchaser' ? 'Total Outlay' : 'Net Turnover'),
+        CurrencyFormatter.format(party == 'partner'
+            ? netProfitLoss
+            : (party == 'purchaser'
+                ? purchaseCost + purchaserDaily + purchaserExpenses + packingCost + transportCost
+                : totalRevenue - sellerDaily - sellerExpenses)),
+        emphasize: true,
+      ),
+      footer: 'Generated via Green Market Wholesale Platform',
     );
+
     await shareBill(
       context,
       bill: bill,
@@ -209,7 +238,6 @@ class _BatchPLPageState extends State<BatchPLPage> {
 
   Widget _buildBody(
     BuildContext context,
-    ThemeData theme,
     BatchDetailProvider batchProvider,
     BatchPLProvider plProvider,
     ExpenseProvider expenseProvider,
@@ -220,14 +248,24 @@ class _BatchPLPageState extends State<BatchPLPage> {
       if (batchProvider.isLoading) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (batchProvider.error != null) {
-        return _errorBlock(
-          context,
-          batchProvider.error!,
-          () => context.read<BatchDetailProvider>().load(batchId),
-        );
-      }
-      return const Center(child: Text('No batch data'));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(HeroIcons.wifi, size: 44, color: AppColors.rose),
+              const SizedBox(height: 12),
+              const Text('No batch data available'),
+              const SizedBox(height: 14),
+              OutlinedButton(
+                onPressed: () => context.read<BatchDetailProvider>().load(batchId),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     final pl = plProvider.pl;
@@ -295,8 +333,10 @@ class _BatchPLPageState extends State<BatchPLPage> {
     final double creditOutstanding = pl?.revenue.creditOutstanding ??
         (totalRevenue - cashReceived).clamp(0, double.infinity).toDouble();
     final double netProfitLoss = pl?.netProfitLoss ?? (totalRevenue - totalCost);
+    final isProfit = netProfitLoss >= 0;
 
     return RefreshIndicator(
+      color: AppColors.primary,
       onRefresh: () async {
         await Future.wait([
           context.read<BatchDetailProvider>().load(batchId),
@@ -306,50 +346,124 @@ class _BatchPLPageState extends State<BatchPLPage> {
         ]);
       },
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
-          Text(batch.batchCode, style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 6),
-          Text(
-            '${batch.productName ?? 'Product'} • ${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 20),
-          _section(theme, 'Cost Breakdown', [
-            _line('Purchase Cost', purchaseCost),
-            _line('Purchaser Daily Charges', purchaserDaily),
-            _line('Purchaser Expenses', purchaserExpenses),
-            _line('Packing Cost', packingCost),
-            _line('Transport Cost', transportCost),
-            _line('Seller Daily Charges', sellerDaily),
-            _line('Seller Expenses', sellerExpenses),
-            _line('Total Cost', totalCost, emphasize: true),
-          ]),
-          const SizedBox(height: 16),
-          _section(theme, 'Revenue', [
-            _line('Total Revenue', totalRevenue),
-            _line('Cash Received', cashReceived),
-            _line('Credit Outstanding', creditOutstanding),
-          ]),
-          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.divider, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow.withValues(alpha: 0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.divider, width: 1),
+                  ),
+                  child: const Icon(HeroIcons.presentation_chart_bar, size: 24, color: AppColors.primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        batch.productName ?? 'Batch Statement',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Batch #${batch.batchCode} • ${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _section('Direct & Operational Costs', [
+            _line('Procurement Cost', purchaseCost),
+            _line('Purchaser Daily Charges', purchaserDaily),
+            _line('Purchaser Local Expenses', purchaserExpenses),
+            _line('Packing & Labor Cost', packingCost),
+            _line('Freight & Transport Cost', transportCost),
+            _line('Seller Daily Charges', sellerDaily),
+            _line('Seller Market Expenses', sellerExpenses),
+            const Divider(height: 16),
+            _line('Total Operational Cost', totalCost, bold: true),
+          ]),
+          const SizedBox(height: 14),
+          _section('Wholesale Revenue & Realization', [
+            _line('Gross Wholesale Revenue', totalRevenue),
+            _line('Cash Received on Counter', cashReceived),
+            _line('Outstanding Buyer Credit', creditOutstanding, textColor: AppColors.rose),
+          ]),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: BoxDecoration(
+              color: isProfit ? AppColors.emeraldSurface : AppColors.roseSurface,
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.08),
+                color: isProfit ? AppColors.emerald.withValues(alpha: 0.3) : AppColors.rose.withValues(alpha: 0.3),
+                width: 1.2,
               ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Net Profit / Loss', style: theme.textTheme.titleMedium),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isProfit ? 'Net Batch Profit' : 'Net Batch Loss',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        color: isProfit ? AppColors.emeraldDark : AppColors.rose,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      totalRevenue > 0
+                          ? 'Margin: ${((netProfitLoss / totalRevenue) * 100).toStringAsFixed(1)}%'
+                          : 'Pending sales completion',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: isProfit ? AppColors.emeraldDark : AppColors.rose,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
                 Text(
                   CurrencyFormatter.format(netProfitLoss),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: netProfitLoss >= 0 ? AppColors.profit : AppColors.error,
-                    fontWeight: FontWeight.w700,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                    letterSpacing: -0.3,
+                    color: isProfit ? AppColors.emeraldDark : AppColors.rose,
                   ),
                 ),
               ],
@@ -360,36 +474,20 @@ class _BatchPLPageState extends State<BatchPLPage> {
     );
   }
 
-  Widget _errorBlock(BuildContext context, String message, VoidCallback onRetry) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message),
-            const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _section(ThemeData theme, String title, List<Widget> children) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.08),
-        ),
-      ),
+  Widget _section(String title, List<Widget> children) {
+    return GreenCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.titleLarge),
+          Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 12),
           ...children,
         ],
@@ -397,24 +495,26 @@ class _BatchPLPageState extends State<BatchPLPage> {
     );
   }
 
-  Widget _line(String label, double value, {bool emphasize = false}) {
+  Widget _line(String label, double amount, {bool bold = false, Color? textColor}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
-              ),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: bold ? AppColors.textPrimary : AppColors.textSecondary,
             ),
           ),
           Text(
-            CurrencyFormatter.format(value),
-            style: TextStyle(
-              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
+            CurrencyFormatter.format(amount),
+            style: GoogleFonts.inter(
+              fontSize: 13.5,
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+              color: textColor ?? (bold ? AppColors.textPrimary : AppColors.textPrimary),
             ),
           ),
         ],

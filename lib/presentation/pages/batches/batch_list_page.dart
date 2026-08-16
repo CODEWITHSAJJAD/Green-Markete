@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -119,58 +120,52 @@ class _BatchListPageState extends State<BatchListPage> {
       isDestructive: true,
     );
     if (ok != true) return false;
-    final deleted = await provider.delete(batch.id);
-    if (!mounted) return deleted;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          deleted ? 'Batch deleted' : (provider.error ?? 'Failed to delete batch'),
-        ),
-      ),
-    );
-    if (deleted && businessId != null && businessId.isNotEmpty) {
-      DataRefreshNotifier.instance.refresh(businessId);
+    try {
+      await provider.delete(batch.id);
+      if (businessId != null && businessId.isNotEmpty) {
+        DataRefreshNotifier.instance.refresh(businessId);
+      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('Deleted batch ${batch.batchCode}')),
+      );
+      return true;
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Failed to delete: $e')),
+      );
+      return false;
     }
-    return deleted;
   }
 
   Future<void> _bulkDelete() async {
     final ids = _selectedIds.toList();
-    final provider = context.read<BatchListProvider>();
-    final businessId = context.read<AuthProvider>().businessId;
     final ok = await showConfirmDialog(
       context,
-      title: ids.length == 1 ? 'Delete this batch?' : 'Delete ${ids.length} batches?',
+      title: 'Delete ${ids.length} batches?',
       message:
-          'Permanently deletes the selected batch(es) and all their packing, expenses, sales, transport and purchase records. This cannot be undone.',
-      confirmLabel: 'Delete',
+          'Permanently deletes ${ids.length} selected batches and all their related records. This action cannot be reversed.',
+      confirmLabel: 'Delete All',
       isDestructive: true,
     );
     if (ok != true) return;
+    final provider = context.read<BatchListProvider>();
+    final businessId = context.read<AuthProvider>().businessId;
     int deleted = 0;
-    String? firstError;
     for (final id in ids) {
-      if (await provider.delete(id)) {
+      try {
+        await provider.delete(id);
         deleted++;
-      } else {
-        firstError ??= provider.error;
-      }
+      } catch (_) {}
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          deleted == ids.length
-              ? 'Deleted $deleted of ${ids.length} batches'
-              : 'Deleted $deleted of ${ids.length} batches — ${firstError ?? 'some failed'}',
-        ),
-      ),
-    );
-    _exitSelect();
-    _load();
     if (businessId != null && businessId.isNotEmpty) {
       DataRefreshNotifier.instance.refresh(businessId);
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Deleted $deleted of ${ids.length} batches')),
+    );
+    _exitSelect();
+    _load();
   }
 
   @override
@@ -194,10 +189,11 @@ class _BatchListPageState extends State<BatchListPage> {
     }).toList();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: _selecting
           ? AppBar(
               leading: IconButton(
-                icon: const Icon(MingCuteIcons.mgc_close_line),
+                icon: const Icon(HeroIcons.x_mark),
                 onPressed: _exitSelect,
                 tooltip: 'Cancel selection',
               ),
@@ -206,23 +202,30 @@ class _BatchListPageState extends State<BatchListPage> {
                 IconButton(
                   tooltip: 'Delete selected',
                   onPressed: _selectedIds.isEmpty ? null : _bulkDelete,
-                  icon: const Icon(MingCuteIcons.mgc_delete_2_line),
+                  icon: const Icon(HeroIcons.trash),
                 ),
                 IconButton(
                   tooltip: 'Mark as closed',
                   onPressed: _selectedIds.isEmpty ? null : _bulkClose,
-                  icon: const Icon(MingCuteIcons.mgc_archive_line),
+                  icon: const Icon(HeroIcons.archive_box),
                 ),
               ],
             )
           : AppBar(
-              title: Text(AppLocalizations.of(context)!.batchesScreenTitle),
+              title: Text(
+                AppLocalizations.of(context)!.batchesScreenTitle,
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 19,
+                ),
+              ),
               leading: IconButton(
-                icon: const Icon(MingCuteIcons.mgc_menu_line),
+                icon: const Icon(HeroIcons.bars_3_bottom_left),
                 onPressed: widget.onMenu,
               ),
             ),
       body: RefreshIndicator(
+        color: AppColors.primary,
         onRefresh: () async => _load(),
         child: NotificationListener<ScrollNotification>(
           onNotification: (n) {
@@ -232,7 +235,7 @@ class _BatchListPageState extends State<BatchListPage> {
             return false;
           },
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
             children: [
               _hero(theme),
               const SizedBox(height: 16),
@@ -240,11 +243,11 @@ class _BatchListPageState extends State<BatchListPage> {
                 controller: _searchCtrl,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Search batches by code, product, or status',
-                  prefixIcon: const Icon(MingCuteIcons.mgc_search_2_line),
+                  hintText: 'Search batches by code, produce, or status...',
+                  prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
                   suffixIcon: _searchCtrl.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(MingCuteIcons.mgc_close_line),
+                          icon: const Icon(HeroIcons.x_circle, size: 18),
                           onPressed: () => setState(() => _searchCtrl.clear()),
                         )
                       : null,
@@ -261,7 +264,7 @@ class _BatchListPageState extends State<BatchListPage> {
                     const SizedBox(width: 8),
                     _statusChip('In Transit', 'in_transit'),
                     const SizedBox(width: 8),
-                    _statusChip('Packing', 'packing'),
+                    _statusChip('Packing', 'packed'),
                     const SizedBox(width: 8),
                     _statusChip('Purchased', 'purchased'),
                     const SizedBox(width: 8),
@@ -280,13 +283,16 @@ class _BatchListPageState extends State<BatchListPage> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                      Icon(
+                        HeroIcons.wifi,
+                        size: 44,
+                        color: AppColors.rose.withValues(alpha: 0.5),
+                      ),
                       const SizedBox(height: 12),
-                      Text(error, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                      Text(error, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13)),
                       const SizedBox(height: 16),
                       OutlinedButton(
                         onPressed: _load,
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
                         child: const Text('Retry'),
                       ),
                     ],
@@ -294,13 +300,13 @@ class _BatchListPageState extends State<BatchListPage> {
                 )
               else if (filteredBatches.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: EmptyState(
-                    icon: MingCuteIcons.mgc_shopping_bag_2_line,
-                    title: query.isNotEmpty ? 'No matching batches' : 'No batches yet',
+                    icon: HeroIcons.cube,
+                    title: query.isNotEmpty ? 'No matching batches' : 'No batches in supply chain',
                     subtitle: query.isNotEmpty
-                        ? 'Try modifying your search or filter.'
-                        : 'Create your first batch to start tracking produce from purchase to sale.',
+                        ? 'Try modifying your search or status filter.'
+                        : 'Create your first produce batch to track purchase, packing, transit, and wholesale sales.',
                     actionLabel: query.isEmpty ? 'New Batch' : null,
                     onAction: query.isEmpty ? _openCreate : null,
                   ),
@@ -309,10 +315,10 @@ class _BatchListPageState extends State<BatchListPage> {
                 ...filteredBatches.map((batch) {
                   final isSelected = _selectedIds.contains(batch.id);
                   final card = GreenCard(
-                    margin: const EdgeInsets.only(bottom: 14),
-                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
                     color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.06)
+                        ? AppColors.primarySurface
                         : null,
                     borderColor: isSelected ? AppColors.primary : null,
                     onTap: _selecting
@@ -331,52 +337,83 @@ class _BatchListPageState extends State<BatchListPage> {
                                 padding: const EdgeInsets.only(right: 12),
                                 child: Icon(
                                   isSelected
-                                      ? MingCuteIcons.mgc_check_fill
-                                      : MingCuteIcons.mgc_check_line,
+                                      ? HeroIcons.check_circle
+                                      : HeroIcons.circle_stack,
                                   color: isSelected
                                       ? AppColors.primary
-                                      : theme.colorScheme.outline,
+                                      : AppColors.divider,
                                 ),
                               )
                             else
                               Container(
-                                width: 48,
-                                height: 48,
+                                width: 44,
+                                height: 44,
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.10),
-                                  borderRadius: BorderRadius.circular(15),
+                                  color: AppColors.primarySurface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.divider,
+                                    width: 1,
+                                  ),
                                 ),
-                                child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, color: AppColors.primary),
+                                child: const Icon(
+                                  HeroIcons.cube,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
                               ),
-                            SizedBox(width: _selecting ? 0 : 14),
+                            SizedBox(width: _selecting ? 0 : 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(batch.productName ?? batch.batchCode, style: theme.textTheme.titleMedium),
+                                  Text(
+                                    batch.productName ?? batch.batchCode,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
                                   const SizedBox(height: 2),
-                                  Text(batch.batchCode, style: theme.textTheme.bodySmall),
+                                  Text(
+                                    '#${batch.batchCode}',
+                                    style: GoogleFonts.inter(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                             StatusPill(status: batch.status),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         Row(
                           children: [
                             Expanded(
-                              child: _meta(theme, 'Quantity', '${batch.totalQuantity.toStringAsFixed(0)} ${batch.quantityUnit}'),
+                              child: _meta(
+                                theme,
+                                'Volume',
+                                '${batch.totalQuantity.toStringAsFixed(batch.totalQuantity.truncateToDouble() == batch.totalQuantity ? 0 : 1)} ${batch.quantityUnit}',
+                              ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 10),
                             Expanded(
-                              child: _meta(theme, 'Purchase cost', CurrencyFormatter.format(batch.totalPurchaseCost)),
+                              child: _meta(
+                                theme,
+                                'Purchase Cost',
+                                CurrencyFormatter.format(batch.totalPurchaseCost),
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
                   );
+
                   if (_selecting) {
                     return GestureDetector(
                       onLongPress: () => _toggleSelect(batch.id),
@@ -387,16 +424,17 @@ class _BatchListPageState extends State<BatchListPage> {
                     key: ValueKey('batch-${batch.id}'),
                     direction: DismissDirection.endToStart,
                     background: Container(
-                      margin: const EdgeInsets.only(bottom: 14),
+                      margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.error.withValues(alpha: 0.15),
+                        color: AppColors.roseSurface,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(color: AppColors.rose, width: 1),
                       ),
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Icon(
-                        MingCuteIcons.mgc_delete_2_line,
-                        color: theme.colorScheme.error,
+                      child: const Icon(
+                        HeroIcons.trash,
+                        color: AppColors.rose,
                       ),
                     ),
                     confirmDismiss: (_) => _confirmDeleteBatch(batch),
@@ -413,8 +451,12 @@ class _BatchListPageState extends State<BatchListPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
                       child: Text(
-                        '— end of list —',
-                        style: theme.textTheme.labelMedium,
+                        '— End of Batches —',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textTertiary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -429,9 +471,18 @@ class _BatchListPageState extends State<BatchListPage> {
               .can(Capability.createBatch)
           ? FloatingActionButton.extended(
               heroTag: null,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
               onPressed: _openCreate,
-              icon: const Icon(MingCuteIcons.mgc_add_line),
-              label: const Text('New Batch'),
+              icon: const Icon(HeroIcons.plus, size: 18),
+              label: Text(
+                'New Batch',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
             )
           : null,
     );
@@ -439,41 +490,56 @@ class _BatchListPageState extends State<BatchListPage> {
 
   Widget _hero(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.10),
-            AppColors.primarySurface.withValues(alpha: 0.6),
-            theme.colorScheme.surface,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.divider, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.primarySurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.divider, width: 1),
             ),
-            child: const Icon(MingCuteIcons.mgc_shopping_bag_2_line, size: 26, color: AppColors.primary),
+            child: const Icon(
+              HeroIcons.cube_transparent,
+              size: 24,
+              color: AppColors.primary,
+            ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Batch lifecycle', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 4),
                 Text(
-                  'Follow produce from purchase to selling, with transport, packing, and P&L in one timeline.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                  'Supply Pipeline & Logistics',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15.5,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Track produce from farm procurement to market wholesale delivery.',
+                  style: GoogleFonts.inter(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -484,26 +550,56 @@ class _BatchListPageState extends State<BatchListPage> {
   }
 
   Widget _statusChip(String label, String value) {
+    final isSelected = _statusFilter == value;
     return ChoiceChip(
       label: Text(label),
-      selected: _statusFilter == value,
+      selected: isSelected,
       onSelected: (_) => setState(() => _statusFilter = value),
+      selectedColor: AppColors.primary,
+      backgroundColor: AppColors.surface,
+      labelStyle: GoogleFonts.plusJakartaSans(
+        color: isSelected ? Colors.white : AppColors.textSecondary,
+        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+        fontSize: 12.5,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? AppColors.primary : AppColors.divider,
+          width: 1,
+        ),
+      ),
     );
   }
 
   Widget _meta(ThemeData theme, String title, String value) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider, width: 0.8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 6),
-          Text(value, style: theme.textTheme.titleSmall),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              color: AppColors.textTertiary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              color: AppColors.textPrimary,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );

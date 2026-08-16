@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -76,7 +77,6 @@ class _CustomerListPageState extends State<CustomerListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final auth = context.watch<AuthProvider>();
     final businessId = auth.businessId ?? '';
     final isOwner = auth.user?.role == 'owner';
@@ -102,126 +102,154 @@ class _CustomerListPageState extends State<CustomerListPage> {
                 city.contains(query);
           }).toList();
 
-    Widget customersSection;
-    if (provider.isLoading) {
-      customersSection = const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    } else if (provider.error != null) {
-      customersSection = GreenCard(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(MingCuteIcons.mgc_wifi_off_line, size: 44, color: theme.colorScheme.error.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            Text(provider.error!.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: () => _load(businessId, _searchCtrl.text),
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    } else if (visibleCustomers.isEmpty) {
-      customersSection = Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: EmptyState(
-          icon: MingCuteIcons.mgc_user_3_line,
-          title: _sharedOnly ? 'No shared customers' : 'No customers found',
-          subtitle: _sharedOnly
-              ? 'Customers shared with this business will appear here.'
-              : _searchCtrl.text.trim().isEmpty
-                  ? 'Add your first customer to start tracking credit and payments.'
-                  : 'No results match your search.',
-          actionLabel: !_sharedOnly && _searchCtrl.text.trim().isEmpty ? 'New Customer' : null,
-          onAction: !_sharedOnly && _searchCtrl.text.trim().isEmpty ? _openCreateCustomer : null,
-        ),
-      );
-    } else {
-      customersSection = Column(
+    Widget buildCustomerList() {
+      if (provider.isLoading) {
+        return const Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (provider.error != null) {
+        return GreenCard(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Icon(HeroIcons.wifi, size: 44, color: AppColors.rose),
+              const SizedBox(height: 12),
+              Text(provider.error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: () => _load(businessId, _searchCtrl.text),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        );
+      }
+      if (visibleCustomers.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: EmptyState(
+            icon: HeroIcons.user_group,
+            title: query.isNotEmpty ? 'No matching buyers found' : 'No buyers in directory',
+            subtitle: query.isNotEmpty
+                ? 'Try modifying your search query.'
+                : 'Add wholesale shopkeepers and commission buyers to track ledger balances and sales.',
+            actionLabel: 'Add Buyer',
+            onAction: _openCreateCustomer,
+          ),
+        );
+      }
+      return Column(
         children: visibleCustomers.map(
           (customer) {
+            final isShared = provider.sharedCustomerIds.contains(customer.id);
+            final hasCredit = customer.outstandingBalance > 0;
+
             final tile = GreenCard(
-              margin: const EdgeInsets.only(bottom: AppSpacing.md),
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                    radius: 22,
+                    backgroundColor: AppColors.primarySurface,
                     child: Text(
-                      customer.fullName.substring(0, 1).toUpperCase(),
-                      style: theme.textTheme.titleMedium?.copyWith(color: AppColors.primary),
+                      customer.fullName.isNotEmpty ? customer.fullName[0].toUpperCase() : '?',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(customer.fullName, style: theme.textTheme.titleMedium),
-                        if (provider.sharedCustomerIds.contains(customer.id)) ...[
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                customer.fullName,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(MingCuteIcons.mgc_share_2_line, size: 12, color: AppColors.primary),
-                                const SizedBox(width: 4),
-                                Text(
+                            if (isShared) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.indigoSurface,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppColors.indigo.withValues(alpha: 0.2), width: 0.8),
+                                ),
+                                child: Text(
                                   'Shared',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.indigo,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 4),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 3),
                         Text(
-                          [customer.shopName, customer.city]
+                          [customer.shopName, customer.city, customer.phone]
                               .where((item) => item != null && item.isNotEmpty)
-                              .join('  •  '),
-                          style: theme.textTheme.bodySmall,
+                              .join(' • '),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
                         CurrencyFormatter.format(customer.outstandingBalance),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: customer.outstandingBalance > 0
-                              ? theme.colorScheme.secondary
-                              : theme.colorScheme.primary,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: hasCredit ? AppColors.rose : AppColors.emerald,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text('Outstanding', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasCredit ? 'Due Credit' : 'Zero Balance',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: hasCredit ? AppColors.rose : AppColors.emerald,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(width: 4),
                   IconButton(
                     visualDensity: VisualDensity.compact,
-                    tooltip: 'Edit customer',
-                    icon: const Icon(MingCuteIcons.mgc_edit_2_line, size: 20),
+                    tooltip: 'Edit Buyer Profile',
+                    icon: const Icon(HeroIcons.pencil_square, size: 18, color: AppColors.textSecondary),
                     onPressed: () => _openEditCustomer(customer),
                   ),
                 ],
               ),
             );
+
             if (!isOwner) {
               return GestureDetector(
                 onTap: () => Navigator.of(context).push(
@@ -234,59 +262,36 @@ class _CustomerListPageState extends State<CustomerListPage> {
               key: ValueKey('customer-${customer.id}'),
               direction: DismissDirection.endToStart,
               background: Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.error.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  color: AppColors.roseSurface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: AppColors.rose, width: 1),
                 ),
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Icon(MingCuteIcons.mgc_archive_line, color: theme.colorScheme.error),
+                child: const Icon(HeroIcons.archive_box, color: AppColors.rose),
               ),
               confirmDismiss: (_) async {
-                final provider = context.read<CustomerProvider>();
+                final customerProv = context.read<CustomerProvider>();
                 final messenger = ScaffoldMessenger.of(context);
                 final ok = await showConfirmDialog(
                   context,
                   title: 'Archive ${customer.fullName}?',
-                  message: 'Archived customers are hidden from the list and excluded from reports. You can restore them later.',
+                  message: 'Archived customers are hidden from the active directory and excluded from reports.',
                   confirmLabel: 'Archive',
                   isDestructive: true,
                 );
                 if (ok != true) return false;
-                final archived = await provider.archive(customer.id);
+                final archived = await customerProv.archive(customer.id);
                 if (!context.mounted) return archived;
                 if (archived) {
-                  final businessId = context.read<AuthProvider>().businessId;
-                  if (businessId != null && businessId.isNotEmpty) {
-                    DataRefreshNotifier.instance.refresh(businessId);
+                  final bId = context.read<AuthProvider>().businessId;
+                  if (bId != null && bId.isNotEmpty) {
+                    DataRefreshNotifier.instance.refresh(bId);
                   }
                   messenger.showSnackBar(
-                    SnackBar(
-                      content: Text('${customer.fullName} archived'),
-                      action: SnackBarAction(
-                        label: 'Undo',
-                        onPressed: () async {
-                          final restored = await provider.unarchive(customer.id);
-                          if (!context.mounted) return;
-                          final restoredBusinessId =
-                              context.read<AuthProvider>().businessId;
-                          if (restoredBusinessId != null &&
-                              restoredBusinessId.isNotEmpty) {
-                            DataRefreshNotifier.instance.refresh(
-                              restoredBusinessId,
-                            );
-                          }
-                          messenger.showSnackBar(
-                            SnackBar(content: Text(restored ? 'Restored' : 'Failed to restore')),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                } else {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(provider.error ?? 'Failed to archive')),
+                    SnackBar(content: Text('${customer.fullName} archived')),
                   );
                 }
                 return archived;
@@ -304,21 +309,31 @@ class _CustomerListPageState extends State<CustomerListPage> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.customersScreenTitle),
+        title: Text(
+          AppLocalizations.of(context)!.customersScreenTitle,
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(MingCuteIcons.mgc_menu_line),
+          icon: const Icon(HeroIcons.bars_3_bottom_left),
           onPressed: widget.onMenu,
         ),
         actions: [
           IconButton(
             tooltip: _showArchived ? 'Hide archived' : 'Show archived',
-            icon: Icon(_showArchived ? MingCuteIcons.mgc_eye_close_line : MingCuteIcons.mgc_eye_line),
+            icon: Icon(
+              _showArchived ? HeroIcons.eye_slash : HeroIcons.eye,
+              size: 20,
+            ),
             onPressed: () {
               setState(() => _showArchived = !_showArchived);
-              final businessId = context.read<AuthProvider>().businessId ?? '';
+              final bId = context.read<AuthProvider>().businessId ?? '';
               context.read<CustomerProvider>().load(
-                businessId,
+                bId,
                 search: _searchCtrl.text.trim(),
                 includeArchived: _showArchived,
               );
@@ -327,96 +342,122 @@ class _CustomerListPageState extends State<CustomerListPage> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.xxl),
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.10),
-                  AppColors.amberSurface.withValues(alpha: 0.6),
-                  theme.colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.divider, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow.withValues(alpha: 0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                      ),
-                      child: const Icon(MingCuteIcons.mgc_user_3_line, size: 26, color: AppColors.primary),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Credit & customers', style: theme.textTheme.titleLarge),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Track outstanding balances, open ledgers, and payment history without leaving the app.',
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.indigoSurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.indigo.withValues(alpha: 0.25), width: 1),
+                  ),
+                  child: const Icon(HeroIcons.user_group, size: 24, color: AppColors.indigo),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                TextField(
-                  controller: _searchCtrl,
-                  onChanged: (query) {
-                    setState(() {});
-                    _load(businessId, query);
-                  },
-                  decoration: const InputDecoration(
-                    hintText: 'Search by name, phone, or shop',
-                    prefixIcon: Icon(MingCuteIcons.mgc_search_2_line),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Buyer CRM & Statements',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15.5,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Manage wholesale customer directories, credit limits, and ledger balances.',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (provider.sharedSupportAvailable) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FilterChip(
-                      label: const Text('Shared'),
-                      avatar: const Icon(MingCuteIcons.mgc_share_2_line, size: 18),
-                      selected: _sharedOnly,
-                      showCheckmark: false,
-                      onSelected: (selected) => setState(() => _sharedOnly = selected),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xl),
-          SectionHeader(title: 'Customers'),
-          const SizedBox(height: AppSpacing.sm),
-          customersSection,
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchCtrl,
+            onChanged: (query) => _load(businessId, query),
+            decoration: InputDecoration(
+              hintText: 'Search by buyer name, shop, city, or phone...',
+              prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
+              suffixIcon: _searchCtrl.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(HeroIcons.x_circle, size: 18),
+                      onPressed: () {
+                        _searchCtrl.clear();
+                        _load(businessId, '');
+                      },
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: [
+              FilterChip(
+                label: const Text('Shared with partners'),
+                avatar: const Icon(HeroIcons.share, size: 15),
+                selected: _sharedOnly,
+                onSelected: (val) => setState(() => _sharedOnly = val),
+              ),
+              if (_showArchived)
+                FilterChip(
+                  label: const Text('Showing archived'),
+                  avatar: const Icon(HeroIcons.archive_box, size: 15),
+                  selected: true,
+                  onSelected: (_) {},
+                ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SectionHeader(
+            title: 'Registered Buyers (${visibleCustomers.length})',
+          ),
+          const SizedBox(height: 8),
+          buildCustomerList(),
         ],
       ),
-      floatingActionButton: context
-              .watch<AuthProvider>()
-              .capabilities
-              .can(Capability.createCustomer)
+      floatingActionButton: context.watch<AuthProvider>().capabilities.can(Capability.createCustomer)
           ? FloatingActionButton.extended(
               heroTag: null,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
               onPressed: _openCreateCustomer,
-              icon: const Icon(MingCuteIcons.mgc_user_4_line),
-              label: const Text('New Customer'),
+              icon: const Icon(HeroIcons.user_plus, size: 18),
+              label: Text(
+                'Add Buyer',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
             )
           : null,
     );

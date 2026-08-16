@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:icons_plus/icons_plus.dart';
 
 import '../../../core/config/theme.dart';
 import '../../../core/utils/breakpoints.dart';
@@ -42,7 +42,7 @@ class DashboardKpiGrid extends StatelessWidget {
               child: DashboardCard(
                 title: 'Customer Dues',
                 value: CurrencyFormatter.format(provider.outstandingCredit),
-                icon: MingCuteIcons.mgc_wallet_3_line,
+                icon: HeroIcons.banknotes,
                 color: AppColors.secondary,
                 badge: provider.customersWithCreditCount > 0
                     ? '${provider.customersWithCreditCount} pending'
@@ -60,8 +60,8 @@ class DashboardKpiGrid extends StatelessWidget {
               child: DashboardCard(
                 title: 'Produce Batches',
                 value: '${provider.batchesCount} Batches',
-                icon: MingCuteIcons.mgc_shopping_bag_2_line,
-                color: const Color(0xFF0284C7),
+                icon: HeroIcons.cube,
+                color: AppColors.sky,
                 badge: '${provider.activeBatchesCount} in pipeline',
                 subtitle: '${provider.sellingBatchesCount} selling in market',
                 onTap: () {
@@ -82,9 +82,9 @@ class DashboardKpiGrid extends StatelessWidget {
               child: DashboardCard(
                 title: 'Buyer Directory',
                 value: '${provider.customersCount} Clients',
-                icon: MingCuteIcons.mgc_user_3_line,
-                color: const Color(0xFF7C3AED),
-                badge: '${provider.customersWithCreditCount} with credit',
+                icon: HeroIcons.user_group,
+                color: AppColors.indigo,
+                badge: '${provider.customersWithCreditCount} with dues',
                 subtitle: 'Registered shopkeepers',
                 onTap: () {
                   if (onSelectTab != null) {
@@ -104,8 +104,8 @@ class DashboardKpiGrid extends StatelessWidget {
               child: DashboardCard(
                 title: 'Produce Lines',
                 value: '${provider.productsCount} Varieties',
-                icon: MingCuteIcons.mgc_leaf_2_line,
-                color: const Color(0xFF059669),
+                icon: HeroIcons.sparkles,
+                color: AppColors.emerald,
                 badge: 'Active catalog',
                 subtitle: 'Produce lines & units',
                 onTap: () => Navigator.of(context, rootNavigator: true).push(
