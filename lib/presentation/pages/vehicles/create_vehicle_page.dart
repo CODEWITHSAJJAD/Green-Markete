@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
@@ -163,7 +164,16 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
                 decoration: const InputDecoration(labelText: 'Notes'),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
                 onPressed: _saving ? null : _submit,
                 child: _saving
                     ? const SizedBox(
@@ -175,7 +185,7 @@ class _CreateVehiclePageState extends State<CreateVehiclePage> {
                         ),
                       )
                     : Text(_isEditing ? 'Save Changes' : 'Save Vehicle'),
-              ),
+              ),),
             ],
           ),
         ),

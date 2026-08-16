@@ -40,7 +40,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (business != null) {
-      context.read<AuthProvider>().setBusinessId(business.id);
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      await auth.loadBusinesses();
+      if (!mounted) return;
+      auth.setBusinessId(business.id);
     } else {
       final error = context.read<BusinessProvider>().error;
       ScaffoldMessenger.of(context).showSnackBar(

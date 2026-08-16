@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../data/models/market_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
@@ -140,7 +141,16 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
                     setState(() => _marketType = value ?? 'wholesale'),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
                 onPressed: _saving ? null : _submit,
                 child: _saving
                     ? const SizedBox(
@@ -152,7 +162,7 @@ class _CreateMarketPageState extends State<CreateMarketPage> {
                         ),
                       )
                     : Text(_isEditing ? 'Save Changes' : 'Save Market'),
-              ),
+              ),),
             ],
           ),
         ),
