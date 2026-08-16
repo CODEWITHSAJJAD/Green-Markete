@@ -90,3 +90,39 @@ class SaleCreateRequest {
     'notes': notes,
   };
 }
+
+class SaleUpdateRequest {
+  final double? quantitySold;
+  final double? pricePerUnit;
+  final double? totalAmount;
+  final String? paymentMode;
+  final double? cashReceived;
+  final double? creditAmount;
+  final String? bankReference;
+  final String? notes;
+  final String? customerId;
+
+  SaleUpdateRequest({
+    this.quantitySold,
+    this.pricePerUnit,
+    this.totalAmount,
+    this.paymentMode,
+    this.cashReceived,
+    this.creditAmount,
+    this.bankReference,
+    this.notes,
+    this.customerId,
+  });
+
+  Map<String, dynamic> toJson() => {
+    if (quantitySold != null) 'quantity_sold': quantitySold,
+    if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
+    if (totalAmount != null) 'total_amount': totalAmount,
+    if (paymentMode != null) 'payment_mode': paymentMode,
+    if (cashReceived != null) 'cash_received': cashReceived,
+    if (creditAmount != null) 'credit_amount': creditAmount,
+    if (bankReference != null) 'bank_reference': bankReference,
+    if (notes != null) 'notes': notes,
+    if (customerId != null) 'customer_id': customerId,
+  };
+}

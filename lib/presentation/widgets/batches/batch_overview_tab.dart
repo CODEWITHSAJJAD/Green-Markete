@@ -21,6 +21,51 @@ class BatchOverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final pl = context.watch<BatchPLProvider>().pl;
+    final detail = context.watch<BatchDetailProvider>();
+    final expenseProv = context.watch<ExpenseProvider>();
+
+    final basePurchaseCost = batch.totalPurchaseCost > 0
+        ? batch.totalPurchaseCost
+        : (batch.totalQuantity * batch.purchasePricePerUnit);
+
+    // Calculate purchase-side expenses from P&L breakdown or local records
+    final packingCost = pl?.costBreakdown.packingCost ??
+        detail.packingRecords.fold<double>(
+          0,
+          (sum, p) => sum + (p.unitCount * p.costPerUnit),
+        );
+
+    final transportCost = pl?.costBreakdown.transportCost ??
+        detail.vehicleLoads.fold<double>(
+          0,
+          (sum, v) => sum + v.totalCost,
+        );
+
+    final purchaseExpenses = pl?.costBreakdown.purchaserExpenses ??
+        expenseProv.expenses
+            .where(
+              (e) =>
+                  !e.isVoided &&
+                  (e.expenseSide.toLowerCase() == 'purchaser' ||
+                      e.expenseSide.toLowerCase() == 'purchase' ||
+                      e.expenseType.toLowerCase().contains('purchase') ||
+                      e.expenseType.toLowerCase().contains('mandi') ||
+                      e.expenseType.toLowerCase().contains('labor')),
+            )
+            .fold<double>(0, (sum, e) => sum + e.amount);
+
+    final purchaserDailyCharges =
+        pl?.costBreakdown.purchaserDailyCharges ?? 0.0;
+
+    final totalPurchaseSideExpenses =
+        packingCost + transportCost + purchaseExpenses + purchaserDailyCharges;
+    final totalLandedPurchaseCost =
+        basePurchaseCost + totalPurchaseSideExpenses;
+    final effectivePricePerUnit = batch.totalQuantity > 0
+        ? (totalLandedPurchaseCost / batch.totalQuantity)
+        : batch.purchasePricePerUnit;
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -44,7 +89,10 @@ class BatchOverviewTab extends StatelessWidget {
               if (batch.status == 'closed')
                 Container(
                   margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
@@ -52,7 +100,11 @@ class BatchOverviewTab extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(HeroIcons.lock_closed, size: 16, color: AppColors.textPrimary),
+                      const Icon(
+                        HeroIcons.lock_closed,
+                        size: 16,
+                        color: AppColors.textPrimary,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -68,6 +120,7 @@ class BatchOverviewTab extends StatelessWidget {
                   ),
                 ),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -108,12 +161,17 @@ class BatchOverviewTab extends StatelessWidget {
                 children: [
                   buildBatchMetric(
                     theme,
-                    'Purchase Cost',
-                    CurrencyFormatter.format(batch.totalPurchaseCost),
+                    'Landed Cost',
+                    CurrencyFormatter.format(totalLandedPurchaseCost),
                   ),
                   buildBatchMetric(
                     theme,
-                    'Price / Unit',
+                    'Cost / Unit',
+                    CurrencyFormatter.format(effectivePricePerUnit),
+                  ),
+                  buildBatchMetric(
+                    theme,
+                    'Base Price / Unit',
                     CurrencyFormatter.format(batch.purchasePricePerUnit),
                   ),
                   buildBatchMetric(
@@ -123,6 +181,43 @@ class BatchOverviewTab extends StatelessWidget {
                   ),
                 ],
               ),
+              if (totalPurchaseSideExpenses > 0) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.emeraldSurface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.emerald.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HeroIcons.calculator,
+                        size: 15,
+                        color: AppColors.emeraldDark,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Base: ${CurrencyFormatter.format(basePurchaseCost)} + Expenses: ${CurrencyFormatter.format(totalPurchaseSideExpenses)}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.emeraldDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (batch.supplierName != null && batch.supplierName!.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Container(

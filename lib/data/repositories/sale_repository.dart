@@ -56,11 +56,19 @@ class SaleRepository {
     int limit = 100,
   }) async {
     try {
-      final batches = await _client
-          .from('batches')
-          .select('id')
-          .eq('business_id', businessId);
-      final batchIds = (batches as List).map((b) => b['id'].toString()).toList();
+      List<dynamic> batches;
+      try {
+        batches = await _client
+            .from('product_batches')
+            .select('id')
+            .eq('business_id', businessId);
+      } catch (_) {
+        batches = await _client
+            .from('batches')
+            .select('id')
+            .eq('business_id', businessId);
+      }
+      final batchIds = batches.map((b) => b['id'].toString()).toList();
       if (batchIds.isEmpty) return [];
       final rows = await _client
           .from('sales')
@@ -68,7 +76,7 @@ class SaleRepository {
           .filter('batch_id', 'in', batchIds)
           .order('sale_date', ascending: false)
           .limit(limit);
-      return (rows as List).map((r) => SaleModel.fromJson(r as Map<String, dynamic>)).toList();
+      return rows.map((r) => SaleModel.fromJson(r)).toList();
     } catch (_) {
       return [];
     }
@@ -106,5 +114,19 @@ class SaleRepository {
         .select()
         .single();
     return SaleModel.fromJson(row);
+  }
+
+  Future<SaleModel> update(String id, SaleUpdateRequest request) async {
+    final row = await _client
+        .from('sales')
+        .update(request.toJson())
+        .eq('id', id)
+        .select()
+        .single();
+    return SaleModel.fromJson(row);
+  }
+
+  Future<void> delete(String id) async {
+    await _client.from('sales').delete().eq('id', id);
   }
 }

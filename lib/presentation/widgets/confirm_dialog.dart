@@ -34,24 +34,31 @@ Future<bool> showConfirmDialog(
         ),
         actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 48),
-              side: BorderSide(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Text(cancelLabel),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(0, 48),
-                backgroundColor: accent,
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
+                  child: Text(cancelLabel),
+                ),
               ),
-              child: Text(confirmLabel),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    backgroundColor: accent,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(confirmLabel),
+                ),
+              ),
+            ],
           ),
         ],
       );

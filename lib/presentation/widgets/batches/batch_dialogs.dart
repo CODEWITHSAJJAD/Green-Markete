@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
 import '../../../data/models/packing_return_model.dart';
@@ -9,6 +10,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/capability.dart';
+import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/transaction_provider.dart';
@@ -969,6 +971,249 @@ Future<void> confirmCloseBatch(BuildContext context, String batchId) async {
   } catch (e) {
     messenger.showSnackBar(
       SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+    );
+  }
+}
+
+Future<void> showEditSaleDialog(
+  BuildContext context,
+  SaleModel sale, {
+  String? businessId,
+  String? batchId,
+}) async {
+  final theme = Theme.of(context);
+  final activeBizId = businessId ?? context.read<AuthProvider>().businessId ?? '';
+  final customerProv = context.read<CustomerProvider>();
+  final customers = customerProv.customers;
+
+  final quantityCtrl = TextEditingController(
+    text: sale.quantitySold.toStringAsFixed(sale.quantitySold.truncateToDouble() == sale.quantitySold ? 0 : 2),
+  );
+  final priceCtrl = TextEditingController(
+    text: sale.pricePerUnit.toStringAsFixed(2),
+  );
+  final cashCtrl = TextEditingController(
+    text: sale.cashReceived > 0 ? sale.cashReceived.toStringAsFixed(2) : '',
+  );
+  final bankRefCtrl = TextEditingController(text: sale.bankReference ?? '');
+  final notesCtrl = TextEditingController(text: sale.notes ?? '');
+  String paymentMode = sale.paymentMode;
+  String? selectedCustomerId = sale.customerId;
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSt) {
+        final qty = double.tryParse(quantityCtrl.text.trim()) ?? 0;
+        final price = double.tryParse(priceCtrl.text.trim()) ?? 0;
+        final total = qty * price;
+        final cash = double.tryParse(cashCtrl.text.trim()) ?? 0;
+        final credit = paymentMode == 'credit'
+            ? total
+            : paymentMode == 'partial'
+                ? (total - cash).clamp(0.0, double.infinity)
+                : 0.0;
+
+        return AlertDialog(
+          title: const Text('Edit Sale'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (customers.isNotEmpty) ...[
+                  AppDropdown<String?>(
+                    value: selectedCustomerId,
+                    labelText: 'Customer (optional for walk-in)',
+                    items: [
+                      const DropdownItem(value: null, child: Text('Direct / Walk-in Customer')),
+                      for (final c in customers)
+                        DropdownItem(value: c.id, child: Text(c.fullName, overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (v) => setSt(() => selectedCustomerId = v),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: quantityCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Quantity Sold'),
+                  onChanged: (_) => setSt(() {}),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: priceCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Price per Unit (Rs)'),
+                  onChanged: (_) => setSt(() {}),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.w600)),
+                      Text(CurrencyFormatter.format(total), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AppDropdown<String>(
+                  value: paymentMode,
+                  labelText: 'Payment Mode',
+                  items: const [
+                    DropdownItem(value: 'cash', child: Text('Full Cash')),
+                    DropdownItem(value: 'credit', child: Text('Full Credit')),
+                    DropdownItem(value: 'partial', child: Text('Partial Payment')),
+                    DropdownItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                  ],
+                  onChanged: (v) => setSt(() {
+                    paymentMode = v ?? 'cash';
+                    if (paymentMode == 'cash' || paymentMode == 'bank_transfer') {
+                      cashCtrl.text = total > 0 ? total.toStringAsFixed(2) : '';
+                    } else if (paymentMode == 'credit') {
+                      cashCtrl.text = '0';
+                    }
+                  }),
+                ),
+                if (paymentMode == 'partial') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: cashCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Cash Received (Rs)'),
+                    onChanged: (_) => setSt(() {}),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Credit remaining: ${CurrencyFormatter.format(credit)}',
+                    style: theme.textTheme.bodySmall?.copyWith(color: AppColors.rose, fontWeight: FontWeight.w600),
+                  ),
+                ],
+                if (paymentMode == 'bank_transfer') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: bankRefCtrl,
+                    decoration: const InputDecoration(labelText: 'Bank Reference (optional)'),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (qty <= 0 || price <= 0) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('Quantity and price must be greater than 0')),
+                  );
+                  return;
+                }
+                final actualCash = paymentMode == 'cash' || paymentMode == 'bank_transfer'
+                    ? total
+                    : paymentMode == 'credit'
+                        ? 0.0
+                        : cash;
+                final actualCredit = (total - actualCash).clamp(0.0, double.infinity);
+
+                final updateReq = SaleUpdateRequest(
+                  quantitySold: qty,
+                  pricePerUnit: price,
+                  totalAmount: total,
+                  paymentMode: paymentMode,
+                  cashReceived: actualCash,
+                  creditAmount: actualCredit,
+                  customerId: selectedCustomerId,
+                  bankReference: bankRefCtrl.text.trim().isEmpty ? null : bankRefCtrl.text.trim(),
+                  notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                );
+
+                final ok = await context.read<SaleProvider>().update(
+                  sale.id,
+                  updateReq,
+                  businessId: activeBizId,
+                  batchId: batchId ?? sale.batchId,
+                );
+
+                if (!ctx.mounted) return;
+                if (ok) {
+                  Navigator.pop(ctx);
+                  if (activeBizId.isNotEmpty) {
+                    DataRefreshNotifier.instance.refresh(activeBizId);
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Sale updated successfully')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed: ${context.read<SaleProvider>().error ?? 'Unknown error'}'),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+Future<void> showDeleteSaleDialog(
+  BuildContext context,
+  SaleModel sale, {
+  String? businessId,
+  String? batchId,
+}) async {
+  final activeBizId = businessId ?? context.read<AuthProvider>().businessId ?? '';
+  final confirmed = await showConfirmDialog(
+    context,
+    title: 'Delete Sale Record?',
+    message:
+        'Are you sure you want to delete this sale of ${CurrencyFormatter.format(sale.totalAmount)}? This will remove the transaction record and return ${sale.quantitySold.toStringAsFixed(0)} units to inventory.',
+    confirmLabel: 'Delete Sale',
+    isDestructive: true,
+  );
+
+  if (!confirmed) return;
+  if (!context.mounted) return;
+
+  final ok = await context.read<SaleProvider>().delete(
+    sale.id,
+    businessId: activeBizId,
+    batchId: batchId ?? sale.batchId,
+  );
+
+  if (!context.mounted) return;
+  if (ok) {
+    if (activeBizId.isNotEmpty) {
+      DataRefreshNotifier.instance.refresh(activeBizId);
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sale deleted successfully')),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed: ${context.read<SaleProvider>().error ?? 'Unknown error'}'),
+      ),
     );
   }
 }

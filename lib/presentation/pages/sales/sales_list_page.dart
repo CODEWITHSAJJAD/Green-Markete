@@ -9,6 +9,7 @@ import '../../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../widgets/batches/batch_dialogs.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
 import 'quick_sale_page.dart';
@@ -38,15 +39,17 @@ class _SalesListPageState extends State<SalesListPage> {
     super.dispose();
   }
 
-  void _load() {
+  Future<void> _load() async {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
-      context.read<SellingBatchesProvider>().load(
-        businessId,
-        status: 'selling',
-      );
-      context.read<SaleProvider>().loadByBusiness(businessId);
-      context.read<CustomerProvider>().load(businessId);
+      await Future.wait([
+        context.read<SellingBatchesProvider>().load(
+          businessId,
+          status: 'selling',
+        ),
+        context.read<SaleProvider>().loadByBusiness(businessId),
+        context.read<CustomerProvider>().load(businessId),
+      ]);
     }
   }
 
@@ -276,7 +279,7 @@ class _SalesListPageState extends State<SalesListPage> {
                   children: filteredSales.map((sale) {
                     final customerName =
                         customerMap[sale.customerId] ?? 'Direct Customer';
-                    return _saleCard(theme, sale, customerName);
+                    return _saleCard(theme, sale, customerName, canSell);
                   }).toList(),
                 ),
             ] else ...[
@@ -405,7 +408,12 @@ class _SalesListPageState extends State<SalesListPage> {
     );
   }
 
-  Widget _saleCard(ThemeData theme, SaleModel sale, String customerName) {
+  Widget _saleCard(
+    ThemeData theme,
+    SaleModel sale,
+    String customerName,
+    bool canSell,
+  ) {
     final formattedDate = DateFormat(
       'dd MMM yyyy, hh:mm a',
     ).format(DateTime.tryParse(sale.saleDate) ?? DateTime.now());
@@ -466,6 +474,58 @@ class _SalesListPageState extends State<SalesListPage> {
                   color: AppColors.textPrimary,
                 ),
               ),
+              if (canSell) ...[
+                const SizedBox(width: 4),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    HeroIcons.ellipsis_vertical,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 120),
+                  onSelected: (action) {
+                    if (action == 'edit') {
+                      showEditSaleDialog(context, sale);
+                    } else if (action == 'delete') {
+                      showDeleteSaleDialog(context, sale);
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(
+                            HeroIcons.pencil_square,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 8),
+                          Text('Edit'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(
+                            HeroIcons.trash,
+                            size: 16,
+                            color: AppColors.rose,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: AppColors.rose),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 12),

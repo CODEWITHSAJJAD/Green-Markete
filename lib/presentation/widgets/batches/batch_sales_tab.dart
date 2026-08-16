@@ -139,13 +139,70 @@ class BatchSalesTab extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                CurrencyFormatter.format(sale.totalAmount),
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14.5,
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    CurrencyFormatter.format(sale.totalAmount),
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (batch.status != 'closed' && context.read<AuthProvider>().canEditSellerSide) ...[
+                    const SizedBox(width: 2),
+                    PopupMenuButton<String>(
+                      icon: const Icon(
+                        HeroIcons.ellipsis_vertical,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 110),
+                      onSelected: (action) {
+                        if (action == 'edit') {
+                          showEditSaleDialog(context, sale, batchId: batch.id);
+                        } else if (action == 'delete') {
+                          showDeleteSaleDialog(context, sale, batchId: batch.id);
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(
+                                HeroIcons.pencil_square,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: 8),
+                              Text('Edit'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                HeroIcons.trash,
+                                size: 16,
+                                color: AppColors.rose,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Delete',
+                                style: TextStyle(color: AppColors.rose),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
               if (canCollect) ...[
                 const SizedBox(height: 4),

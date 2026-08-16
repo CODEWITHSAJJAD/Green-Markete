@@ -1,6 +1,27 @@
 # Project State — MandiRoznamcha Frontend
 
-**Last updated:** 2026-08-16 (daily-122)
+**Last updated:** 2026-08-16 (daily-124)
+
+> **Session (2026-08-16, daily-124, Sales Edit/Delete, Credit Reconciliation & Landed Purchase Cost):**
+> 1. **Customer Credit Auto-Reconciliation (`customer_repository.dart`):** Updated `CustomerRepository.recordPayment` to automatically allocate recorded payments against the customer's open sales (FIFO order), reducing `credit_amount` and increasing `cash_received` so the sales list ledger reflects credit collections immediately without stale due balances.
+> 2. **Sales Edit & Delete Capability (`sale_model.dart`, `sale_repository.dart`, `batch_provider.dart`, `batch_dialogs.dart`, `sales_list_page.dart`, `batch_sales_tab.dart`):**
+>    - Created `SaleUpdateRequest` model and implemented `update` & `delete` in `SaleRepository` and `SaleProvider`.
+>    - Built modal `showEditSaleDialog` (with customer selector, dynamic total calculation, payment mode switcher, cash/credit auto-adjusters, and notes).
+>    - Built destructive `showDeleteSaleDialog` (with inventory restoration messaging and confirm dialog).
+>    - Integrated popup action menus (`Edit` / `Delete`) on all sale cards in `SalesListPage` and `BatchSalesTab`.
+> 3. **Batch Overview Landed Purchase Cost (`batch_overview_tab.dart`):**
+>    - Computed true landed purchase cost by summing base procurement cost with purchase-side expenses (packing costs, transport freight, and purchaser mandi/labor expenses).
+>    - Computed effective landed cost per unit (`totalLandedPurchaseCost / totalQuantity`) and displayed both Landed Cost and Base Price / Unit along with an expense breakdown strip.
+> 4. **Icon Registry (`app_icons.dart`):** Added `HeroIcons.ellipsis_vertical` and `HeroIcons.calculator`.
+> 5. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all passed).
+
+> **Session (2026-08-16, daily-123, Production Release APK, OverflowBar Fix & Business Sales History Fix):**
+> 1. **Batch Closure ParentData Crash Fix (`confirm_dialog.dart`):** Replaced direct `Expanded` inside `AlertDialog.actions` with `Row(children: [Expanded(...), Expanded(...)])`. This eliminates `Incorrect use of ParentDataWidget. The offending Expanded is currently placed inside a OverflowBar widget` when closing a batch or showing confirmation dialogs.
+> 2. **Sales Page Business-Wide History Fix (`sale_repository.dart`, `sales_list_page.dart`):**
+>    - In `SaleRepository.listByBusiness`, fixed the query table name to `product_batches` (with fallback to `batches`). Previously queried non-existent `batches` table, throwing a silent PostgrestException and returning an empty list `[]`.
+>    - In `sales_list_page.dart`, converted `_load` to an `async Future<void>` with `await Future.wait(...)` so pull-to-refresh reliably re-fetches and renders all business-wide sales across all batches.
+> 3. **Production Release Build:** Generated release APK `build\app\outputs\flutter-apk\app-release.apk` (61.5MB) with multi-density vector launcher icons, native splash screen, and Internet permissions.
+> 4. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all passed), `flutter build apk --release` succeeded with code 0.
 
 > **Session (2026-08-16, daily-122, Bill Preview & PDF Branding Update):**
 > 1. **Bill Previews & Image Sharing (`bill_view.dart`):** Replaced legacy 'GREEN MARKET' and placeholder eco icon with official vector `BrandLogo` and `MANDI ROZNAMCHA` header.

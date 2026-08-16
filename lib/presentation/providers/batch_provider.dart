@@ -469,4 +469,45 @@ class SaleProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> update(
+    String saleId,
+    SaleUpdateRequest request, {
+    String? businessId,
+    String? batchId,
+  }) async {
+    try {
+      await _repo.update(saleId, request);
+      if (businessId != null && businessId.isNotEmpty) {
+        await loadByBusiness(businessId);
+      } else if (batchId != null && batchId.isNotEmpty) {
+        await loadByBatch(batchId);
+      }
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> delete(
+    String saleId, {
+    String? businessId,
+    String? batchId,
+  }) async {
+    try {
+      await _repo.delete(saleId);
+      if (businessId != null && businessId.isNotEmpty) {
+        await loadByBusiness(businessId);
+      } else if (batchId != null && batchId.isNotEmpty) {
+        await loadByBatch(batchId);
+      }
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

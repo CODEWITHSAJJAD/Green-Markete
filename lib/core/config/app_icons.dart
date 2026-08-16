@@ -84,4 +84,7 @@ class HeroIcons {
   static const IconData tag = MingCuteIcons.mgc_tag_line;
   static const IconData no_symbol = MingCuteIcons.mgc_forbid_circle_line;
   static const IconData envelope = MingCuteIcons.mgc_mail_line;
+  static const IconData ellipsis_vertical = MingCuteIcons.mgc_more_2_line;
+  static const IconData ellipsis_horizontal = MingCuteIcons.mgc_more_1_line;
+  static const IconData calculator = MingCuteIcons.mgc_counter_line;
 }
