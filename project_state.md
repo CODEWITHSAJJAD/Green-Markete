@@ -1,6 +1,11 @@
 # Project State — Green Market Frontend
 
-**Last updated:** 2026-08-16 (daily-114)
+**Last updated:** 2026-08-16 (daily-115)
+
+> **Session (2026-08-16, daily-115, Supplier Settlement & Partner Profile RenderFlex Overflow Fixes):** Per runtime layout assertions on compact screens:
+> 1. **Supplier Settlement 11px Overflow (`supplier_settlement_page.dart:264`):** Fixed SegmentedButton + title row by wrapping title in `Expanded` and applying `VisualDensity.compact` with compact micro-padding to `SegmentedButton`.
+> 2. **Partner Profile 2.2px Overflow (`partner_profile_page.dart:204`):** Wrapped "Access & Role Controls" card title in `Expanded` and converted member classification chips row to `Wrap(spacing: 8, runSpacing: 8)`.
+> 3. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all tests passed).
 
 > **Session (2026-08-16, daily-114, RecentActivityList RenderFlex 25px Overflow Fix):** Per runtime layout assertion ("A RenderFlex overflowed by 25 pixels on the right in Row recent_activity_list.dart:81:21"):
 > 1. **Root Cause:** In `RecentActivityList` batch row, the produce title was wrapped in `Flexible` rather than `Expanded`, allowing long titles + batch code `#GM-XXXX` pills + trailing status pills to push the content row beyond compact mobile device widths.

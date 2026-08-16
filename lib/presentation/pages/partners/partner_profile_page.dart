@@ -204,14 +204,17 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Access & Role Controls',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: AppColors.textPrimary,
+                    Expanded(
+                      child: Text(
+                        'Access & Role Controls',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
@@ -236,7 +239,9 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                   style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 8),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     ChoiceChip(
                       avatar: const Icon(HeroIcons.user, size: 16),
@@ -244,7 +249,6 @@ class _PartnerProfilePageState extends State<PartnerProfilePage> {
                       selected: partner.memberType == 'employee',
                       onSelected: (_) => _updateMemberType(context, partner, businessId, 'employee'),
                     ),
-                    const SizedBox(width: 8),
                     ChoiceChip(
                       avatar: const Icon(HeroIcons.briefcase, size: 16),
                       label: const Text('Business Partner'),

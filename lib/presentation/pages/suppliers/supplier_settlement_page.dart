@@ -263,12 +263,18 @@ class _SupplierSettlementPageState extends State<SupplierSettlementPage> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Text(
-                  _showBatches ? 'Purchases by batch' : 'Suppliers',
-                  style: theme.textTheme.titleMedium,
+                Expanded(
+                  child: Text(
+                    _showBatches ? 'Purchases by batch' : 'Suppliers',
+                    style: theme.textTheme.titleMedium,
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 SegmentedButton<bool>(
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   segments: const [
                     ButtonSegment(value: false, label: Text('By supplier')),
                     ButtonSegment(value: true, label: Text('By batch')),
