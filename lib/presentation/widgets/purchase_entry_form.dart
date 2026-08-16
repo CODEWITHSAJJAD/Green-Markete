@@ -17,6 +17,10 @@ class PurchaseEntryForm extends StatefulWidget {
   /// "Add … as new supplier" row) so it can be persisted to the registry.
   final ValueChanged<String>? onCreateSupplier;
 
+  /// Business-created measurement units (Settings → Units & Packing),
+  /// offered in the Purchase Unit dropdown alongside the built-in list.
+  final List<PurchaseUnit> customUnits;
+
   const PurchaseEntryForm({
     super.key,
     required this.entries,
@@ -24,6 +28,7 @@ class PurchaseEntryForm extends StatefulWidget {
     this.suppliers = const [],
     required this.onChanged,
     this.onCreateSupplier,
+    this.customUnits = const [],
   });
 
   @override
@@ -60,7 +65,7 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
     final unitKey = e['unitKey'] as String? ?? 'kg';
     final kgPerUnit = unitKey == 'custom'
         ? double.tryParse(e['customKg']?.toString() ?? '') ?? 0
-        : purchaseUnitByKey(unitKey).kgPerUnit;
+        : resolvePurchaseUnit(unitKey, widget.customUnits).kgPerUnit;
     return qty * kgPerUnit;
   }
 
@@ -90,6 +95,7 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
             markets: widget.markets,
             suppliers: widget.suppliers,
             onCreateSupplier: widget.onCreateSupplier,
+            customUnits: widget.customUnits,
             deletable: _entries.length > 1,
             onChanged: (entry) {
               setState(() => _entries[i] = entry);
@@ -199,6 +205,7 @@ class _EntryCard extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
   final ValueChanged<String>? onCreateSupplier;
+  final List<PurchaseUnit> customUnits;
 
   const _EntryCard({
     super.key,
@@ -210,6 +217,7 @@ class _EntryCard extends StatefulWidget {
     required this.onChanged,
     required this.onDelete,
     this.onCreateSupplier,
+    this.customUnits = const [],
   });
 
   @override
@@ -259,7 +267,7 @@ class _EntryCardState extends State<_EntryCard> {
     final unitKey = _unitKey;
     final kgPerUnit = unitKey == 'custom'
         ? double.tryParse(_customKgCtrl.text) ?? 0
-        : purchaseUnitByKey(unitKey).kgPerUnit;
+        : resolvePurchaseUnit(unitKey, widget.customUnits).kgPerUnit;
     final qty = double.tryParse(_qtyCtrl.text) ?? 0;
     final price = double.tryParse(_priceCtrl.text) ?? 0;
     return {
@@ -269,7 +277,7 @@ class _EntryCardState extends State<_EntryCard> {
       'unitKey': unitKey,
       'unitLabel': unitKey == 'custom'
           ? 'custom'
-          : purchaseUnitByKey(unitKey).label,
+          : resolvePurchaseUnit(unitKey, widget.customUnits).label,
       'unitKg': kgPerUnit,
       'customKg': _customKgCtrl.text.trim(),
       'quantity': qty,
@@ -293,7 +301,7 @@ class _EntryCardState extends State<_EntryCard> {
     final unitKey = _unitKey;
     final kgPerUnit = unitKey == 'custom'
         ? double.tryParse(_customKgCtrl.text) ?? 0
-        : purchaseUnitByKey(unitKey).kgPerUnit;
+        : resolvePurchaseUnit(unitKey, widget.customUnits).kgPerUnit;
     final qty = double.tryParse(_qtyCtrl.text) ?? 0;
     final price = double.tryParse(_priceCtrl.text) ?? 0;
     final subtotal = qty * price;
@@ -379,6 +387,8 @@ class _EntryCardState extends State<_EntryCard> {
             prefixIcon: const Icon(MingCuteIcons.mgc_scale_line, size: 18),
             items: [
               for (final u in purchaseUnits)
+                DropdownItem(value: u.key, child: Text(u.label)),
+              for (final u in widget.customUnits)
                 DropdownItem(value: u.key, child: Text(u.label)),
               const DropdownItem(value: 'custom', child: Text('Custom Weight')),
             ],

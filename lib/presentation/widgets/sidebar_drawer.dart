@@ -9,6 +9,7 @@ import '../pages/partners/partner_list_page.dart';
 import '../pages/products/product_list_page.dart';
 import '../pages/reports/reports_page.dart';
 import '../pages/settings/settings_page.dart';
+import '../pages/settings/units_packing_page.dart';
 import '../pages/suppliers/supplier_settlement_page.dart';
 import '../pages/transactions/partner_dues_page.dart';
 import '../pages/transactions/transaction_list_page.dart';
@@ -111,6 +112,13 @@ class SidebarDrawer extends StatelessWidget {
                       activeIcon: MingCuteIcons.mgc_truck_fill,
                       label: 'Vehicles',
                       onTap: () => onOpenPage(const VehicleListPage()),
+                    ),
+                  if (isOwner || canPurchaser)
+                    _NavTile(
+                      icon: MingCuteIcons.mgc_scale_line,
+                      activeIcon: MingCuteIcons.mgc_scale_fill,
+                      label: 'Units & Packing',
+                      onTap: () => onOpenPage(const UnitsPackingPage()),
                     ),
                   if (isOwner || canPurchaser || isAccountant)
                     _NavTile(

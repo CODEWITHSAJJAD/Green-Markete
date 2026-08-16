@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/utils/unit_converter.dart';
 import '../../../data/models/market_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../providers/market_provider.dart';
+import '../../providers/measurement_unit_provider.dart';
 import '../../providers/product_provider.dart';
 import '../app_dropdown.dart';
 import '../purchase_entry_form.dart';
@@ -50,6 +52,11 @@ class WizardBasicInfoStep extends StatelessWidget {
     final theme = Theme.of(context);
     final productsProvider = context.watch<ProductProvider>();
     final marketsProvider = context.watch<MarketProvider>();
+    final customUnits = context
+        .watch<MeasurementUnitProvider>()
+        .units
+        .map((u) => PurchaseUnit(u.id, u.name, u.kgPerUnit))
+        .toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -111,6 +118,7 @@ class WizardBasicInfoStep extends StatelessWidget {
             suppliers: suppliers,
             onChanged: onPurchasesChanged,
             onCreateSupplier: onCreateSupplier,
+            customUnits: customUnits,
           ),
           const SizedBox(height: 16),
           Text('Transport Paid By', style: theme.textTheme.titleMedium),

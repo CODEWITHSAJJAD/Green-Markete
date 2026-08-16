@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/expense_model.dart';
 import '../../providers/batch_provider.dart';
 import 'batch_metric_card.dart';
 
@@ -23,6 +24,18 @@ class BatchPLTab extends StatelessWidget {
     final pl = plProvider.pl;
     final batch = detailProvider.batch;
 
+    // Voided expenses are archived-only and must never affect P&L totals.
+    // Transport-type expenses are payment records against the already
+    // accrued vehicle-load fare (or, if no loads are logged, a standalone
+    // transport cost) — they must never also be summed into the generic
+    // Purchaser/Seller Expenses totals, or transport cost gets counted twice.
+    final activeExpenses = expenseProvider.expenses
+        .where((e) => !e.isVoided)
+        .toList();
+    final nonTransportExpenses = activeExpenses
+        .where((e) => e.expenseType != 'transport')
+        .toList();
+
     final double purchaseCost = pl?.costBreakdown.purchaseCost ??
         (batch?.totalPurchaseCost ?? 0.0);
     final double purchaserDaily = pl?.costBreakdown.purchaserDailyCharges ??
@@ -35,20 +48,31 @@ class BatchPLTab extends StatelessWidget {
                   ((p['daily_charge_rate'] as num?)?.toDouble() ?? 0) *
                       ((p['days_involved'] as num?)?.toInt() ?? 1),
             );
+    final purchaserExpenseLines = nonTransportExpenses
+        .where((e) => e.expenseSide == 'purchaser')
+        .toList();
     final double purchaserExpenses = pl?.costBreakdown.purchaserExpenses ??
-        expenseProvider.expenses
-            .where((e) => e.expenseSide == 'purchaser')
-            .fold<double>(0, (s, e) => s + e.amount);
+        purchaserExpenseLines.fold<double>(0, (s, e) => s + e.amount);
     final double packingCost = pl?.costBreakdown.packingCost ??
         detailProvider.packingRecords.fold<double>(
           0,
           (s, p) => s + p.totalPackingCost,
         );
+    final double vehicleLoadsFare = detailProvider.vehicleLoads.fold<double>(
+      0,
+      (s, l) => s + l.totalCost,
+    );
+    final double transportExpenseTotal = activeExpenses
+        .where((e) => e.expenseType == 'transport')
+        .fold<double>(0, (s, e) => s + e.amount);
+    // The accrued fare and the recorded payments against it should match by
+    // construction (payments are capped at the remaining fare); take the
+    // larger of the two so a standalone transport expense with no logged
+    // vehicle load is still counted instead of silently dropped.
     final double transportCost = pl?.costBreakdown.transportCost ??
-        detailProvider.vehicleLoads.fold<double>(
-          0,
-          (s, l) => s + l.totalCost,
-        );
+        (vehicleLoadsFare > transportExpenseTotal
+            ? vehicleLoadsFare
+            : transportExpenseTotal);
     final int transportVehicleCount = detailProvider.vehicleLoads
         .map((l) => l.vehicleId)
         .toSet()
@@ -68,10 +92,11 @@ class BatchPLTab extends StatelessWidget {
                   ((p['daily_charge_rate'] as num?)?.toDouble() ?? 0) *
                       ((p['days_involved'] as num?)?.toInt() ?? 1),
             );
+    final sellerExpenseLines = nonTransportExpenses
+        .where((e) => e.expenseSide == 'seller')
+        .toList();
     final double sellerExpenses = pl?.costBreakdown.sellerExpenses ??
-        expenseProvider.expenses
-            .where((e) => e.expenseSide == 'seller')
-            .fold<double>(0, (s, e) => s + e.amount);
+        sellerExpenseLines.fold<double>(0, (s, e) => s + e.amount);
 
     final double totalCost = pl?.costBreakdown.totalCost ??
         (purchaseCost +
@@ -155,9 +180,10 @@ class BatchPLTab extends StatelessWidget {
             'Purchaser Daily Charges',
             purchaserDaily,
           ),
-          buildBatchCostLine(
+          _expenseTypeBreakdown(
             theme,
             'Purchaser Expenses',
+            purchaserExpenseLines,
             purchaserExpenses,
           ),
           buildBatchCostLine(theme, 'Packing Cost', packingCost),
@@ -167,7 +193,12 @@ class BatchPLTab extends StatelessWidget {
             'Seller Daily Charges',
             sellerDaily,
           ),
-          buildBatchCostLine(theme, 'Seller Expenses', sellerExpenses),
+          _expenseTypeBreakdown(
+            theme,
+            'Seller Expenses',
+            sellerExpenseLines,
+            sellerExpenses,
+          ),
           const Divider(height: 20),
           buildBatchCostLine(theme, 'TOTAL COST', totalCost, bold: true),
           const SizedBox(height: 16),
@@ -178,6 +209,74 @@ class BatchPLTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _expenseTypeBreakdown(
+    ThemeData theme,
+    String title,
+    List<ExpenseModel> lines,
+    double total,
+  ) {
+    if (lines.isEmpty) {
+      return buildBatchCostLine(theme, title, total);
+    }
+    final byType = <String, double>{};
+    for (final e in lines) {
+      byType[e.expenseType] = (byType[e.expenseType] ?? 0) + e.amount;
+    }
+    final types = byType.keys.toList()
+      ..sort((a, b) => byType[b]!.compareTo(byType[a]!));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Column(
+              children: [
+                for (final type in types)
+                  buildBatchCostLine(
+                    theme,
+                    _expenseTypeLabel(type),
+                    byType[type]!,
+                  ),
+                buildBatchCostLine(theme, 'Total', total, bold: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _expenseTypeLabel(String type) {
+    switch (type) {
+      case 'daily_charge':
+        return 'Daily Charge';
+      case 'labor':
+        return 'Labor';
+      case 'accountant':
+        return 'Accountant';
+      case 'packing':
+        return 'Packing';
+      case 'stall_fee':
+        return 'Stall Fee';
+      case 'local_transport':
+        return 'Local Transport';
+      case 'misc':
+        return 'Misc';
+      default:
+        return type.isEmpty
+            ? 'Other'
+            : '${type[0].toUpperCase()}${type.substring(1).replaceAll('_', ' ')}';
+    }
   }
 
   Widget _sectionHeader(ThemeData theme, String text) => Padding(

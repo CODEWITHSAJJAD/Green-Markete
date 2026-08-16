@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/utils/unit_converter.dart';
+import '../../providers/packing_type_provider.dart';
 import '../packing_entry_form.dart';
 import 'wizard_group_selector.dart';
 
@@ -22,6 +26,11 @@ class WizardPackingStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final customPackingTypes = context
+        .watch<PackingTypeProvider>()
+        .types
+        .map((t) => PackingType(t.id, t.name, t.kgCapacity))
+        .toList();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -41,6 +50,7 @@ class WizardPackingStep extends StatelessWidget {
             entries: packingForActiveGroup,
             totalKg: groupQuantityKg,
             onChanged: onPackingChanged,
+            customPackingTypes: customPackingTypes,
           ),
         ],
       ),

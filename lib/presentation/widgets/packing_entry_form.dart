@@ -8,11 +8,16 @@ class PackingEntryForm extends StatefulWidget {
   final double? totalKg;
   final ValueChanged<List<Map<String, dynamic>>> onChanged;
 
+  /// Business-created packing types (Settings → Units & Packing), offered in
+  /// the Packing type dropdown alongside the built-in list.
+  final List<PackingType> customPackingTypes;
+
   const PackingEntryForm({
     super.key,
     required this.entries,
     required this.totalKg,
     required this.onChanged,
+    this.customPackingTypes = const [],
   });
 
   @override
@@ -67,7 +72,7 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
   });
 
   double _sizeKg(String? unitType) =>
-      packingTypeByKey(unitType ?? 'bag_5').kgCapacity;
+      resolvePackingType(unitType ?? 'bag_5', widget.customPackingTypes).kgCapacity;
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +144,7 @@ class _PackingEntryFormState extends State<PackingEntryForm> {
             index: i,
             entry: _entries[i],
             deletable: _entries.length > 1,
+            customPackingTypes: widget.customPackingTypes,
             onChanged: (next) {
               _entries[i] = Map<String, dynamic>.from(next);
               _emit();
@@ -189,6 +195,7 @@ class _PackingEntryCard extends StatefulWidget {
   final bool deletable;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
+  final List<PackingType> customPackingTypes;
 
   const _PackingEntryCard({
     super.key,
@@ -197,6 +204,7 @@ class _PackingEntryCard extends StatefulWidget {
     required this.deletable,
     required this.onChanged,
     required this.onDelete,
+    this.customPackingTypes = const [],
   });
 
   @override
@@ -238,7 +246,7 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
   bool get _isCustom => _unitType == 'custom';
 
   Map<String, dynamic> _buildPayload() {
-    final type = packingTypeByKey(_unitType);
+    final type = resolvePackingType(_unitType, widget.customPackingTypes);
     final count = int.tryParse(_countCtrl.text) ?? 0;
     final cost = double.tryParse(_costCtrl.text) ?? 0.0;
     final weight = _isCustom
@@ -267,7 +275,7 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
     final cost = double.tryParse(_costCtrl.text) ?? 0.0;
     final weight = _isCustom
         ? double.tryParse(_customKgCtrl.text) ?? 0.0
-        : packingTypeByKey(_unitType).kgCapacity * count;
+        : resolvePackingType(_unitType, widget.customPackingTypes).kgCapacity * count;
     final subtotal = cost * count;
 
     return Container(
@@ -289,7 +297,7 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
                   value: _unitType,
                   labelText: 'Packing type',
                   items: [
-                    for (final t in packingTypes)
+                    for (final t in packingTypes.where((t) => t.key != 'custom'))
                       DropdownItem(
                         value: t.key,
                         child: Text(
@@ -298,6 +306,23 @@ class _PackingEntryCardState extends State<_PackingEntryCard> {
                           maxLines: 1,
                         ),
                       ),
+                    for (final t in widget.customPackingTypes)
+                      DropdownItem(
+                        value: t.key,
+                        child: Text(
+                          t.label,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    DropdownItem(
+                      value: customPackingType.key,
+                      child: Text(
+                        customPackingType.label,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
                   ],
                   onChanged: (v) {
                     if (v == null) return;

@@ -13,6 +13,8 @@ import '../../providers/batch_provider.dart';
 import '../../providers/batch_wizard_provider.dart';
 import '../../providers/data_refresh.dart';
 import '../../providers/market_provider.dart';
+import '../../providers/measurement_unit_provider.dart';
+import '../../providers/packing_type_provider.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/supplier_provider.dart';
@@ -72,6 +74,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
         context.read<MarketProvider>().load(businessId);
         context.read<PartnerProvider>().load(businessId);
         context.read<VehicleProvider>().load(businessId);
+        context.read<MeasurementUnitProvider>().load(businessId);
+        context.read<PackingTypeProvider>().load(businessId);
         context.read<SupplierProvider>().loadSuppliers(businessId);
       }
     });

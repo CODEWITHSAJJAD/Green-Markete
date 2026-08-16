@@ -551,10 +551,21 @@ class BatchRepository {
                   ((batchRow['total_quantity'] as num?)?.toDouble() ?? 0.0));
         }
 
+        // Voided expenses must never affect P&L totals. Transport-type
+        // expenses are payment records against the transport cost (below),
+        // never a separate Purchaser/Seller Expense line, or transport cost
+        // gets counted twice.
         double purchaserExpenses = 0;
         double sellerExpenses = 0;
+        double transportExpenseTotal = 0;
         for (final e in expenses) {
+          if (e['is_voided'] == true) continue;
           final amt = (e['amount'] as num?)?.toDouble() ?? 0.0;
+          final type = (e['expense_type'] as String?)?.toLowerCase();
+          if (type == 'transport') {
+            transportExpenseTotal += amt;
+            continue;
+          }
           final side = (e['expense_side'] as String?)?.toLowerCase();
           if (side == 'purchaser') {
             purchaserExpenses += amt;
@@ -563,12 +574,19 @@ class BatchRepository {
           }
         }
 
-        double transportCost = 0;
+        double vehicleLoadsFare = 0;
         for (final v in vehicles) {
-          transportCost += (v['total_cost'] as num?)?.toDouble() ??
+          vehicleLoadsFare += (v['total_cost'] as num?)?.toDouble() ??
               (v['transport_cost'] as num?)?.toDouble() ??
               0.0;
         }
+        // The accrued fare and the recorded payments against it should match
+        // by construction; take the larger of the two so a standalone
+        // transport expense with no logged vehicle load is still counted
+        // instead of silently dropped.
+        final transportCost = vehicleLoadsFare > transportExpenseTotal
+            ? vehicleLoadsFare
+            : transportExpenseTotal;
 
         double packingCost = 0;
         for (final p in packings) {

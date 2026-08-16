@@ -24,6 +24,15 @@ PurchaseUnit purchaseUnitByKey(String key) {
   return const PurchaseUnit('kg', 'kg', 1);
 }
 
+/// Resolves [key] against a business's custom units first (created via
+/// Settings → Units & Packing), then falls back to the built-in list.
+PurchaseUnit resolvePurchaseUnit(String key, List<PurchaseUnit> customUnits) {
+  for (final u in customUnits) {
+    if (u.key == key) return u;
+  }
+  return purchaseUnitByKey(key);
+}
+
 class PackingType {
   final String key;
   final String label;
@@ -47,6 +56,15 @@ PackingType packingTypeByKey(String key) {
   final match = packingTypes.where((p) => p.key == key);
   if (match.isNotEmpty) return match.first;
   return const PackingType('bag_5', 'Plastic bag (5 kg)', 5);
+}
+
+/// Resolves [key] against a business's custom packing types first (created
+/// via Settings → Units & Packing), then falls back to the built-in list.
+PackingType resolvePackingType(String key, List<PackingType> customTypes) {
+  for (final t in customTypes) {
+    if (t.key == key) return t;
+  }
+  return packingTypeByKey(key);
 }
 
 class PackingSuggestion {

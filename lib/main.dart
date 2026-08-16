@@ -20,6 +20,8 @@ import 'presentation/providers/connectivity_provider.dart';
 import 'presentation/providers/customer_provider.dart';
 import 'presentation/providers/dashboard_provider.dart';
 import 'presentation/providers/market_provider.dart';
+import 'presentation/providers/measurement_unit_provider.dart';
+import 'presentation/providers/packing_type_provider.dart';
 import 'presentation/providers/partner_dues_provider.dart';
 import 'presentation/providers/partner_provider.dart';
 import 'presentation/providers/product_provider.dart';
@@ -34,6 +36,8 @@ import 'data/repositories/customer_repository.dart';
 import 'data/repositories/dashboard_repository.dart';
 import 'data/repositories/expense_repository.dart';
 import 'data/repositories/market_repository.dart';
+import 'data/repositories/measurement_unit_repository.dart';
+import 'data/repositories/packing_type_repository.dart';
 import 'data/repositories/partner_repository.dart';
 import 'data/repositories/product_repository.dart';
 import 'data/repositories/report_repository.dart';
@@ -66,6 +70,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => TransactionProvider(TransactionRepository())),
         ChangeNotifierProvider(create: (_) => PartnerDuesProvider(BatchRepository(), TransactionRepository())),
         ChangeNotifierProvider(create: (_) => VehicleProvider(VehicleRepository())),
+        ChangeNotifierProvider(create: (_) => MeasurementUnitProvider(MeasurementUnitRepository())),
+        ChangeNotifierProvider(create: (_) => PackingTypeProvider(PackingTypeRepository())),
         ChangeNotifierProvider(create: (_) => SupplierProvider(BatchRepository())),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
