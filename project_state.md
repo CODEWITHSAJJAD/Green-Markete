@@ -1,6 +1,11 @@
 # Project State — MandiRoznamcha Frontend
 
-**Last updated:** 2026-08-16 (daily-119)
+**Last updated:** 2026-08-16 (daily-120)
+
+> **Session (2026-08-16, daily-120, Complete Mandi Terminology Localization & RLS Policy Schema):**
+> 1. **Complete ARB & Localization Overhaul (`app_en.arb`, `app_localizations_en.dart`):** Synchronized 100% of user-facing localization keys to authentic Pakistani Mandi terminology (Aamad Maal / Lots, Bikri & Boli, Bikri Parchi, Khareedar Khata & Wasooli, Safaya Statements, Arthi & Munshi roles).
+> 2. **Database & RLS Policy Schema (`supabase/migrations/27_mandi_roznamcha_policies.sql`):** Cataloged all multi-business RLS policies across core tables (`businesses`, `business_partners`, `product_batches`, `batch_purchases`, `batch_sales`, `customers`, `customer_payments`, `supplier_settlements`, `transactions`) ensuring data isolation per commission shop and RBAC role gating.
+> 3. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all tests passed).
 
 > **Session (2026-08-16, daily-119, Brand Identity, Vector Logo, Obsidian Splash & Mandi Terminology):**
 > 1. **Brand Identity Renaming:** Rebranded application to **`MandiRoznamcha` (منڈی روزنامچہ)** — Pakistan's Digital Mandi & Wholesale OS (*منڈی کا ڈیجیٹل کھاتہ و بکری نظام*).

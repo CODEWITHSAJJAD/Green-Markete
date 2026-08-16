@@ -86,85 +86,85 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dashboardRevenueTitle => 'Today\'s Revenue';
+  String get dashboardRevenueTitle => 'Today\'s Bikri';
 
   @override
-  String get dashboardRevenueSubtitle => 'Gross sales recorded today across all batches';
+  String get dashboardRevenueSubtitle => 'Gross sales recorded today across all Mandi lots';
 
   @override
-  String get dashboardCredit => 'Outstanding Credit';
+  String get dashboardCredit => 'Market Baqayaat (Khata Dues)';
 
   @override
-  String get dashboardCustomers => 'Customers';
+  String get dashboardCustomers => 'Khareedar Directory';
 
   @override
-  String get dashboardBatches => 'Total Batches';
+  String get dashboardBatches => 'Live Mandi Lots';
 
   @override
-  String get dashboardProducts => 'Products';
+  String get dashboardProducts => 'Produce Lines';
 
   @override
-  String get dashboardQuickActions => 'Quick actions';
+  String get dashboardQuickActions => 'Quick Operations';
 
   @override
-  String get dashboardQuickNewBatch => 'New Batch';
+  String get dashboardQuickNewBatch => 'New Aamad Maal';
 
   @override
-  String get dashboardQuickNewSale => 'New Sale';
+  String get dashboardQuickNewSale => 'Quick Bikri';
 
   @override
-  String get dashboardQuickRecordPayment => 'Record Payment';
+  String get dashboardQuickRecordPayment => 'Collect Wasooli';
 
   @override
-  String get dashboardQuickReports => 'Reports';
+  String get dashboardQuickReports => 'P&L Reports';
 
   @override
-  String get dashboardCreditAlerts => 'Credit alerts';
+  String get dashboardCreditAlerts => 'Baqaya Dues Monitor';
 
   @override
-  String get dashboardRecentBatches => 'Recent batches';
+  String get dashboardRecentBatches => 'Recent Mandi Lots';
 
   @override
-  String get dashboardNoOverdue => 'No overdue customers.';
+  String get dashboardNoOverdue => 'All buyer accounts settled.';
 
   @override
-  String get emptyCustomersTitle => 'No customers yet';
+  String get emptyCustomersTitle => 'No Khareedar records yet';
 
   @override
-  String get emptyCustomersSubtitle => 'Add your first customer to start recording credit sales.';
+  String get emptyCustomersSubtitle => 'Add your first buyer to start recording credit sales.';
 
   @override
-  String get emptyBatchesTitle => 'No batches yet';
+  String get emptyBatchesTitle => 'No Mandi lots recorded yet';
 
   @override
-  String get emptyBatchesSubtitle => 'Create your first batch to start tracking produce from purchase to sale.';
+  String get emptyBatchesSubtitle => 'Log your first produce arrival to start tracking lots from Zamindar to Boli sale.';
 
   @override
-  String get emptySalesTitle => 'No batches on sale yet';
+  String get emptySalesTitle => 'No lots currently on Boli sale';
 
   @override
-  String get emptySalesSubtitle => 'Move a batch to \'selling\' status to start recording revenue against it.';
+  String get emptySalesSubtitle => 'Advance an arrival lot to \'selling\' status to start recording Bikri against it.';
 
   @override
-  String get emptyPartnersTitle => 'No partners yet';
+  String get emptyPartnersTitle => 'No partners or Munshi added yet';
 
   @override
-  String get emptyPartnersSubtitle => 'Add partners to track balances and settlements.';
+  String get emptyPartnersSubtitle => 'Add business partners or accountants to track balances and Safaya.';
 
   @override
-  String get batchesScreenTitle => 'Batches';
+  String get batchesScreenTitle => 'Aamad Maal / Lots';
 
   @override
-  String get batchesSearchHint => 'Search by batch code or product';
+  String get batchesSearchHint => 'Search by lot code, produce or Zamindar';
 
   @override
-  String get batchesCreateCta => 'New Batch';
+  String get batchesCreateCta => 'New Lot Arrival';
 
   @override
-  String get batchesCreateTitle => 'Batch lifecycle';
+  String get batchesCreateTitle => 'Mandi Lot Lifecycle';
 
   @override
-  String get batchesCreateSubtitle => 'Follow produce from purchase to selling, with transport, packing, and P&L in one timeline.';
+  String get batchesCreateSubtitle => 'Follow produce from Mandi arrival to Boli selling, with transport, packing, and Safaya in one timeline.';
 
   @override
   String batchesStepLabel(Object current, Object total) {
@@ -172,49 +172,49 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get batchesStep1Title => 'Product & Purchase';
+  String get batchesStep1Title => 'Produce & Zamindar / Purchase';
 
   @override
-  String get batchesStep2Title => 'Purchasing Partners';
+  String get batchesStep2Title => 'Partners & Arhat';
 
   @override
-  String get batchesStep3Title => 'Packing';
+  String get batchesStep3Title => 'Packing & Bardana';
 
   @override
-  String get batchesStep4Title => 'Purchaser Expenses';
+  String get batchesStep4Title => 'Palledari & Mandi Expenses';
 
   @override
   String get batchesStep5Title => 'Review & Confirm';
 
   @override
-  String get batchesSummary => 'Summary';
+  String get batchesSummary => 'Lot Summary';
 
   @override
-  String get batchesSave => 'Confirm & Create';
+  String get batchesSave => 'Confirm & Log Arrival';
 
   @override
-  String get batchesNext => 'Next';
+  String get batchesNext => 'Next Step';
 
   @override
   String get batchesBack => 'Back';
 
   @override
-  String get batchesAdvanceStatus => 'Advance Status';
+  String get batchesAdvanceStatus => 'Advance Lot Status';
 
   @override
-  String get batchesClosedPill => 'Closed — read only. Edits, packing, expenses and sales are locked.';
+  String get batchesClosedPill => 'Safaya Done — read only. Edits, packing, expenses and sales are locked.';
 
   @override
-  String get batchesMarkAsClosed => 'Mark as closed';
+  String get batchesMarkAsClosed => 'Mark as Safaya Done (Close Lot)';
 
   @override
-  String get batchesSoldRemaining => 'Sold vs Remaining';
+  String get batchesSoldRemaining => 'Sold vs Remaining Stock';
 
   @override
-  String get batchesSold => 'Sold';
+  String get batchesSold => 'Bikri (Sold)';
 
   @override
-  String get batchesRemaining => 'Remaining';
+  String get batchesRemaining => 'Baqaya Stock';
 
   @override
   String batchesTotalSuffix(Object unit, Object value) {
@@ -222,37 +222,37 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get batchStatusPurchased => 'Purchased';
+  String get batchStatusPurchased => 'Aamad / Purchased';
 
   @override
-  String get batchStatusPacked => 'Packed';
+  String get batchStatusPacked => 'Packed / Bardana';
 
   @override
-  String get batchStatusInTransit => 'In transit';
+  String get batchStatusInTransit => 'In Transit / Gaari';
 
   @override
-  String get batchStatusDelivered => 'Delivered';
+  String get batchStatusDelivered => 'Delivered / Mandi Arrived';
 
   @override
-  String get batchStatusSelling => 'Selling';
+  String get batchStatusSelling => 'Boli & Selling';
 
   @override
-  String get batchStatusClosed => 'Closed';
+  String get batchStatusClosed => 'Safaya Done (Closed)';
 
   @override
-  String get salesScreenTitle => 'Sales';
+  String get salesScreenTitle => 'Bikri & Boli';
 
   @override
-  String get salesRecordCta => 'Record Sale';
+  String get salesRecordCta => 'Record Bikri / Boli';
 
   @override
-  String get salesRecordNewTitle => 'Revenue capture';
+  String get salesRecordNewTitle => 'Bikri & Boli Entry';
 
   @override
-  String get salesRecordNewSubtitle => 'Sales are tied to active selling batches so revenue and credit stay aligned with P&L.';
+  String get salesRecordNewSubtitle => 'Bikri is tied to active selling lots so revenue and credit stay aligned with Safaya and Khata.';
 
   @override
-  String get saleEntryTitle => 'Record Sale';
+  String get saleEntryTitle => 'Record Bikri (Sale Parchi)';
 
   @override
   String saleEntryQuantityLabel(Object unit) {
@@ -261,32 +261,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String saleEntryRemainingHelper(Object remaining, Object total, Object unit) {
-    return 'Only $remaining $unit remaining (of $total)';
+    return 'Only $remaining $unit remaining in lot (of $total)';
   }
 
   @override
-  String get saleEntryQuantityError => 'Exceeds remaining quantity';
+  String get saleEntryQuantityError => 'Exceeds remaining lot quantity';
 
   @override
-  String get saleEntryPriceLabel => 'Price per unit';
+  String get saleEntryPriceLabel => 'Boli Rate / Price per unit';
 
   @override
   String get saleEntryPaymentLabel => 'Payment mode';
 
   @override
-  String get saleEntryCustomerLabel => 'Customer';
+  String get saleEntryCustomerLabel => 'Khareedar / Buyer';
 
   @override
-  String get saleEntrySave => 'Save Sale';
+  String get saleEntrySave => 'Save Bikri Parchi';
 
   @override
-  String get saleRecordedSnack => 'Sale recorded';
+  String get saleRecordedSnack => 'Bikri recorded & Parchi generated';
 
   @override
-  String get paymentCash => 'Cash';
+  String get paymentCash => 'Naqd (Cash)';
 
   @override
-  String get paymentCredit => 'Credit';
+  String get paymentCredit => 'Udhar (Credit Khata)';
 
   @override
   String get paymentPartialCredit => 'Partial Credit';
@@ -295,55 +295,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentBankTransfer => 'Bank Transfer';
 
   @override
-  String get customersScreenTitle => 'Customers';
+  String get customersScreenTitle => 'Khareedar Khata';
 
   @override
-  String get customersSearchHint => 'Search by name, phone, or shop';
+  String get customersSearchHint => 'Search by buyer name, phone, or shop';
 
   @override
-  String get customersCreateCta => 'New Customer';
+  String get customersCreateCta => 'New Khareedar';
 
   @override
-  String get customersAddTitle => 'Outstanding balance';
+  String get customersAddTitle => 'Khata & Baqaya Wasooli';
 
   @override
-  String get customersNoBalance => 'No balance owed';
+  String get customersNoBalance => 'No outstanding balance';
 
   @override
-  String get customersRecordPayment => 'Record Payment';
+  String get customersRecordPayment => 'Collect Wasooli';
 
   @override
-  String get customerFullName => 'Full name';
+  String get customerFullName => 'Buyer Full Name';
 
   @override
-  String get customerPhone => 'Phone';
+  String get customerPhone => 'WhatsApp / Phone';
 
   @override
-  String get customerCity => 'City';
+  String get customerCity => 'City / Mandi';
 
   @override
-  String get customerShop => 'Shop / stall';
+  String get customerShop => 'Shop / Phari Name';
 
   @override
   String get customerOptionalPhone => 'Optional';
 
   @override
-  String get recordPaymentAmount => 'Amount';
+  String get recordPaymentAmount => 'Wasooli Amount (Rs.)';
 
   @override
   String get recordPaymentMode => 'Payment mode';
 
   @override
-  String get recordPaymentBankRef => 'Bank reference';
+  String get recordPaymentBankRef => 'Bank reference / Cheque';
 
   @override
-  String get recordPaymentNotes => 'Notes';
+  String get recordPaymentNotes => 'Khata Notes';
 
   @override
-  String get recordPaymentSave => 'Save Payment';
+  String get recordPaymentSave => 'Save Wasooli';
 
   @override
-  String get recordPaymentRecorded => 'Payment recorded successfully';
+  String get recordPaymentRecorded => 'Wasooli recorded successfully';
 
   @override
   String recordPaymentExceeds(Object balance) {
@@ -376,7 +376,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get archivePromptMessage => 'Archived customers are hidden from the list and excluded from reports. You can restore them later.';
+  String get archivePromptMessage => 'Archived buyers are hidden from the list and excluded from reports. You can restore them later.';
 
   @override
   String get archiveFailed => 'Failed to archive';
@@ -424,28 +424,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsAlertsSection => 'Alerts';
 
   @override
-  String get notificationsCreditAlerts => 'Credit alerts';
+  String get notificationsCreditAlerts => 'Khata Credit Alerts';
 
   @override
-  String get notificationsCreditAlertsDesc => 'Get notified when a customer crosses the credit threshold.';
+  String get notificationsCreditAlertsDesc => 'Get notified when a buyer crosses the credit limit threshold.';
 
   @override
-  String get notificationsBatchUpdates => 'Batch updates';
+  String get notificationsBatchUpdates => 'Aamad Maal Updates';
 
   @override
-  String get notificationsBatchUpdatesDesc => 'Batch status changes and new batch activity.';
+  String get notificationsBatchUpdatesDesc => 'Lot status changes and vehicle arrivals.';
 
   @override
-  String get notificationsExpenseApprovals => 'Expense approvals';
+  String get notificationsExpenseApprovals => 'Expense Approvals';
 
   @override
-  String get notificationsExpenseApprovalsDesc => 'When a partner or expense needs attention.';
+  String get notificationsExpenseApprovalsDesc => 'When Palledari or Mandi expenses need approval.';
 
   @override
-  String get notificationsDailySummary => 'Daily summary';
+  String get notificationsDailySummary => 'Daily Roznamcha Summary';
 
   @override
-  String get notificationsDailySummaryDesc => 'A daily digest of sales, credit and P&L.';
+  String get notificationsDailySummaryDesc => 'Daily digest of Bikri, Wasooli, and net balance.';
 
   @override
   String get notificationsSave => 'Save Preferences';
@@ -492,7 +492,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutOffline => 'Offline mode is planned. Currently an active connection is required.';
 
   @override
-  String get roleOwner => 'Owner';
+  String get roleOwner => 'Arthi / Owner';
 
   @override
   String get roleEditor => 'Editor';
@@ -501,10 +501,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleViewer => 'Viewer';
 
   @override
-  String get roleAccountant => 'Accountant';
+  String get roleAccountant => 'Munshi / Accountant';
 
   @override
-  String get roleMember => 'Member';
+  String get roleMember => 'Hissedar / Partner';
 
   @override
   String get offlineBanner => 'You are offline. Showing cached data where possible.';
