@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 import '../../core/utils/unit_converter.dart';
 import 'app_dropdown.dart';

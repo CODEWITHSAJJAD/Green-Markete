@@ -1,6 +1,12 @@
 # Project State — Green Market Frontend
 
-**Last updated:** 2026-08-16 (daily-111)
+**Last updated:** 2026-08-16 (daily-112)
+
+> **Session (2026-08-16, daily-112, Full App-Wide Dropdown Standardization to AppDropdown):** Per user directive ("why some pages use dropdown_button2 directly however I already have created my AppDropdown in widgets, use it wherever dropdown is required and do not use dropdown_button2 directly"):
+> 1. **Exported `DropdownItem` via `AppDropdown`:** Added `export 'package:dropdown_button2/dropdown_button2.dart' show DropdownItem;` in `lib/presentation/widgets/app_dropdown.dart` so child pages and forms do not need to import the third-party package directly.
+> 2. **Converted Raw Dropdowns to `AppDropdown`:** Converted `quick_sale_page.dart` from standard `DropdownButtonFormField` to `AppDropdown<BatchModel>.fromList` and `AppDropdown<CustomerModel?>` / `AppDropdown<String>`.
+> 3. **Eliminated Direct `dropdown_button2` Imports:** Removed all direct `package:dropdown_button2/dropdown_button2.dart` imports from `record_payment_page.dart`, `create_partner_page.dart`, `partner_settlement_page.dart`, `record_supplier_payment_page.dart`, `create_vehicle_page.dart`, `credit_report_page.dart`, `access_management_page.dart`, `create_market_page.dart`, `sale_entry_sheet.dart`, `purchase_entry_form.dart`, `partner_selector.dart`, `packing_entry_form.dart`, `expense_entry_sheet.dart`, `wizard_transport_step.dart`, `wizard_expenses_step.dart`, and `batch_dialogs.dart`.
+> 4. **Verified Single-Source Architecture:** Ran codebase-wide grep confirming that `package:dropdown_button2/dropdown_button2.dart` is now ONLY referenced internally inside `lib/presentation/widgets/app_dropdown.dart`. `dart analyze lib` is completely clean with 0 errors, and all tests in `flutter test` pass.
 
 > **Session (2026-08-16, daily-111, Complete App-Wide Luxury Modern Minimalist UI/UX Redesign):** Per user directive ("redesign the whole app with luxury, cool, modern and attractive minimalist design, no unnecessary gradients, 12+ icon package variety via icons_plus, WCAG AA/AAA accessibility, and zero feature loss across all modules"):
 > 1. **Integrated `icons_plus` Package:** Added `icons_plus: ^5.0.0` to `pubspec.yaml` and standardized icon optical weights across the application using crisp `HeroIcons` outlines and solids.

@@ -7,7 +7,6 @@ import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
 import '../providers/customer_provider.dart';
 import 'app_dropdown.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 /// Returns `true` when a sale was actually saved, `null`/`false` otherwise.
 Future<bool?> showSaleEntrySheet(
@@ -202,8 +201,9 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
                   if (v == null || v.trim().isEmpty) return 'Required';
                   final n = double.tryParse(v.trim());
                   if (n == null || n <= 0) return 'Enter a positive number';
-                  if (n > remaining + 0.0001)
+                  if (n > remaining + 0.0001) {
                     return 'Exceeds remaining quantity';
+                  }
                   return null;
                 },
                 onChanged: (_) => setState(() {}),

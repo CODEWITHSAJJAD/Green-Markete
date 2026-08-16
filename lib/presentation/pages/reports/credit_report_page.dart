@@ -13,7 +13,6 @@ import '../../providers/business_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../widgets/green_card.dart';
 import '../../widgets/app_dropdown.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreditReportPage extends StatefulWidget {
   const CreditReportPage({super.key});

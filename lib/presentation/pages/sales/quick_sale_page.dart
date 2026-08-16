@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
+import '../../widgets/app_dropdown.dart';
 import '../../widgets/green_card.dart';
 
 class QuickSalePage extends StatefulWidget {
@@ -172,48 +173,32 @@ class _QuickSalePageState extends State<QuickSalePage> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                DropdownButtonFormField<BatchModel>(
+                AppDropdown<BatchModel>.fromList(
                   value: _selectedBatch,
-                  decoration: const InputDecoration(
-                    labelText: 'Select Selling Batch *',
-                    prefixIcon: Icon(HeroIcons.cube, size: 18),
-                  ),
-                  isExpanded: true,
-                  items: batches
-                      .map(
-                        (b) => DropdownMenuItem(
-                          value: b,
-                          child: Text(
-                            '#${b.batchCode} - ${b.productName ?? 'Product'} (${b.totalQuantity.toStringAsFixed(0)} ${b.quantityUnit})',
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 13),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                  labelText: 'Select Selling Batch *',
+                  prefixIcon: const Icon(HeroIcons.cube, size: 18),
+                  items: batches,
+                  itemLabel: (b) =>
+                      '#${b.batchCode} - ${b.productName ?? 'Product'} (${b.totalQuantity.toStringAsFixed(0)} ${b.quantityUnit})',
                   onChanged: (val) => setState(() => _selectedBatch = val),
                   validator: (v) => v == null ? 'Please select a batch' : null,
                 ),
                 const SizedBox(height: 14),
-                DropdownButtonFormField<CustomerModel?>(
+                AppDropdown<CustomerModel?>(
                   value: _selectedCustomer,
-                  decoration: const InputDecoration(
-                    labelText: 'Customer / Buyer (Optional for Walk-in)',
-                    prefixIcon: Icon(HeroIcons.user, size: 18),
-                  ),
-                  isExpanded: true,
+                  labelText: 'Customer / Buyer (Optional for Walk-in)',
+                  prefixIcon: const Icon(HeroIcons.user, size: 18),
                   items: [
-                    DropdownMenuItem<CustomerModel?>(
+                    const DropdownItem<CustomerModel?>(
                       value: null,
-                      child: Text('Direct Walk-in Buyer', style: GoogleFonts.inter(fontSize: 13)),
+                      child: Text('Direct Walk-in Buyer'),
                     ),
                     ...customers.map(
-                      (c) => DropdownMenuItem<CustomerModel?>(
+                      (c) => DropdownItem<CustomerModel?>(
                         value: c,
                         child: Text(
                           '${c.fullName}${c.shopName != null ? ' (${c.shopName})' : ''}',
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 13),
                         ),
                       ),
                     ),
@@ -257,16 +242,14 @@ class _QuickSalePageState extends State<QuickSalePage> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                DropdownButtonFormField<String>(
+                AppDropdown<String>(
                   value: _paymentMode,
-                  decoration: const InputDecoration(
-                    labelText: 'Settlement Terms *',
-                    prefixIcon: Icon(HeroIcons.credit_card, size: 18),
-                  ),
+                  labelText: 'Settlement Terms *',
+                  prefixIcon: const Icon(HeroIcons.credit_card, size: 18),
                   items: const [
-                    DropdownMenuItem(value: 'cash', child: Text('Full Cash Payment')),
-                    DropdownMenuItem(value: 'credit', child: Text('Full Credit (Customer Account)')),
-                    DropdownMenuItem(value: 'partial_credit', child: Text('Split Cash & Credit')),
+                    DropdownItem(value: 'cash', child: Text('Full Cash Payment')),
+                    DropdownItem(value: 'credit', child: Text('Full Credit (Customer Account)')),
+                    DropdownItem(value: 'partial_credit', child: Text('Split Cash & Credit')),
                   ],
                   onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
                 ),

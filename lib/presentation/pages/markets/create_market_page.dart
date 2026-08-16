@@ -5,7 +5,6 @@ import '../../../data/models/market_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
 import '../../widgets/app_dropdown.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CreateMarketPage extends StatefulWidget {
   final MarketModel? market;

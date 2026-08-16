@@ -5,7 +5,6 @@ import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
 import '../providers/partner_provider.dart';
 import 'app_dropdown.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 Future<void> showExpenseEntrySheet(
   BuildContext context, {

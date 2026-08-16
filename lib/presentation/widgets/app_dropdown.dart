@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
+export 'package:dropdown_button2/dropdown_button2.dart' show DropdownItem;
+
 /// Standard item definition for [AppDropdown].
 class AppDropdownItem<T> {
   final T value;

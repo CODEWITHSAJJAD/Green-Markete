@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
