@@ -28,7 +28,7 @@ class AboutPage extends StatelessWidget {
           const SizedBox(height: 4),
           Center(
             child: Text(
-              'Pakistan\'s Digital Mandi & Wholesale OS\nمنڈی کا ڈیجیٹل کھاتہ و بکری نظام',
+              'Wholesale Management Platform',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall,
             ),
@@ -50,7 +50,7 @@ class AboutPage extends StatelessWidget {
               children: [
                 _infoTile(theme, 'Publisher', 'MandiRoznamcha Technologies'),
                 _infoTile(theme, 'Version', '1.0.0 (build 1)'),
-                _infoTile(theme, 'Purpose', 'Manage Mandi arrivals, Boli auctions, Bikri Parchis, Zamindar Safaya bills, and Khareedar Khata.'),
+                _infoTile(theme, 'Purpose', 'Track batches, sales, expenses and partner P&L for wholesale produce traders.'),
               ],
             ),
           ),

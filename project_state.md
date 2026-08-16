@@ -1,6 +1,16 @@
 # Project State — MandiRoznamcha Frontend
 
-**Last updated:** 2026-08-16 (daily-120)
+**Last updated:** 2026-08-16 (daily-121)
+
+> **Session (2026-08-16, daily-121, Streamlined English Terminology with MandiRoznamcha Brand Assets):** Per user request to maintain 100% app-wide consistency:
+> 1. **Reverted Ad-Hoc Terminology Overhaul:** Cleaned and reverted all navigation, form, and localization strings back to standard, professional English terms (`Batches`, `Sales`, `Customers`, `Suppliers`, `Settlements`, `Purchased`, `Selling`, `Closed`, `Cash`, `Credit`).
+> 2. **Retained Production Brand Assets:**
+>    - **App Brand & Name:** **`MandiRoznamcha`** (defined in `AppConfig`, `pubspec.yaml`, `main.dart`, `app_en.arb`, `app_localizations_en.dart`).
+>    - **Brand Logo & Mark:** Vector `BrandLogo` and `BrandMark` with Royal Emerald & Champagne Amber accents.
+>    - **Luxury Obsidian Splash Screen:** Animated `BrandLogo` with `MandiRoznamcha` title and tagline.
+>    - **About Page:** Updated with `MandiRoznamcha` versioning, purpose, and copyright.
+>    - **Bills & Export Previews:** Shareable P&L and Credit statement headers outputting `MandiRoznamcha`.
+> 3. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all tests passed).
 
 > **Session (2026-08-16, daily-120, Complete Mandi Terminology Localization & RLS Policy Schema):**
 > 1. **Complete ARB & Localization Overhaul (`app_en.arb`, `app_localizations_en.dart`):** Synchronized 100% of user-facing localization keys to authentic Pakistani Mandi terminology (Aamad Maal / Lots, Bikri & Boli, Bikri Parchi, Khareedar Khata & Wasooli, Safaya Statements, Arthi & Munshi roles).
