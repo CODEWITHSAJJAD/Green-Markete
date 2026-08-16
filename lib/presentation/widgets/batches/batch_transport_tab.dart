@@ -24,6 +24,7 @@ class BatchTransportTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final detailProvider = context.watch<BatchDetailProvider>();
+    final expenseProvider = context.watch<ExpenseProvider>();
     if (detailProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -46,6 +47,11 @@ class BatchTransportTab extends StatelessWidget {
       for (final p in detailProvider.packingRecords) p.id: p,
     };
     final totalCost = loads.fold<double>(0, (acc, l) => acc + l.totalCost);
+    final paidSoFar = expenseProvider.expenses
+        .where((e) => e.expenseType == 'transport' && !e.isVoided)
+        .fold<double>(0, (acc, e) => acc + e.amount);
+    final remaining = (totalCost - paidSoFar).clamp(0, totalCost);
+    final isFullyPaid = totalCost > 0 && remaining <= 0.01;
     final transportPaidBy = batch.transportPaidBy ?? 'purchaser';
     final transportPartnerId = detailProvider.batchPartners
         .where(
@@ -77,21 +83,54 @@ class BatchTransportTab extends StatelessWidget {
             ],
           ),
         ),
+        if (paidSoFar > 0) ...[
+          GreenCard(
+            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: buildBatchMetric(
+                    theme,
+                    'Paid',
+                    CurrencyFormatter.format(paidSoFar),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: buildBatchMetric(
+                    theme,
+                    'Remaining',
+                    CurrencyFormatter.format(remaining.toDouble()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (transportPartnerId != null && context.read<AuthProvider>().canEditPurchaserSide) ...[
           SizedBox(
             width: double.infinity,
             height: 48,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-              onPressed: () => showPayTransportDialog(
-                context,
-                batch: batch,
-                totalCost: totalCost,
-                transportPartnerId: transportPartnerId,
+              style: FilledButton.styleFrom(
+                backgroundColor: isFullyPaid ? AppColors.divider : AppColors.primary,
               ),
-              icon: const Icon(HeroIcons.banknotes, size: 18),
+              onPressed: isFullyPaid
+                  ? null
+                  : () => showPayTransportDialog(
+                        context,
+                        batch: batch,
+                        totalCost: totalCost,
+                        paidSoFar: paidSoFar,
+                        transportPartnerId: transportPartnerId,
+                      ),
+              icon: Icon(
+                isFullyPaid ? HeroIcons.check_circle : HeroIcons.banknotes,
+                size: 18,
+              ),
               label: Text(
-                'Pay Transport Direct Expense',
+                isFullyPaid ? 'Transport Fully Paid' : 'Pay Transport Direct Expense',
                 style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14),
               ),
             ),

@@ -116,9 +116,9 @@ class _ReportsPageState extends State<ReportsPage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.18,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 2.3,
             children: [
               _navCard(
                 context,
@@ -169,39 +169,37 @@ class _ReportsPageState extends State<ReportsPage> {
     Widget page,
   ) {
     return GreenCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       onTap: () =>
           Navigator.of(context).push(MaterialPageRoute(builder: (_) => page)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
             ),
-            child: Icon(icon, size: 20, color: color),
+            child: Icon(icon, size: 17, color: color),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.5,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+                height: 1.15,
+                color: AppColors.textPrimary,
               ),
-              Icon(HeroIcons.arrow_up_right, size: 14, color: color),
-            ],
+            ),
           ),
+          const SizedBox(width: 4),
+          Icon(HeroIcons.chevron_right, size: 14, color: color),
         ],
       ),
     );
@@ -248,7 +246,8 @@ class _ReportsPageState extends State<ReportsPage> {
               child: _metric(
                 'Total Revenue',
                 CurrencyFormatter.format(pl.totalRevenue),
-                AppColors.textPrimary,
+                AppColors.emerald,
+                HeroIcons.arrow_trending_up,
               ),
             ),
             const SizedBox(width: 10),
@@ -256,7 +255,8 @@ class _ReportsPageState extends State<ReportsPage> {
               child: _metric(
                 'Total Expenses',
                 CurrencyFormatter.format(pl.totalCost),
-                AppColors.textSecondary,
+                AppColors.amber,
+                HeroIcons.receipt_percent,
               ),
             ),
           ],
@@ -269,6 +269,7 @@ class _ReportsPageState extends State<ReportsPage> {
                 'Net Profit / Loss',
                 CurrencyFormatter.format(pl.totalProfitLoss),
                 isProfit ? AppColors.emerald : AppColors.rose,
+                isProfit ? HeroIcons.arrow_trending_up : HeroIcons.arrow_trending_down,
               ),
             ),
             const SizedBox(width: 10),
@@ -276,7 +277,8 @@ class _ReportsPageState extends State<ReportsPage> {
               child: _metric(
                 'Batches Analyzed',
                 '${pl.totalBatches} Batches',
-                AppColors.primary,
+                AppColors.indigo,
+                HeroIcons.cube,
               ),
             ),
           ],
@@ -442,19 +444,28 @@ class _ReportsPageState extends State<ReportsPage> {
     );
   }
 
-  Widget _metric(String title, String value, Color color) {
+  Widget _metric(String title, String value, Color color, IconData icon) {
     return GreenCard(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              color: AppColors.textTertiary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: AppColors.textTertiary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           FittedBox(

@@ -40,7 +40,51 @@ class CustomerRepository {
       );
     }
     final rows = await query.order('full_name');
-    return rows.map(CustomerModel.fromJson).toList();
+    final customers = rows.map(CustomerModel.fromJson).toList();
+    final balances = await _liveOutstandingBalances(
+      customers.map((c) => c.id).toList(),
+    );
+    return customers
+        .map(
+          (c) => CustomerModel(
+            id: c.id,
+            businessId: c.businessId,
+            fullName: c.fullName,
+            phone: c.phone,
+            city: c.city,
+            shopName: c.shopName,
+            totalPurchased: c.totalPurchased,
+            totalPaid: c.totalPaid,
+            outstandingBalance: balances[c.id] ?? 0.0,
+            isArchived: c.isArchived,
+          ),
+        )
+        .toList();
+  }
+
+  /// Live outstanding balance per customer, summed from `sales.credit_amount`
+  /// — the ledger `recordPayment`'s FIFO allocation actually keeps accurate
+  /// on partial payments. `customers.outstanding_balance` is a DB-maintained
+  /// cache that can drift out of sync (e.g. after a partial payment), so
+  /// every read of "outstanding credit" in the app must go through this
+  /// instead of trusting that column.
+  Future<Map<String, double>> _liveOutstandingBalances(
+    List<String> customerIds,
+  ) async {
+    if (customerIds.isEmpty) return const {};
+    final rows = await _client
+        .from('sales')
+        .select('customer_id, credit_amount')
+        .inFilter('customer_id', customerIds);
+    final balances = <String, double>{};
+    for (final r in rows) {
+      final id = r['customer_id'] as String?;
+      if (id == null) continue;
+      final credit = (r['credit_amount'] as num?)?.toDouble() ?? 0.0;
+      if (credit <= 0.001) continue;
+      balances[id] = (balances[id] ?? 0) + credit;
+    }
+    return balances;
   }
 
   /// Returns the ids of customers shared with/from this business, plus whether

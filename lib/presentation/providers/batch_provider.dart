@@ -344,7 +344,9 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<bool> voidExpense(String id, String reason) async {
     try {
+      final batchId = _expenses.where((e) => e.id == id).firstOrNull?.batchId;
       await _repo.voidExpense(id, reason: reason);
+      if (batchId != null) await load(batchId);
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');

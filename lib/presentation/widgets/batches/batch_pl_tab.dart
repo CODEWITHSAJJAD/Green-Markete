@@ -49,6 +49,15 @@ class BatchPLTab extends StatelessWidget {
           0,
           (s, l) => s + l.totalCost,
         );
+    final int transportVehicleCount = detailProvider.vehicleLoads
+        .map((l) => l.vehicleId)
+        .toSet()
+        .length;
+    final int transportLoadCount = detailProvider.vehicleLoads.length;
+    final String transportLabel = transportLoadCount > 0
+        ? 'Transport ($transportVehicleCount vehicle${transportVehicleCount == 1 ? '' : 's'} · '
+            '$transportLoadCount load${transportLoadCount == 1 ? '' : 's'})'
+        : 'Transport';
     final double sellerDaily = pl?.costBreakdown.sellerDailyCharges ??
         detailProvider.batchPartners
             .where((p) => p['role'] == 'seller' || p['role'] == 'both')
@@ -152,7 +161,7 @@ class BatchPLTab extends StatelessWidget {
             purchaserExpenses,
           ),
           buildBatchCostLine(theme, 'Packing Cost', packingCost),
-          buildBatchCostLine(theme, 'Transport', transportCost),
+          buildBatchCostLine(theme, transportLabel, transportCost),
           buildBatchCostLine(
             theme,
             'Seller Daily Charges',

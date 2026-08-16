@@ -8,7 +8,6 @@ import '../../../data/models/customer_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/data_refresh.dart';
-import '../../widgets/green_card.dart';
 
 class CreateCustomerPage extends StatefulWidget {
   final CustomerModel? customer;
@@ -113,104 +112,87 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              GreenCard(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Customer Information',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: AppColors.textPrimary,
-                      ),
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name (required)',
+                  hintText: 'e.g. Haji Rashid Ahmed',
+                  prefixIcon: Icon(HeroIcons.user, size: 20),
+                ),
+                validator: (value) =>
+                    value == null || value.trim().isEmpty
+                    ? 'Please enter Customer name'
+                    : null,
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  hintText: '03001234567',
+                  prefixIcon: Icon(HeroIcons.phone, size: 20),
+                ),
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    return Validators.phone(value);
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _shopCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Shop / Business Name',
+                  hintText: 'e.g. Rashid Sabzi Stall #42',
+                  prefixIcon: Icon(
+                    HeroIcons.building_storefront,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _cityCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'City / Wholesale Mandi',
+                  hintText: 'e.g. Badami Bagh, Lahore',
+                  prefixIcon: Icon(HeroIcons.map_pin, size: 20),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 50,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _nameCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name (required)',
-                        hintText: 'e.g. Haji Rashid Ahmed',
-                        prefixIcon: Icon(HeroIcons.user, size: 20),
-                      ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? 'Please enter Customer name'
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _phoneCtrl,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        hintText: '03001234567',
-                        prefixIcon: Icon(HeroIcons.phone, size: 20),
-                      ),
-                      validator: (value) {
-                        if (value != null && value.isNotEmpty) {
-                          return Validators.phone(value);
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _shopCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Shop / Business Name',
-                        hintText: 'e.g. Rashid Sabzi Stall #42',
-                        prefixIcon: Icon(
-                          HeroIcons.building_storefront,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _cityCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'City / Wholesale Mandi',
-                        hintText: 'e.g. Badami Bagh, Lahore',
-                        prefixIcon: Icon(HeroIcons.map_pin, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      height: 50,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                  ),
+                  onPressed: _saving ? null : _submit,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          _isEditing ? 'Save Changes' : 'Create Customer',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
                           ),
                         ),
-                        onPressed: _saving ? null : _submit,
-                        child: _saving
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                _isEditing ? 'Save Changes' : 'Create Customer',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],

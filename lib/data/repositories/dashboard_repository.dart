@@ -138,14 +138,31 @@ class DashboardRepository {
     try {
       final custRows = await _client
           .from('customers')
-          .select('id, outstanding_balance')
+          .select('id')
           .eq('business_id', businessId);
       final custList = (custRows as List);
       totalCustomers = custList.length;
-      for (final c in custList) {
-        final bal = (c['outstanding_balance'] as num?)?.toDouble() ?? 0.0;
-        outstandingCredit += bal;
-        if (bal > 0) customersWithCredit++;
+      final custIds = custList.map((c) => c['id'] as String).toList();
+      if (custIds.isNotEmpty) {
+        // Live sum from sales.credit_amount — customers.outstanding_balance
+        // is a DB-maintained cache that can drift out of sync after a
+        // partial payment, so the dashboard must not trust it directly.
+        final salesRows = await _client
+            .from('sales')
+            .select('customer_id, credit_amount')
+            .inFilter('customer_id', custIds);
+        final balances = <String, double>{};
+        for (final r in salesRows) {
+          final id = r['customer_id'] as String?;
+          if (id == null) continue;
+          final credit = (r['credit_amount'] as num?)?.toDouble() ?? 0.0;
+          if (credit <= 0.001) continue;
+          balances[id] = (balances[id] ?? 0) + credit;
+        }
+        for (final bal in balances.values) {
+          outstandingCredit += bal;
+          if (bal > 0) customersWithCredit++;
+        }
       }
     } catch (_) {}
 

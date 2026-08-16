@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/vehicle_model.dart';
 
 class WizardReviewStep extends StatelessWidget {
   final int groupCount;
@@ -17,7 +18,9 @@ class WizardReviewStep extends StatelessWidget {
   final double Function(int g) groupDailyCharges;
   final double Function(int g) groupLoadCost;
   final List<Map<String, dynamic>> Function(int g) loadsForGroup;
+  final List<Map<String, dynamic>> Function(int g) packingForGroup;
   final List<Map<String, dynamic>> Function(int g) partnersForGroup;
+  final List<VehicleModel> vehicles;
 
   const WizardReviewStep({
     super.key,
@@ -34,7 +37,9 @@ class WizardReviewStep extends StatelessWidget {
     required this.groupDailyCharges,
     required this.groupLoadCost,
     required this.loadsForGroup,
+    required this.packingForGroup,
     required this.partnersForGroup,
+    required this.vehicles,
   });
 
   @override
@@ -108,6 +113,10 @@ class WizardReviewStep extends StatelessWidget {
     final expenseCost = groupExpenseCost(g);
     final dailyCharges = groupDailyCharges(g);
     final transportLoadCost = groupLoadCost(g);
+    final loads = loadsForGroup(
+      g,
+    ).where((v) => v['vehicle_id'] != null).toList();
+    final vehicleCount = loads.map((v) => v['vehicle_id']).toSet().length;
     final total =
         purchaseCost +
         packingCost +
@@ -189,10 +198,15 @@ class WizardReviewStep extends StatelessWidget {
           _summaryRow('Daily charges', CurrencyFormatter.format(dailyCharges)),
           _summaryRow('Packing', CurrencyFormatter.format(packingCost)),
           _summaryRow('Expenses', CurrencyFormatter.format(expenseCost)),
-          _summaryRow(
-            'Vehicle loads',
-            '${loadsForGroup(g).where((v) => v['vehicle_id'] != null).length}',
-          ),
+          if (loads.isNotEmpty) ...[
+            _summaryRow('Vehicles', '$vehicleCount'),
+            _summaryRow('Loads', '${loads.length}'),
+            const SizedBox(height: 6),
+            ...loads.asMap().entries.map(
+              (entry) => _loadRow(theme, g, entry.key, entry.value),
+            ),
+            const SizedBox(height: 6),
+          ],
           _summaryRow(
             'Transport loads',
             CurrencyFormatter.format(transportLoadCost),
@@ -206,6 +220,60 @@ class WizardReviewStep extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _loadRow(
+    ThemeData theme,
+    int g,
+    int index,
+    Map<String, dynamic> load,
+  ) {
+    final plate = _vehiclePlate(load['vehicle_id'] as String?);
+    final label = _packingLabelFor(g, load['packing_index'] as int?);
+    final units = double.tryParse(load['unit_count'].toString()) ?? 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              'Load ${index + 1} · $plate'
+              '${label != null ? ' — $label' : ''}',
+              style: theme.textTheme.bodySmall,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${units.toStringAsFixed(0)} units',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _vehiclePlate(String? vehicleId) {
+    if (vehicleId == null) return 'Unassigned';
+    final vehicle = vehicles.where((v) => v.id == vehicleId).firstOrNull;
+    return vehicle?.plateNumber ?? 'Unknown vehicle';
+  }
+
+  String? _packingLabelFor(int g, int? packingIndex) {
+    if (packingIndex == null) return null;
+    final packing = packingForGroup(g);
+    if (packingIndex < 0 || packingIndex >= packing.length) return null;
+    final p = packing[packingIndex];
+    final unitType = p['unit_type'] as String? ?? '';
+    final count = (p['unit_count'] as num?)?.toInt() ?? 0;
+    final label = p['unit_label'] as String?;
+    if (unitType == 'custom') {
+      return label == null || label.isEmpty ? 'Loose' : label;
+    }
+    return '$unitType × $count';
   }
 
   Widget _summaryRow(String label, String value, {bool isBold = false}) {

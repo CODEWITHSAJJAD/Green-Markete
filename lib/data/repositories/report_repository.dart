@@ -33,27 +33,53 @@ class ReportRepository {
   Future<List<CreditReportModel>> getCustomerCredit(
     String businessId, {
     double threshold = 0,
-  }) async {
-    final rows = await _client
-        .from('customers')
-        .select('id, full_name, phone, city, outstanding_balance')
-        .eq('business_id', businessId)
-        .gt('outstanding_balance', threshold)
-        .order('outstanding_balance', ascending: false);
-    return rows.map(CreditReportModel.fromJson).toList();
-  }
+  }) => _liveCreditReport(businessId, threshold: threshold);
 
   Future<List<CreditReportModel>> getOverdueCustomers(
     String businessId, {
     double threshold = 50000,
+  }) => _liveCreditReport(businessId, threshold: threshold);
+
+  /// Live outstanding balance per customer, summed from `sales.credit_amount`
+  /// instead of the DB-maintained `customers.outstanding_balance` cache,
+  /// which can drift out of sync after a partial payment.
+  Future<List<CreditReportModel>> _liveCreditReport(
+    String businessId, {
+    required double threshold,
   }) async {
-    final rows = await _client
+    final custRows = await _client
         .from('customers')
-        .select('id, full_name, phone, city, outstanding_balance')
-        .eq('business_id', businessId)
-        .gt('outstanding_balance', threshold)
-        .order('outstanding_balance', ascending: false);
-    return rows.map(CreditReportModel.fromJson).toList();
+        .select('id, full_name, phone, city')
+        .eq('business_id', businessId);
+    final custList = List<Map<String, dynamic>>.from(custRows);
+    final ids = custList.map((c) => c['id'] as String).toList();
+    final balances = <String, double>{};
+    if (ids.isNotEmpty) {
+      final salesRows = await _client
+          .from('sales')
+          .select('customer_id, credit_amount')
+          .inFilter('customer_id', ids);
+      for (final r in salesRows) {
+        final id = r['customer_id'] as String?;
+        if (id == null) continue;
+        final credit = (r['credit_amount'] as num?)?.toDouble() ?? 0.0;
+        if (credit <= 0.001) continue;
+        balances[id] = (balances[id] ?? 0) + credit;
+      }
+    }
+    final result = custList
+        .map(
+          (c) => CreditReportModel.fromJson({
+            ...c,
+            'outstanding_balance': balances[c['id']] ?? 0.0,
+          }),
+        )
+        .where((c) => c.outstandingBalance > threshold)
+        .toList();
+    result.sort(
+      (a, b) => b.outstandingBalance.compareTo(a.outstandingBalance),
+    );
+    return result;
   }
 
   Future<PartnerPLModel> getPartnerPL(String partnerId, String batchId) async {

@@ -434,12 +434,14 @@ Future<void> showPayTransportDialog(
   BuildContext context, {
   required BatchModel batch,
   required double totalCost,
+  required double paidSoFar,
   required String transportPartnerId,
 }) async {
   final theme = Theme.of(context);
   final businessId = context.read<AuthProvider>().businessId ?? '';
   final side = batch.transportPaidBy ?? 'purchaser';
   final partners = context.read<PartnerProvider>().partners;
+  final remaining = (totalCost - paidSoFar).clamp(0, totalCost);
 
   String partnerName(String id) {
     return partners
@@ -450,7 +452,7 @@ Future<void> showPayTransportDialog(
   }
 
   final amountCtrl = TextEditingController(
-    text: totalCost > 0 ? totalCost.toStringAsFixed(2) : '',
+    text: remaining > 0 ? remaining.toStringAsFixed(2) : '',
   );
   final notesCtrl = TextEditingController(
     text: 'Transport payment for batch ${batch.batchCode}',
@@ -483,6 +485,20 @@ Future<void> showPayTransportDialog(
                 Text(
                   'Total transport fare: ${CurrencyFormatter.format(totalCost)}',
                   style: theme.textTheme.bodyMedium,
+                ),
+                if (paidSoFar > 0) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Already paid: ${CurrencyFormatter.format(paidSoFar)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+                const SizedBox(height: 2),
+                Text(
+                  'Remaining due: ${CurrencyFormatter.format(remaining.toDouble())}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -535,6 +551,16 @@ Future<void> showPayTransportDialog(
                 if (amount == null || amount <= 0) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     const SnackBar(content: Text('Enter a valid amount')),
+                  );
+                  return;
+                }
+                if (amount > remaining + 0.01) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Amount exceeds the remaining due of ${CurrencyFormatter.format(remaining.toDouble())}',
+                      ),
+                    ),
                   );
                   return;
                 }

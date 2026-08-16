@@ -163,7 +163,10 @@ class SettingsPage extends StatelessWidget {
           SizedBox(
             height: 50,
             child: OutlinedButton.icon(
-              onPressed: () => context.read<AuthProvider>().logout(),
+              onPressed: () {
+                context.read<AuthProvider>().logout();
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
               icon: const Icon(HeroIcons.arrow_left_on_rectangle, size: 19, color: AppColors.rose),
               label: Text(
                 'Sign Out of Session',
