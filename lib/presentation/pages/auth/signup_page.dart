@@ -256,7 +256,7 @@ class _SignupPageState extends State<SignupPage> {
                         child: Text(
                           'Sign in',
                           style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.emeraldDark,
+                            color: AppColors.textPrimary,
                             fontWeight: FontWeight.w800,
                             fontSize: 13.5,
                           ),

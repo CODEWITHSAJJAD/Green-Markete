@@ -201,7 +201,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Text(
                           'Register now',
                           style: GoogleFonts.plusJakartaSans(
-                            color: AppColors.emeraldDark,
+                            color: AppColors.textPrimary,
                             fontWeight: FontWeight.w800,
                             fontSize: 13.5,
                           ),

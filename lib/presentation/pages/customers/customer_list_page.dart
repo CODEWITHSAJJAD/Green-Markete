@@ -137,12 +137,12 @@ class _CustomerListPageState extends State<CustomerListPage> {
           child: EmptyState(
             icon: HeroIcons.user_group,
             title: query.isNotEmpty
-                ? 'No matching buyers found'
-                : 'No buyers in directory',
+                ? 'No matching customers found'
+                : 'No customers in directory',
             subtitle: query.isNotEmpty
                 ? 'Try modifying your search query.'
-                : 'Add wholesale shopkeepers and commission buyers to track ledger balances and sales.',
-            actionLabel: 'Add Buyer',
+                : 'Add wholesale shopkeepers and commission customers to track ledger balances and sales.',
+            actionLabel: 'Add Customer',
             onAction: _openCreateCustomer,
           ),
         );
@@ -258,7 +258,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                 const SizedBox(width: 4),
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  tooltip: 'Edit Buyer Profile',
+                  tooltip: 'Edit Customer Profile',
                   icon: const Icon(
                     HeroIcons.pencil_square,
                     size: 18,
@@ -407,7 +407,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Buyer CRM & Statements',
+                        'Customer CRM & Statements',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w800,
                           fontSize: 15.5,
@@ -468,7 +468,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
           ),
           const SizedBox(height: 18),
           SectionHeader(
-            title: 'Registered Buyers (${visibleCustomers.length})',
+            title: 'Registered Customers (${visibleCustomers.length})',
           ),
           const SizedBox(height: 8),
           buildCustomerList(),
@@ -486,7 +486,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
               onPressed: _openCreateCustomer,
               icon: const Icon(HeroIcons.user_plus, size: 18),
               label: Text(
-                'Add Buyer',
+                'Add Customer',
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
