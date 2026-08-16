@@ -1,6 +1,11 @@
 # Project State — Green Market Frontend
 
-**Last updated:** 2026-08-16 (daily-113)
+**Last updated:** 2026-08-16 (daily-114)
+
+> **Session (2026-08-16, daily-114, RecentActivityList RenderFlex 25px Overflow Fix):** Per runtime layout assertion ("A RenderFlex overflowed by 25 pixels on the right in Row recent_activity_list.dart:81:21"):
+> 1. **Root Cause:** In `RecentActivityList` batch row, the produce title was wrapped in `Flexible` rather than `Expanded`, allowing long titles + batch code `#GM-XXXX` pills + trailing status pills to push the content row beyond compact mobile device widths.
+> 2. **Overflow-Proof Layout:** Wrapped `title` in `Expanded(child: Text(..., overflow: TextOverflow.ellipsis))` and tightened horizontal dot spacing in the supplier & unit quantity sub-row.
+> 3. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all tests passed).
 
 > **Session (2026-08-16, daily-113, IconData `final` Class Compile Fix & Complete Removal of `icons_plus`):** Per Gradle build failure during `flutter run` on Android ("The class 'IconData' can't be extended outside of its library because it's a final class in icons_plus: ^5.0.0"):
 > 1. **Root Cause:** In modern Dart/Flutter SDKs, `IconData` is marked `final class IconData`, causing third-party packages that subclass `IconData` (such as `icons_plus: ^5.0.0`) to fail during kernel compilation.

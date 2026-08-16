@@ -80,7 +80,7 @@ class RecentActivityList extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Flexible(
+                        Expanded(
                           child: Text(
                             title,
                             maxLines: 1,
@@ -132,7 +132,7 @@ class RecentActivityList extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           const Text(
                             '•',
                             style: TextStyle(
@@ -140,7 +140,7 @@ class RecentActivityList extends StatelessWidget {
                               fontSize: 10,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                         ],
                         Text(
                           '${batch.totalQuantity.toStringAsFixed(batch.totalQuantity.truncateToDouble() == batch.totalQuantity ? 0 : 1)} ${batch.quantityUnit}',
