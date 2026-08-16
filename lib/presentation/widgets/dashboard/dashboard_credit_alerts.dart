@@ -76,7 +76,7 @@ class DashboardCreditAlerts extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'No buyers have overdue credit balances',
+                        'No Customers have overdue credit balances',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -93,7 +93,10 @@ class DashboardCreditAlerts extends StatelessWidget {
             children: report.overdue.take(3).map((c) {
               return GreenCard(
                 margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 onTap: () {
                   final cust = CustomerModel(
                     id: c.id,

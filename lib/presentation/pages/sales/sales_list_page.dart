@@ -41,16 +41,19 @@ class _SalesListPageState extends State<SalesListPage> {
   void _load() {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
-      context.read<SellingBatchesProvider>().load(businessId, status: 'selling');
+      context.read<SellingBatchesProvider>().load(
+        businessId,
+        status: 'selling',
+      );
       context.read<SaleProvider>().loadByBusiness(businessId);
       context.read<CustomerProvider>().load(businessId);
     }
   }
 
   Future<void> _openCreate() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const QuickSalePage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const QuickSalePage()));
     if (!mounted) return;
     _load();
   }
@@ -91,9 +94,18 @@ class _SalesListPageState extends State<SalesListPage> {
             return code.contains(query) || prod.contains(query);
           }).toList();
 
-    final totalRevenue = allSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
-    final totalCredit = allSales.fold<double>(0, (sum, s) => sum + s.creditAmount);
-    final totalCash = allSales.fold<double>(0, (sum, s) => sum + s.cashReceived);
+    final totalRevenue = allSales.fold<double>(
+      0,
+      (sum, s) => sum + s.totalAmount,
+    );
+    final totalCredit = allSales.fold<double>(
+      0,
+      (sum, s) => sum + s.creditAmount,
+    );
+    final totalCash = allSales.fold<double>(
+      0,
+      (sum, s) => sum + s.cashReceived,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -123,14 +135,20 @@ class _SalesListPageState extends State<SalesListPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
           children: [
-            _heroSummary(theme, totalRevenue, totalCash, totalCredit, allSales.length),
+            _heroSummary(
+              theme,
+              totalRevenue,
+              totalCash,
+              totalCredit,
+              allSales.length,
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _searchCtrl,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: _activeTab == 0
-                    ? 'Search sales by buyer, mode, or notes...'
+                    ? 'Search sales by Customer, mode, or notes...'
                     : 'Search ready batches by code or product...',
                 prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
                 suffixIcon: _searchCtrl.text.isNotEmpty
@@ -149,21 +167,29 @@ class _SalesListPageState extends State<SalesListPage> {
                     avatar: Icon(
                       HeroIcons.clock,
                       size: 16,
-                      color: _activeTab == 0 ? Colors.white : AppColors.textSecondary,
+                      color: _activeTab == 0
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                     label: Text('Sales History (${allSales.length})'),
                     selected: _activeTab == 0,
                     selectedColor: AppColors.primary,
                     backgroundColor: AppColors.surface,
                     labelStyle: GoogleFonts.plusJakartaSans(
-                      color: _activeTab == 0 ? Colors.white : AppColors.textSecondary,
-                      fontWeight: _activeTab == 0 ? FontWeight.w800 : FontWeight.w600,
+                      color: _activeTab == 0
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      fontWeight: _activeTab == 0
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       fontSize: 12.5,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: _activeTab == 0 ? AppColors.primary : AppColors.divider,
+                        color: _activeTab == 0
+                            ? AppColors.primary
+                            : AppColors.divider,
                         width: 1,
                       ),
                     ),
@@ -176,21 +202,29 @@ class _SalesListPageState extends State<SalesListPage> {
                     avatar: Icon(
                       HeroIcons.cube,
                       size: 16,
-                      color: _activeTab == 1 ? Colors.white : AppColors.textSecondary,
+                      color: _activeTab == 1
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                     label: Text('Ready Batches (${sellingBatches.length})'),
                     selected: _activeTab == 1,
                     selectedColor: AppColors.primary,
                     backgroundColor: AppColors.surface,
                     labelStyle: GoogleFonts.plusJakartaSans(
-                      color: _activeTab == 1 ? Colors.white : AppColors.textSecondary,
-                      fontWeight: _activeTab == 1 ? FontWeight.w800 : FontWeight.w600,
+                      color: _activeTab == 1
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      fontWeight: _activeTab == 1
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       fontSize: 12.5,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: _activeTab == 1 ? AppColors.primary : AppColors.divider,
+                        color: _activeTab == 1
+                            ? AppColors.primary
+                            : AppColors.divider,
                         width: 1,
                       ),
                     ),
@@ -227,7 +261,9 @@ class _SalesListPageState extends State<SalesListPage> {
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: EmptyState(
                     icon: HeroIcons.shopping_cart,
-                    title: query.isNotEmpty ? 'No matching sales found' : 'No sales recorded yet',
+                    title: query.isNotEmpty
+                        ? 'No matching sales found'
+                        : 'No sales recorded yet',
                     subtitle: query.isNotEmpty
                         ? 'Try a different search query.'
                         : 'Record your first wholesale sale against ready batches.',
@@ -238,7 +274,8 @@ class _SalesListPageState extends State<SalesListPage> {
               else
                 Column(
                   children: filteredSales.map((sale) {
-                    final customerName = customerMap[sale.customerId] ?? 'Direct Customer';
+                    final customerName =
+                        customerMap[sale.customerId] ?? 'Direct Customer';
                     return _saleCard(theme, sale, customerName);
                   }).toList(),
                 ),
@@ -269,7 +306,9 @@ class _SalesListPageState extends State<SalesListPage> {
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: EmptyState(
                     icon: HeroIcons.cube,
-                    title: query.isNotEmpty ? 'No matching ready batches' : 'No batches ready for selling',
+                    title: query.isNotEmpty
+                        ? 'No matching ready batches'
+                        : 'No batches ready for selling',
                     subtitle: query.isNotEmpty
                         ? 'Try modifying your search query.'
                         : 'Advance your delivered batches to "selling" status to start recording wholesale orders.',
@@ -289,9 +328,18 @@ class _SalesListPageState extends State<SalesListPage> {
                             decoration: BoxDecoration(
                               color: AppColors.emeraldSurface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.emerald.withValues(alpha: 0.25), width: 1),
+                              border: Border.all(
+                                color: AppColors.emerald.withValues(
+                                  alpha: 0.25,
+                                ),
+                                width: 1,
+                              ),
                             ),
-                            child: const Icon(HeroIcons.shopping_bag, size: 22, color: AppColors.emerald),
+                            child: const Icon(
+                              HeroIcons.shopping_bag,
+                              size: 22,
+                              color: AppColors.emerald,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -321,7 +369,9 @@ class _SalesListPageState extends State<SalesListPage> {
                             FilledButton.tonal(
                               onPressed: () => Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => QuickSalePage(preselectedBatchId: batch.id),
+                                  builder: (_) => QuickSalePage(
+                                    preselectedBatchId: batch.id,
+                                  ),
                                 ),
                               ),
                               child: const Text('Sell'),
@@ -356,9 +406,9 @@ class _SalesListPageState extends State<SalesListPage> {
   }
 
   Widget _saleCard(ThemeData theme, SaleModel sale, String customerName) {
-    final formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(
-      DateTime.tryParse(sale.saleDate) ?? DateTime.now(),
-    );
+    final formattedDate = DateFormat(
+      'dd MMM yyyy, hh:mm a',
+    ).format(DateTime.tryParse(sale.saleDate) ?? DateTime.now());
     final isCredit = sale.creditAmount > 0;
     final isCash = sale.cashReceived > 0;
 
@@ -378,7 +428,11 @@ class _SalesListPageState extends State<SalesListPage> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.divider, width: 1),
                 ),
-                child: const Icon(HeroIcons.document_text, size: 18, color: AppColors.primary),
+                child: const Icon(
+                  HeroIcons.document_text,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -453,11 +507,17 @@ class _SalesListPageState extends State<SalesListPage> {
                 if (isCash)
                   Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.emeraldSurface,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.emerald.withValues(alpha: 0.2), width: 0.8),
+                      border: Border.all(
+                        color: AppColors.emerald.withValues(alpha: 0.2),
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       'Cash: ${CurrencyFormatter.format(sale.cashReceived)}',
@@ -470,11 +530,17 @@ class _SalesListPageState extends State<SalesListPage> {
                   ),
                 if (isCredit)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.roseSurface,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.rose.withValues(alpha: 0.2), width: 0.8),
+                      border: Border.all(
+                        color: AppColors.rose.withValues(alpha: 0.2),
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       'Credit Due: ${CurrencyFormatter.format(sale.creditAmount)}',
@@ -536,9 +602,16 @@ class _SalesListPageState extends State<SalesListPage> {
                 decoration: BoxDecoration(
                   color: AppColors.amberSurface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.amber.withValues(alpha: 0.25), width: 1),
+                  border: Border.all(
+                    color: AppColors.amber.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
                 ),
-                child: const Icon(HeroIcons.banknotes, size: 22, color: AppColors.amber),
+                child: const Icon(
+                  HeroIcons.banknotes,
+                  size: 22,
+                  color: AppColors.amber,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -567,7 +640,10 @@ class _SalesListPageState extends State<SalesListPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceAlt,
                   borderRadius: BorderRadius.circular(8),
@@ -592,7 +668,10 @@ class _SalesListPageState extends State<SalesListPage> {
                   decoration: BoxDecoration(
                     color: AppColors.emeraldSurface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.emerald.withValues(alpha: 0.2), width: 1),
+                    border: Border.all(
+                      color: AppColors.emerald.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,7 +704,10 @@ class _SalesListPageState extends State<SalesListPage> {
                   decoration: BoxDecoration(
                     color: AppColors.roseSurface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.rose.withValues(alpha: 0.2), width: 1),
+                    border: Border.all(
+                      color: AppColors.rose.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

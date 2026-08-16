@@ -31,7 +31,8 @@ class BatchReturnsTab extends StatelessWidget {
         child: EmptyState(
           icon: HeroIcons.arrow_path,
           title: 'No produce returns recorded',
-          subtitle: 'Tap the "+" button below to log buyer rejections or damaged packaging returns.',
+          subtitle:
+              'Tap the "+" button below to log Customer rejections or damaged packaging returns.',
         ),
       );
     }
@@ -84,9 +85,16 @@ class BatchReturnsTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.roseSurface,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.rose.withValues(alpha: 0.2), width: 1),
+              border: Border.all(
+                color: AppColors.rose.withValues(alpha: 0.2),
+                width: 1,
+              ),
             ),
-            child: const Icon(HeroIcons.arrow_uturn_left, size: 20, color: AppColors.rose),
+            child: const Icon(
+              HeroIcons.arrow_uturn_left,
+              size: 20,
+              color: AppColors.rose,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -147,7 +155,8 @@ class BatchReturnsTab extends StatelessWidget {
         final ok = await showConfirmDialog(
           context,
           title: 'Delete return record?',
-          message: 'This return will be permanently removed and restored into batch inventory.',
+          message:
+              'This return will be permanently removed and restored into batch inventory.',
           confirmLabel: 'Delete',
           isDestructive: true,
         );

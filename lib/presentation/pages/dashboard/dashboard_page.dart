@@ -153,7 +153,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         b.name,
@@ -165,7 +166,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        b.businessType == 'single' ? 'Solo Business' : 'Multi-Partner Enterprise',
+                                        b.businessType == 'single'
+                                            ? 'Solo Business'
+                                            : 'Multi-Partner Enterprise',
                                         style: GoogleFonts.inter(
                                           fontSize: 11.5,
                                           color: AppColors.textSecondary,
@@ -224,12 +227,12 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 18),
                     DashboardHeroCard(provider: provider),
                     const SizedBox(height: 18),
-                    const DashboardQuickActions(),
-                    const SizedBox(height: 20),
                     DashboardKpiGrid(
                       provider: provider,
                       onSelectTab: widget.onSelectTab,
                     ),
+                    const SizedBox(height: 20),
+                    const DashboardQuickActions(),
                     const SizedBox(height: 20),
                     const DashboardCreditAlerts(),
                     const SizedBox(height: 24),
@@ -285,10 +288,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.divider,
-                    width: 1.2,
-                  ),
+                  border: Border.all(color: AppColors.divider, width: 1.2),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.shadow.withValues(alpha: 0.03),
@@ -320,7 +320,11 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(HeroIcons.chevron_down, size: 13, color: AppColors.textSecondary),
+                    const Icon(
+                      HeroIcons.chevron_down,
+                      size: 13,
+                      color: AppColors.textSecondary,
+                    ),
                   ],
                 ),
               ),
@@ -470,7 +474,11 @@ class _MenuButton extends StatelessWidget {
         onTap: onPressed,
         child: const Padding(
           padding: EdgeInsets.all(10),
-          child: Icon(HeroIcons.bars_3_bottom_left, size: 22, color: AppColors.textPrimary),
+          child: Icon(
+            HeroIcons.bars_3_bottom_left,
+            size: 22,
+            color: AppColors.textPrimary,
+          ),
         ),
       ),
     );

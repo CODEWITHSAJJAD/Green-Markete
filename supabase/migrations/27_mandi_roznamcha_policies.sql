@@ -8,14 +8,14 @@
 --    - Hissedar (Partner): Access to assigned lots, shared capital, and partner P&L.
 --    - Munshi (Accountant): Access to Roznamcha daybook, Bikri Parchis, and Khata Wasooli.
 --    - Purchaser / Field Agent: Access to Aamad Maal, Zamindar purchase logging, and vehicle loading.
---    - Seller / Auctioneer: Access to Boli auction sales, buyer lot distribution, and daily Bikri.
+--    - Seller / Auctioneer: Access to Boli auction sales, Customer lot distribution, and daily Bikri.
 -- 3. Core Tables Protected:
 --    - `businesses` (Mandi Commission Shops)
 --    - `business_partners` (Hissedar & Munshi directory)
 --    - `product_batches` (Aamad Maal / Produce Lots)
 --    - `batch_purchases` (Zamindar / Beopari / Arhat Shop procurement)
 --    - `batch_sales` (Bikri & Boli auctions)
---    - `customers` (Khareedar / Buyer directory)
+--    - `customers` (Khareedar / Customer directory)
 --    - `customer_payments` (Baqaya Wasooli records)
 --    - `supplier_settlements` (Zamindar Safaya & commission deduction statements)
 --    - `transactions` (Roznamcha ledger transactions)

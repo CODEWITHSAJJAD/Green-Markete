@@ -53,7 +53,13 @@ class DashboardQuickActions extends StatelessWidget {
     final canSell = auth.canEditSellerSide;
     final canRecordPayment = auth.capabilities.can(Capability.recordPayment);
 
-    Widget actionCard(IconData icon, String title, String subtitle, VoidCallback onTap, Color color) {
+    Widget actionCard(
+      IconData icon,
+      String title,
+      String subtitle,
+      VoidCallback onTap,
+      Color color,
+    ) {
       return GreenCard(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         onTap: onTap,
@@ -132,18 +138,20 @@ class DashboardQuickActions extends StatelessWidget {
             HeroIcons.shopping_cart,
             'Quick Sale',
             'Sell produce',
-            () => Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(builder: (_) => const QuickSalePage()),
-            ),
+            () => Navigator.of(
+              context,
+              rootNavigator: true,
+            ).push(MaterialPageRoute(builder: (_) => const QuickSalePage())),
             AppColors.secondary,
           )
         : actionCard(
             HeroIcons.chart_bar,
             'Analytics',
             'View metrics',
-            () => Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(builder: (_) => const ReportsPage()),
-            ),
+            () => Navigator.of(
+              context,
+              rootNavigator: true,
+            ).push(MaterialPageRoute(builder: (_) => const ReportsPage())),
             AppColors.indigo,
           );
 
@@ -159,9 +167,10 @@ class DashboardQuickActions extends StatelessWidget {
             HeroIcons.chart_bar,
             'Statements',
             'Accounts',
-            () => Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(builder: (_) => const ReportsPage()),
-            ),
+            () => Navigator.of(
+              context,
+              rootNavigator: true,
+            ).push(MaterialPageRoute(builder: (_) => const ReportsPage())),
             AppColors.emerald,
           );
 
@@ -169,9 +178,10 @@ class DashboardQuickActions extends StatelessWidget {
       HeroIcons.chart_bar,
       'P&L Reports',
       'Statements',
-      () => Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(builder: (_) => const ReportsPage()),
-      ),
+      () => Navigator.of(
+        context,
+        rootNavigator: true,
+      ).push(MaterialPageRoute(builder: (_) => const ReportsPage())),
       AppColors.indigo,
     );
 
@@ -231,14 +241,14 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
     final filtered = _query.isEmpty
         ? customers
         : customers
-            .where(
-              (c) =>
-                  c.fullName.toLowerCase().contains(_query.toLowerCase()) ||
-                  (c.phone != null && c.phone!.contains(_query)) ||
-                  (c.city != null &&
-                      c.city!.toLowerCase().contains(_query.toLowerCase())),
-            )
-            .toList();
+              .where(
+                (c) =>
+                    c.fullName.toLowerCase().contains(_query.toLowerCase()) ||
+                    (c.phone != null && c.phone!.contains(_query)) ||
+                    (c.city != null &&
+                        c.city!.toLowerCase().contains(_query.toLowerCase())),
+              )
+              .toList();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -273,7 +283,7 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
               controller: _searchCtrl,
               onChanged: (val) => setState(() => _query = val),
               decoration: InputDecoration(
-                hintText: 'Search buyer by name, phone or city...',
+                hintText: 'Search Customer by name, phone or city...',
                 prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
                 fillColor: AppColors.surfaceAlt,
                 suffixIcon: _query.isNotEmpty
@@ -320,11 +330,17 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
                           onTap: () => widget.onCustomerSelected(c),
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.surface,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.divider, width: 1),
+                              border: Border.all(
+                                color: AppColors.divider,
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -332,7 +348,9 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
                                   radius: 20,
                                   backgroundColor: AppColors.primarySurface,
                                   child: Text(
-                                    c.fullName.isNotEmpty ? c.fullName[0].toUpperCase() : '?',
+                                    c.fullName.isNotEmpty
+                                        ? c.fullName[0].toUpperCase()
+                                        : '?',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.primary,
@@ -342,7 +360,8 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         c.fullName,
@@ -354,7 +373,11 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        [c.phone, c.city].where((e) => e != null && e.isNotEmpty).join(' • '),
+                                        [c.phone, c.city]
+                                            .where(
+                                              (e) => e != null && e.isNotEmpty,
+                                            )
+                                            .join(' • '),
                                         style: GoogleFonts.inter(
                                           fontSize: 12,
                                           color: AppColors.textSecondary,
@@ -367,20 +390,28 @@ class _CustomerPaymentPickerState extends State<_CustomerPaymentPicker> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      CurrencyFormatter.format(c.outstandingBalance),
+                                      CurrencyFormatter.format(
+                                        c.outstandingBalance,
+                                      ),
                                       style: GoogleFonts.inter(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 14,
-                                        color: hasCredit ? AppColors.rose : AppColors.emerald,
+                                        color: hasCredit
+                                            ? AppColors.rose
+                                            : AppColors.emerald,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      hasCredit ? 'Outstanding Due' : 'Zero Balance',
+                                      hasCredit
+                                          ? 'Outstanding Due'
+                                          : 'Zero Balance',
                                       style: GoogleFonts.inter(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w600,
-                                        color: hasCredit ? AppColors.rose : AppColors.emerald,
+                                        color: hasCredit
+                                            ? AppColors.rose
+                                            : AppColors.emerald,
                                       ),
                                     ),
                                   ],

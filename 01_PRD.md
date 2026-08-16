@@ -26,7 +26,7 @@
 
 Green Market is a **standalone Flutter mobile application** backed directly by **Supabase** (PostgreSQL + Auth + Realtime). It serves vegetable traders operating an import/export chain where multiple partners collaborate across cities — one or more partners buy product, accumulate costs, pack, and ship to a destination where another partner (or the same person) sells and tracks revenue.
 
-The app handles the complete financial lifecycle of every product batch: purchase cost, layered expenses on both the buyer and seller side, packing, transport, sale proceeds, customer credit, and partner settlements — all leading to a clear **profit/loss** figure per batch and across the business.
+The app handles the complete financial lifecycle of every product batch: purchase cost, layered expenses on both the Customer and seller side, packing, transport, sale proceeds, customer credit, and partner settlements — all leading to a clear **profit/loss** figure per batch and across the business.
 
 ---
 

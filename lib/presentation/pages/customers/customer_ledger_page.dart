@@ -83,7 +83,9 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
 
   Future<void> _openRecordPayment() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => RecordPaymentPage(customer: widget.customer)),
+      MaterialPageRoute(
+        builder: (_) => RecordPaymentPage(customer: widget.customer),
+      ),
     );
     if (!mounted) return;
     context.read<CustomerProvider>().loadLedger(widget.customer.id);
@@ -104,9 +106,12 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
       businessName: businessName,
       header: [
         BillHeaderLine('Customer', customer.fullName),
-        if (customer.shopName != null && customer.shopName!.isNotEmpty) BillHeaderLine('Shop', customer.shopName!),
-        if (customer.city != null && customer.city!.isNotEmpty) BillHeaderLine('City', customer.city!),
-        if (customer.phone != null && customer.phone!.isNotEmpty) BillHeaderLine('Phone', customer.phone!),
+        if (customer.shopName != null && customer.shopName!.isNotEmpty)
+          BillHeaderLine('Shop', customer.shopName!),
+        if (customer.city != null && customer.city!.isNotEmpty)
+          BillHeaderLine('City', customer.city!),
+        if (customer.phone != null && customer.phone!.isNotEmpty)
+          BillHeaderLine('Phone', customer.phone!),
       ],
       sections: [
         BillSection('Statement of account', [
@@ -119,12 +124,23 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
             ),
         ]),
         BillSection('Summary', [
-          BillLine('Total Purchased (Credit)', CurrencyFormatter.format(customer.totalPurchased)),
-          BillLine('Total Cleared (Paid)', CurrencyFormatter.format(customer.totalPaid)),
+          BillLine(
+            'Total Purchased (Credit)',
+            CurrencyFormatter.format(customer.totalPurchased),
+          ),
+          BillLine(
+            'Total Cleared (Paid)',
+            CurrencyFormatter.format(customer.totalPaid),
+          ),
         ]),
       ],
-      total: BillLine('Outstanding Balance', CurrencyFormatter.format(customer.outstandingBalance), emphasize: true),
-      footer: 'Please settle the outstanding balance at your earliest convenience. '
+      total: BillLine(
+        'Outstanding Balance',
+        CurrencyFormatter.format(customer.outstandingBalance),
+        emphasize: true,
+      ),
+      footer:
+          'Please settle the outstanding balance at your earliest convenience. '
           'Generated on ${DateFormatter.toDDMMYYYY(DateTime.now())}. Amounts in ${CurrencyFormatter.currentCode}.',
     );
     await shareBill(
@@ -150,7 +166,10 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
     } else if (provider.error != null) {
       ledgerSection = Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(provider.error!.toString(), style: GoogleFonts.inter(color: AppColors.rose)),
+        child: Text(
+          provider.error!.toString(),
+          style: GoogleFonts.inter(color: AppColors.rose),
+        ),
       );
     } else if (provider.ledger.isEmpty) {
       ledgerSection = const Padding(
@@ -158,7 +177,8 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
         child: EmptyState(
           icon: HeroIcons.receipt_percent,
           title: 'No transaction activity',
-          subtitle: 'Sales invoices and payments recorded for this buyer will appear in this ledger.',
+          subtitle:
+              'Sales invoices and payments recorded for this Customer will appear in this ledger.',
         ),
       );
     } else {
@@ -174,12 +194,18 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: (entry.type == 'payment' ? AppColors.emeraldSurface : AppColors.roseSurface),
+                        color: (entry.type == 'payment'
+                            ? AppColors.emeraldSurface
+                            : AppColors.roseSurface),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        entry.type == 'payment' ? HeroIcons.arrow_down_left : HeroIcons.arrow_up_right,
-                        color: entry.type == 'payment' ? AppColors.emeraldDark : AppColors.rose,
+                        entry.type == 'payment'
+                            ? HeroIcons.arrow_down_left
+                            : HeroIcons.arrow_up_right,
+                        color: entry.type == 'payment'
+                            ? AppColors.emeraldDark
+                            : AppColors.rose,
                         size: 20,
                       ),
                     ),
@@ -199,7 +225,10 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                           const SizedBox(height: 2),
                           Text(
                             entry.date,
-                            style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.textSecondary),
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                       ),
@@ -212,13 +241,18 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
-                            color: entry.type == 'payment' ? AppColors.emeraldDark : AppColors.rose,
+                            color: entry.type == 'payment'
+                                ? AppColors.emeraldDark
+                                : AppColors.rose,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Bal: ${CurrencyFormatter.format(entry.runningBalance)}',
-                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textTertiary),
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: AppColors.textTertiary,
+                          ),
                         ),
                       ],
                     ),
@@ -234,7 +268,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          'Buyer Ledger',
+          'Customer Ledger',
           style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w800,
             fontSize: 18.5,
@@ -272,7 +306,11 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  [widget.customer.shopName, widget.customer.city, widget.customer.phone]
+                  [
+                        widget.customer.shopName,
+                        widget.customer.city,
+                        widget.customer.phone,
+                      ]
                       .where((item) => item != null && item.isNotEmpty)
                       .join(' • '),
                   style: GoogleFonts.inter(
@@ -286,7 +324,9 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                     Expanded(
                       child: _metricTile(
                         'Total Credit',
-                        CurrencyFormatter.format(widget.customer.totalPurchased),
+                        CurrencyFormatter.format(
+                          widget.customer.totalPurchased,
+                        ),
                         AppColors.textPrimary,
                       ),
                     ),
@@ -302,8 +342,12 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                     Expanded(
                       child: _metricTile(
                         'Outstanding Due',
-                        CurrencyFormatter.format(widget.customer.outstandingBalance),
-                        widget.customer.outstandingBalance > 0 ? AppColors.rose : AppColors.emeraldDark,
+                        CurrencyFormatter.format(
+                          widget.customer.outstandingBalance,
+                        ),
+                        widget.customer.outstandingBalance > 0
+                            ? AppColors.rose
+                            : AppColors.emeraldDark,
                       ),
                     ),
                   ],

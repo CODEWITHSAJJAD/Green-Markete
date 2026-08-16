@@ -44,15 +44,20 @@ class _QuickSalePageState extends State<QuickSalePage> {
   void _load() {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
-      context.read<BatchListProvider>().load(businessId, status: 'selling').then((_) {
-        if (widget.preselectedBatchId != null && mounted) {
-          final batches = context.read<BatchListProvider>().batches;
-          final match = batches.where((b) => b.id == widget.preselectedBatchId).firstOrNull;
-          if (match != null) {
-            setState(() => _selectedBatch = match);
-          }
-        }
-      });
+      context
+          .read<BatchListProvider>()
+          .load(businessId, status: 'selling')
+          .then((_) {
+            if (widget.preselectedBatchId != null && mounted) {
+              final batches = context.read<BatchListProvider>().batches;
+              final match = batches
+                  .where((b) => b.id == widget.preselectedBatchId)
+                  .firstOrNull;
+              if (match != null) {
+                setState(() => _selectedBatch = match);
+              }
+            }
+          });
       context.read<CustomerProvider>().load(businessId);
     }
   }
@@ -79,8 +84,8 @@ class _QuickSalePageState extends State<QuickSalePage> {
     final creditAmount = _paymentMode == 'partial_credit'
         ? (totalAmount - cashReceived)
         : _paymentMode == 'credit'
-            ? totalAmount
-            : 0.0;
+        ? totalAmount
+        : 0.0;
 
     setState(() => _saving = true);
     final ok = await context.read<SaleProvider>().add(
@@ -94,7 +99,9 @@ class _QuickSalePageState extends State<QuickSalePage> {
         paymentMode: _paymentMode,
         cashReceived: cashReceived,
         creditAmount: creditAmount,
-        bankReference: _bankRefCtrl.text.trim().isEmpty ? null : _bankRefCtrl.text.trim(),
+        bankReference: _bankRefCtrl.text.trim().isEmpty
+            ? null
+            : _bankRefCtrl.text.trim(),
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       ),
     );
@@ -185,12 +192,12 @@ class _QuickSalePageState extends State<QuickSalePage> {
                 const SizedBox(height: 14),
                 AppDropdown<CustomerModel?>(
                   value: _selectedCustomer,
-                  labelText: 'Customer / Buyer (Optional for Walk-in)',
+                  labelText: 'Customer / Customer (Optional for Walk-in)',
                   prefixIcon: const Icon(HeroIcons.user, size: 18),
                   items: [
                     const DropdownItem<CustomerModel?>(
                       value: null,
-                      child: Text('Direct Walk-in Buyer'),
+                      child: Text('Direct Walk-in Customer'),
                     ),
                     ...customers.map(
                       (c) => DropdownItem<CustomerModel?>(
@@ -210,14 +217,17 @@ class _QuickSalePageState extends State<QuickSalePage> {
                     Expanded(
                       child: TextFormField(
                         controller: _quantityCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'Quantity Sold *',
                           suffixText: _selectedBatch?.quantityUnit ?? 'units',
                         ),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Required';
-                          if (double.tryParse(v.trim()) == null) return 'Invalid';
+                          if (double.tryParse(v.trim()) == null)
+                            return 'Invalid';
                           return null;
                         },
                       ),
@@ -226,14 +236,17 @@ class _QuickSalePageState extends State<QuickSalePage> {
                     Expanded(
                       child: TextFormField(
                         controller: _priceCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'Price / Unit *',
                           prefixText: '${CurrencyFormatter.currentCode} ',
                         ),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Required';
-                          if (double.tryParse(v.trim()) == null) return 'Invalid';
+                          if (double.tryParse(v.trim()) == null)
+                            return 'Invalid';
                           return null;
                         },
                       ),
@@ -246,17 +259,29 @@ class _QuickSalePageState extends State<QuickSalePage> {
                   labelText: 'Settlement Terms *',
                   prefixIcon: const Icon(HeroIcons.credit_card, size: 18),
                   items: const [
-                    DropdownItem(value: 'cash', child: Text('Full Cash Payment')),
-                    DropdownItem(value: 'credit', child: Text('Full Credit (Customer Account)')),
-                    DropdownItem(value: 'partial_credit', child: Text('Split Cash & Credit')),
+                    DropdownItem(
+                      value: 'cash',
+                      child: Text('Full Cash Payment'),
+                    ),
+                    DropdownItem(
+                      value: 'credit',
+                      child: Text('Full Credit (Customer Account)'),
+                    ),
+                    DropdownItem(
+                      value: 'partial_credit',
+                      child: Text('Split Cash & Credit'),
+                    ),
                   ],
-                  onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
+                  onChanged: (val) =>
+                      setState(() => _paymentMode = val ?? 'cash'),
                 ),
                 if (_paymentMode == 'partial_credit') ...[
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _cashCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Cash Paid Upfront *',
                       prefixText: '${CurrencyFormatter.currentCode} ',
@@ -290,7 +315,10 @@ class _QuickSalePageState extends State<QuickSalePage> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : const Icon(HeroIcons.check_circle, size: 20),
               label: Text(

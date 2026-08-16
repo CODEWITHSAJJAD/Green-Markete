@@ -77,7 +77,11 @@ class _ReportsPageState extends State<ReportsPage> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: AppColors.divider, width: 1),
                   ),
-                  child: const Icon(HeroIcons.presentation_chart_line, size: 24, color: AppColors.primary),
+                  child: const Icon(
+                    HeroIcons.presentation_chart_line,
+                    size: 24,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -94,7 +98,7 @@ class _ReportsPageState extends State<ReportsPage> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'P&L summaries, buyer risk audits, and wholesale channel benchmarks.',
+                        'P&L summaries, Customer risk audits, and wholesale channel benchmarks.',
                         style: GoogleFonts.inter(
                           color: AppColors.textSecondary,
                           fontSize: 12,
@@ -116,10 +120,34 @@ class _ReportsPageState extends State<ReportsPage> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.18,
             children: [
-              _navCard(context, 'P&L Statement', HeroIcons.chart_bar_square, AppColors.emerald, const PLReportPage()),
-              _navCard(context, 'Customer Balances', HeroIcons.banknotes, AppColors.amber, const CreditReportPage()),
-              _navCard(context, 'Overdue Dues', HeroIcons.exclamation_triangle, AppColors.rose, const OverdueCustomersPage()),
-              _navCard(context, 'Market Channels', HeroIcons.building_storefront, AppColors.indigo, const MarketPerformancePage()),
+              _navCard(
+                context,
+                'P&L Statement',
+                HeroIcons.chart_bar_square,
+                AppColors.emerald,
+                const PLReportPage(),
+              ),
+              _navCard(
+                context,
+                'Customer Balances',
+                HeroIcons.banknotes,
+                AppColors.amber,
+                const CreditReportPage(),
+              ),
+              _navCard(
+                context,
+                'Overdue Dues',
+                HeroIcons.exclamation_triangle,
+                AppColors.rose,
+                const OverdueCustomersPage(),
+              ),
+              _navCard(
+                context,
+                'Market Channels',
+                HeroIcons.building_storefront,
+                AppColors.indigo,
+                const MarketPerformancePage(),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -133,12 +161,17 @@ class _ReportsPageState extends State<ReportsPage> {
     );
   }
 
-  Widget _navCard(BuildContext context, String title, IconData icon, Color color, Widget page) {
+  Widget _navCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    Widget page,
+  ) {
     return GreenCard(
       padding: const EdgeInsets.all(14),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => page),
-      ),
+      onTap: () =>
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => page)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -211,63 +244,91 @@ class _ReportsPageState extends State<ReportsPage> {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _metric('Total Revenue', CurrencyFormatter.format(pl.totalRevenue), AppColors.textPrimary)),
+            Expanded(
+              child: _metric(
+                'Total Revenue',
+                CurrencyFormatter.format(pl.totalRevenue),
+                AppColors.textPrimary,
+              ),
+            ),
             const SizedBox(width: 10),
-            Expanded(child: _metric('Total Expenses', CurrencyFormatter.format(pl.totalCost), AppColors.textSecondary)),
+            Expanded(
+              child: _metric(
+                'Total Expenses',
+                CurrencyFormatter.format(pl.totalCost),
+                AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _metric('Net Profit / Loss', CurrencyFormatter.format(pl.totalProfitLoss), isProfit ? AppColors.emerald : AppColors.rose)),
+            Expanded(
+              child: _metric(
+                'Net Profit / Loss',
+                CurrencyFormatter.format(pl.totalProfitLoss),
+                isProfit ? AppColors.emerald : AppColors.rose,
+              ),
+            ),
             const SizedBox(width: 10),
-            Expanded(child: _metric('Batches Analyzed', '${pl.totalBatches} Batches', AppColors.primary)),
+            Expanded(
+              child: _metric(
+                'Batches Analyzed',
+                '${pl.totalBatches} Batches',
+                AppColors.primary,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 24),
         SectionHeader(title: 'Batch Performance Breakdown'),
         const SizedBox(height: 10),
-        ...pl.batchSummaries.take(5).map(
-          (batch) => GreenCard(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '#${batch.batchCode ?? 'Batch'}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14.5,
-                          color: AppColors.textPrimary,
-                        ),
+        ...pl.batchSummaries
+            .take(5)
+            .map(
+              (batch) => GreenCard(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '#${batch.batchCode ?? 'Batch'}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14.5,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Revenue ${CurrencyFormatter.format(batch.revenue.totalRevenue)} • Cost ${CurrencyFormatter.format(batch.costBreakdown.totalCost)}',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textSecondary,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Revenue ${CurrencyFormatter.format(batch.revenue.totalRevenue)} • Cost ${CurrencyFormatter.format(batch.costBreakdown.totalCost)}',
-                        style: GoogleFonts.inter(
-                          color: AppColors.textSecondary,
-                          fontSize: 11.5,
-                        ),
+                    ),
+                    Text(
+                      CurrencyFormatter.format(batch.netProfitLoss),
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        color: batch.netProfitLoss >= 0
+                            ? AppColors.emerald
+                            : AppColors.rose,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Text(
-                  CurrencyFormatter.format(batch.netProfitLoss),
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14.5,
-                    color: batch.netProfitLoss >= 0 ? AppColors.emerald : AppColors.rose,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
       ],
     );
   }
@@ -297,11 +358,18 @@ class _ReportsPageState extends State<ReportsPage> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            const Icon(HeroIcons.check_circle, color: AppColors.emerald, size: 20),
+            const Icon(
+              HeroIcons.check_circle,
+              color: AppColors.emerald,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Text(
               'No overdue customer balances detected.',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -318,7 +386,11 @@ class _ReportsPageState extends State<ReportsPage> {
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: AppColors.roseSurface,
-                    child: const Icon(HeroIcons.exclamation_triangle, color: AppColors.rose, size: 16),
+                    child: const Icon(
+                      HeroIcons.exclamation_triangle,
+                      color: AppColors.rose,
+                      size: 16,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

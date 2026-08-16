@@ -49,12 +49,15 @@ class _CustomerListPageState extends State<CustomerListPage> {
   }
 
   Future<void> _openCreateCustomer() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CreateCustomerPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CreateCustomerPage()));
     if (!mounted) return;
     final businessId = context.read<AuthProvider>().businessId ?? '';
-    context.read<CustomerProvider>().load(businessId, search: _searchCtrl.text.trim());
+    context.read<CustomerProvider>().load(
+      businessId,
+      search: _searchCtrl.text.trim(),
+    );
   }
 
   Future<void> _openEditCustomer(CustomerModel customer) async {
@@ -63,7 +66,10 @@ class _CustomerListPageState extends State<CustomerListPage> {
     );
     if (!mounted) return;
     final businessId = context.read<AuthProvider>().businessId ?? '';
-    context.read<CustomerProvider>().load(businessId, search: _searchCtrl.text.trim());
+    context.read<CustomerProvider>().load(
+      businessId,
+      search: _searchCtrl.text.trim(),
+    );
   }
 
   void _load(String businessId, String query) {
@@ -84,8 +90,8 @@ class _CustomerListPageState extends State<CustomerListPage> {
 
     final baseCustomers = _sharedOnly
         ? provider.customers
-            .where((c) => provider.sharedCustomerIds.contains(c.id))
-            .toList()
+              .where((c) => provider.sharedCustomerIds.contains(c.id))
+              .toList()
         : provider.customers;
 
     final visibleCustomers = query.isEmpty
@@ -130,7 +136,9 @@ class _CustomerListPageState extends State<CustomerListPage> {
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: EmptyState(
             icon: HeroIcons.user_group,
-            title: query.isNotEmpty ? 'No matching buyers found' : 'No buyers in directory',
+            title: query.isNotEmpty
+                ? 'No matching buyers found'
+                : 'No buyers in directory',
             subtitle: query.isNotEmpty
                 ? 'Try modifying your search query.'
                 : 'Add wholesale shopkeepers and commission buyers to track ledger balances and sales.',
@@ -140,170 +148,187 @@ class _CustomerListPageState extends State<CustomerListPage> {
         );
       }
       return Column(
-        children: visibleCustomers.map(
-          (customer) {
-            final isShared = provider.sharedCustomerIds.contains(customer.id);
-            final hasCredit = customer.outstandingBalance > 0;
+        children: visibleCustomers.map((customer) {
+          final isShared = provider.sharedCustomerIds.contains(customer.id);
+          final hasCredit = customer.outstandingBalance > 0;
 
-            final tile = GreenCard(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppColors.primarySurface,
-                    child: Text(
-                      customer.fullName.isNotEmpty ? customer.fullName[0].toUpperCase() : '?',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                        fontSize: 15,
-                      ),
+          final tile = GreenCard(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: AppColors.primarySurface,
+                  child: Text(
+                    customer.fullName.isNotEmpty
+                        ? customer.fullName[0].toUpperCase()
+                        : '?',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                      fontSize: 15,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                customer.fullName,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                  color: AppColors.textPrimary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              customer.fullName,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isShared) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.indigoSurface,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: AppColors.indigo.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  width: 0.8,
                                 ),
-                                overflow: TextOverflow.ellipsis,
+                              ),
+                              child: Text(
+                                'Shared',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.indigo,
+                                ),
                               ),
                             ),
-                            if (isShared) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.indigoSurface,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppColors.indigo.withValues(alpha: 0.2), width: 0.8),
-                                ),
-                                child: Text(
-                                  'Shared',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.indigo,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          [customer.shopName, customer.city, customer.phone]
-                              .where((item) => item != null && item.isNotEmpty)
-                              .join(' • '),
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        CurrencyFormatter.format(customer.outstandingBalance),
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14.5,
-                          color: hasCredit ? AppColors.rose : AppColors.emerald,
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
-                        hasCredit ? 'Due Credit' : 'Zero Balance',
+                        [customer.shopName, customer.city, customer.phone]
+                            .where((item) => item != null && item.isNotEmpty)
+                            .join(' • '),
                         style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: hasCredit ? AppColors.rose : AppColors.emerald,
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Edit Buyer Profile',
-                    icon: const Icon(HeroIcons.pencil_square, size: 18, color: AppColors.textSecondary),
-                    onPressed: () => _openEditCustomer(customer),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      CurrencyFormatter.format(customer.outstandingBalance),
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        color: hasCredit ? AppColors.rose : AppColors.emerald,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasCredit ? 'Due Credit' : 'Zero Balance',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: hasCredit ? AppColors.rose : AppColors.emerald,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Edit Buyer Profile',
+                  icon: const Icon(
+                    HeroIcons.pencil_square,
+                    size: 18,
+                    color: AppColors.textSecondary,
                   ),
-                ],
-              ),
-            );
+                  onPressed: () => _openEditCustomer(customer),
+                ),
+              ],
+            ),
+          );
 
-            if (!isOwner) {
-              return GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => CustomerLedgerPage(customer: customer)),
+          if (!isOwner) {
+            return GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CustomerLedgerPage(customer: customer),
                 ),
-                child: tile,
-              );
-            }
-            return Dismissible(
-              key: ValueKey('customer-${customer.id}'),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.roseSurface,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.rose, width: 1),
-                ),
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: const Icon(HeroIcons.archive_box, color: AppColors.rose),
               ),
-              confirmDismiss: (_) async {
-                final customerProv = context.read<CustomerProvider>();
-                final messenger = ScaffoldMessenger.of(context);
-                final ok = await showConfirmDialog(
-                  context,
-                  title: 'Archive ${customer.fullName}?',
-                  message: 'Archived customers are hidden from the active directory and excluded from reports.',
-                  confirmLabel: 'Archive',
-                  isDestructive: true,
-                );
-                if (ok != true) return false;
-                final archived = await customerProv.archive(customer.id);
-                if (!context.mounted) return archived;
-                if (archived) {
-                  final bId = context.read<AuthProvider>().businessId;
-                  if (bId != null && bId.isNotEmpty) {
-                    DataRefreshNotifier.instance.refresh(bId);
-                  }
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('${customer.fullName} archived')),
-                  );
-                }
-                return archived;
-              },
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => CustomerLedgerPage(customer: customer)),
-                ),
-                child: tile,
-              ),
+              child: tile,
             );
-          },
-        ).toList(),
+          }
+          return Dismissible(
+            key: ValueKey('customer-${customer.id}'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppColors.roseSurface,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.rose, width: 1),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: const Icon(HeroIcons.archive_box, color: AppColors.rose),
+            ),
+            confirmDismiss: (_) async {
+              final customerProv = context.read<CustomerProvider>();
+              final messenger = ScaffoldMessenger.of(context);
+              final ok = await showConfirmDialog(
+                context,
+                title: 'Archive ${customer.fullName}?',
+                message:
+                    'Archived customers are hidden from the active directory and excluded from reports.',
+                confirmLabel: 'Archive',
+                isDestructive: true,
+              );
+              if (ok != true) return false;
+              final archived = await customerProv.archive(customer.id);
+              if (!context.mounted) return archived;
+              if (archived) {
+                final bId = context.read<AuthProvider>().businessId;
+                if (bId != null && bId.isNotEmpty) {
+                  DataRefreshNotifier.instance.refresh(bId);
+                }
+                messenger.showSnackBar(
+                  SnackBar(content: Text('${customer.fullName} archived')),
+                );
+              }
+              return archived;
+            },
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CustomerLedgerPage(customer: customer),
+                ),
+              ),
+              child: tile,
+            ),
+          );
+        }).toList(),
       );
     }
 
@@ -365,9 +390,16 @@ class _CustomerListPageState extends State<CustomerListPage> {
                   decoration: BoxDecoration(
                     color: AppColors.indigoSurface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.indigo.withValues(alpha: 0.25), width: 1),
+                    border: Border.all(
+                      color: AppColors.indigo.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
                   ),
-                  child: const Icon(HeroIcons.user_group, size: 24, color: AppColors.indigo),
+                  child: const Icon(
+                    HeroIcons.user_group,
+                    size: 24,
+                    color: AppColors.indigo,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -402,7 +434,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
             controller: _searchCtrl,
             onChanged: (query) => _load(businessId, query),
             decoration: InputDecoration(
-              hintText: 'Search by buyer name, shop, city, or phone...',
+              hintText: 'Search by Customer name, shop, city, or phone...',
               prefixIcon: const Icon(HeroIcons.magnifying_glass, size: 18),
               suffixIcon: _searchCtrl.text.isNotEmpty
                   ? IconButton(
@@ -442,7 +474,10 @@ class _CustomerListPageState extends State<CustomerListPage> {
           buildCustomerList(),
         ],
       ),
-      floatingActionButton: context.watch<AuthProvider>().capabilities.can(Capability.createCustomer)
+      floatingActionButton:
+          context.watch<AuthProvider>().capabilities.can(
+            Capability.createCustomer,
+          )
           ? FloatingActionButton.extended(
               heroTag: null,
               backgroundColor: AppColors.primary,

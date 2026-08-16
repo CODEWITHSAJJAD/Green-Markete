@@ -63,7 +63,9 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
         'full_name': _nameCtrl.text.trim(),
         'phone': _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         'city': _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-        'shop_name': _shopCtrl.text.trim().isEmpty ? null : _shopCtrl.text.trim(),
+        'shop_name': _shopCtrl.text.trim().isEmpty
+            ? null
+            : _shopCtrl.text.trim(),
       };
       final customer = _isEditing
           ? await provider.update(widget.customer!.id, data)
@@ -73,7 +75,11 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
         DataRefreshNotifier.instance.refresh(businessId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditing ? 'Buyer updated successfully' : 'Buyer created successfully'),
+            content: Text(
+              _isEditing
+                  ? 'Customer updated successfully'
+                  : 'Customer created successfully',
+            ),
           ),
         );
         Navigator.of(context).pop();
@@ -99,7 +105,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          _isEditing ? 'Edit Buyer Profile' : 'Register New Buyer',
+          _isEditing ? 'Edit Customer Profile' : 'Register New Customer',
           style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w800,
             fontSize: 18.5,
@@ -118,7 +124,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Buyer Information',
+                      'Customer Information',
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -134,7 +140,9 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                         prefixIcon: Icon(HeroIcons.user, size: 20),
                       ),
                       validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Please enter buyer name' : null,
+                          value == null || value.trim().isEmpty
+                          ? 'Please enter Customer name'
+                          : null,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -158,7 +166,10 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                       decoration: const InputDecoration(
                         labelText: 'Shop / Business Name',
                         hintText: 'e.g. Rashid Sabzi Stall #42',
-                        prefixIcon: Icon(HeroIcons.building_storefront, size: 20),
+                        prefixIcon: Icon(
+                          HeroIcons.building_storefront,
+                          size: 20,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -176,7 +187,9 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                       child: FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: _saving ? null : _submit,
                         child: _saving
@@ -189,7 +202,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                                 ),
                               )
                             : Text(
-                                _isEditing ? 'Save Changes' : 'Create Buyer',
+                                _isEditing ? 'Save Changes' : 'Create Customer',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15,

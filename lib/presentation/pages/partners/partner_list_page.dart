@@ -28,7 +28,8 @@ class _PartnerListPageState extends State<PartnerListPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final businessId = context.read<AuthProvider>().businessId ?? '';
-      if (businessId.isNotEmpty) context.read<PartnerProvider>().load(businessId);
+      if (businessId.isNotEmpty)
+        context.read<PartnerProvider>().load(businessId);
     });
   }
 
@@ -39,12 +40,14 @@ class _PartnerListPageState extends State<PartnerListPage> {
   }
 
   Future<void> _openCreate() async {
-    if (!context.read<AuthProvider>().capabilities.can(Capability.createPartner)) {
+    if (!context.read<AuthProvider>().capabilities.can(
+      Capability.createPartner,
+    )) {
       return;
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CreatePartnerPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CreatePartnerPage()));
     if (!mounted) return;
     final businessId = context.read<AuthProvider>().businessId ?? '';
     if (businessId.isNotEmpty) context.read<PartnerProvider>().load(businessId);
@@ -54,8 +57,9 @@ class _PartnerListPageState extends State<PartnerListPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final businessId = auth.businessId ?? '';
-    final currentBusiness =
-        auth.businesses.where((b) => b.id == auth.businessId).firstOrNull;
+    final currentBusiness = auth.businesses
+        .where((b) => b.id == auth.businessId)
+        .firstOrNull;
     final isSoloBusiness = currentBusiness?.businessType == 'single';
 
     final query = _searchCtrl.text.trim().toLowerCase();
@@ -122,7 +126,11 @@ class _PartnerListPageState extends State<PartnerListPage> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: AppColors.divider, width: 1),
                   ),
-                  child: const Icon(HeroIcons.users, size: 24, color: AppColors.primary),
+                  child: const Icon(
+                    HeroIcons.users,
+                    size: 24,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -130,7 +138,9 @@ class _PartnerListPageState extends State<PartnerListPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isSoloBusiness ? 'Staff & Team Directory' : 'Team Roles & Access Control',
+                        isSoloBusiness
+                            ? 'Staff & Team Directory'
+                            : 'Team Roles & Access Control',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w800,
                           fontSize: 15.5,
@@ -179,8 +189,12 @@ class _PartnerListPageState extends State<PartnerListPage> {
                     selectedColor: AppColors.primary,
                     backgroundColor: AppColors.surface,
                     labelStyle: GoogleFonts.plusJakartaSans(
-                      color: _filter == 'all' ? Colors.white : AppColors.textSecondary,
-                      fontWeight: _filter == 'all' ? FontWeight.w800 : FontWeight.w600,
+                      color: _filter == 'all'
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      fontWeight: _filter == 'all'
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       fontSize: 12.5,
                     ),
                     onSelected: (_) => setState(() => _filter = 'all'),
@@ -192,8 +206,12 @@ class _PartnerListPageState extends State<PartnerListPage> {
                     selectedColor: AppColors.primary,
                     backgroundColor: AppColors.surface,
                     labelStyle: GoogleFonts.plusJakartaSans(
-                      color: _filter == 'partners' ? Colors.white : AppColors.textSecondary,
-                      fontWeight: _filter == 'partners' ? FontWeight.w800 : FontWeight.w600,
+                      color: _filter == 'partners'
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      fontWeight: _filter == 'partners'
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       fontSize: 12.5,
                     ),
                     onSelected: (_) => setState(() => _filter = 'partners'),
@@ -205,8 +223,12 @@ class _PartnerListPageState extends State<PartnerListPage> {
                     selectedColor: AppColors.primary,
                     backgroundColor: AppColors.surface,
                     labelStyle: GoogleFonts.plusJakartaSans(
-                      color: _filter == 'employees' ? Colors.white : AppColors.textSecondary,
-                      fontWeight: _filter == 'employees' ? FontWeight.w800 : FontWeight.w600,
+                      color: _filter == 'employees'
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      fontWeight: _filter == 'employees'
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       fontSize: 12.5,
                     ),
                     onSelected: (_) => setState(() => _filter = 'employees'),
@@ -242,11 +264,15 @@ class _PartnerListPageState extends State<PartnerListPage> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: EmptyState(
                 icon: HeroIcons.user_group,
-                title: query.isNotEmpty ? 'No matching members found' : 'No team members added',
+                title: query.isNotEmpty
+                    ? 'No matching members found'
+                    : 'No team members added',
                 subtitle: query.isNotEmpty
                     ? 'Try modifying your search query.'
-                    : 'Invite partners, buyers, sellers, and accountants to collaborate in your business.',
-                actionLabel: auth.capabilities.can(Capability.createPartner) ? 'Add Member' : null,
+                    : 'Invite partners, Customers, sellers, and accountants to collaborate in your business.',
+                actionLabel: auth.capabilities.can(Capability.createPartner)
+                    ? 'Add Member'
+                    : null,
                 onAction: _openCreate,
               ),
             )
@@ -262,7 +288,8 @@ class _PartnerListPageState extends State<PartnerListPage> {
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => PartnerProfilePage(partnerId: partner.id),
+                        builder: (_) =>
+                            PartnerProfilePage(partnerId: partner.id),
                       ),
                     );
                     if (!mounted) return;
@@ -277,17 +304,19 @@ class _PartnerListPageState extends State<PartnerListPage> {
                         backgroundColor: isOwner
                             ? AppColors.primarySurface
                             : isPartnerType
-                                ? AppColors.indigoSurface
-                                : AppColors.surfaceAlt,
+                            ? AppColors.indigoSurface
+                            : AppColors.surfaceAlt,
                         child: Text(
-                          partner.fullName.isNotEmpty ? partner.fullName[0].toUpperCase() : '?',
+                          partner.fullName.isNotEmpty
+                              ? partner.fullName[0].toUpperCase()
+                              : '?',
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w800,
                             color: isOwner
                                 ? AppColors.primary
                                 : isPartnerType
-                                    ? AppColors.indigo
-                                    : AppColors.textPrimary,
+                                ? AppColors.indigo
+                                : AppColors.textPrimary,
                             fontSize: 15,
                           ),
                         ),
@@ -313,7 +342,10 @@ class _PartnerListPageState extends State<PartnerListPage> {
                                 if (isOwner) ...[
                                   const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: AppColors.primarySurface,
                                       borderRadius: BorderRadius.circular(6),
@@ -334,8 +366,12 @@ class _PartnerListPageState extends State<PartnerListPage> {
                             Text(
                               [
                                 partner.role.toUpperCase(),
-                                if (partner.city != null && partner.city!.isNotEmpty) partner.city,
-                                if (partner.phone != null && partner.phone!.isNotEmpty) partner.phone,
+                                if (partner.city != null &&
+                                    partner.city!.isNotEmpty)
+                                  partner.city,
+                                if (partner.phone != null &&
+                                    partner.phone!.isNotEmpty)
+                                  partner.phone,
                               ].where((e) => e != null).join(' • '),
                               style: GoogleFonts.inter(
                                 fontSize: 12,
@@ -348,12 +384,19 @@ class _PartnerListPageState extends State<PartnerListPage> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: isPartnerType ? AppColors.indigoSurface : AppColors.surfaceAlt,
+                          color: isPartnerType
+                              ? AppColors.indigoSurface
+                              : AppColors.surfaceAlt,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isPartnerType ? AppColors.indigo.withValues(alpha: 0.2) : AppColors.divider,
+                            color: isPartnerType
+                                ? AppColors.indigo.withValues(alpha: 0.2)
+                                : AppColors.divider,
                             width: 0.8,
                           ),
                         ),
@@ -362,7 +405,9 @@ class _PartnerListPageState extends State<PartnerListPage> {
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: isPartnerType ? AppColors.indigo : AppColors.textSecondary,
+                            color: isPartnerType
+                                ? AppColors.indigo
+                                : AppColors.textSecondary,
                           ),
                         ),
                       ),

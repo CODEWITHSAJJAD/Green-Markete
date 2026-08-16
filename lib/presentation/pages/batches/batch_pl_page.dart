@@ -82,15 +82,17 @@ class _BatchPLPageState extends State<BatchPLPage> {
   ) async {
     final batch = batchProvider.batch;
     if (batch == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Batch data not ready yet')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Batch data not ready yet')));
       return;
     }
 
     final pl = plProvider.pl;
-    final double purchaseCost = pl?.costBreakdown.purchaseCost ?? batch.totalPurchaseCost;
-    final double purchaserDaily = pl?.costBreakdown.purchaserDailyCharges ??
+    final double purchaseCost =
+        pl?.costBreakdown.purchaseCost ?? batch.totalPurchaseCost;
+    final double purchaserDaily =
+        pl?.costBreakdown.purchaserDailyCharges ??
         batchProvider.batchPartners
             .where((p) => p['role'] == 'purchaser')
             .fold<double>(
@@ -100,21 +102,22 @@ class _BatchPLPageState extends State<BatchPLPage> {
                   ((p['daily_charge_rate'] as num?)?.toDouble() ?? 0) *
                       ((p['days_involved'] as num?)?.toInt() ?? 1),
             );
-    final double purchaserExpenses = pl?.costBreakdown.purchaserExpenses ??
+    final double purchaserExpenses =
+        pl?.costBreakdown.purchaserExpenses ??
         expenseProvider.expenses
             .where((e) => e.expenseSide == 'purchaser')
             .fold<double>(0, (s, e) => s + e.amount);
-    final double packingCost = pl?.costBreakdown.packingCost ??
+    final double packingCost =
+        pl?.costBreakdown.packingCost ??
         batchProvider.packingRecords.fold<double>(
           0,
           (s, p) => s + p.totalPackingCost,
         );
-    final double transportCost = pl?.costBreakdown.transportCost ??
-        batchProvider.vehicleLoads.fold<double>(
-          0,
-          (s, l) => s + l.totalCost,
-        );
-    final double sellerDaily = pl?.costBreakdown.sellerDailyCharges ??
+    final double transportCost =
+        pl?.costBreakdown.transportCost ??
+        batchProvider.vehicleLoads.fold<double>(0, (s, l) => s + l.totalCost);
+    final double sellerDaily =
+        pl?.costBreakdown.sellerDailyCharges ??
         batchProvider.batchPartners
             .where((p) => p['role'] == 'seller' || p['role'] == 'both')
             .fold<double>(
@@ -124,12 +127,14 @@ class _BatchPLPageState extends State<BatchPLPage> {
                   ((p['daily_charge_rate'] as num?)?.toDouble() ?? 0) *
                       ((p['days_involved'] as num?)?.toInt() ?? 1),
             );
-    final double sellerExpenses = pl?.costBreakdown.sellerExpenses ??
+    final double sellerExpenses =
+        pl?.costBreakdown.sellerExpenses ??
         expenseProvider.expenses
             .where((e) => e.expenseSide == 'seller')
             .fold<double>(0, (s, e) => s + e.amount);
 
-    final double totalCost = pl?.costBreakdown.totalCost ??
+    final double totalCost =
+        pl?.costBreakdown.totalCost ??
         (purchaseCost +
             purchaserDaily +
             purchaserExpenses +
@@ -138,9 +143,11 @@ class _BatchPLPageState extends State<BatchPLPage> {
             sellerDaily +
             sellerExpenses);
 
-    final double totalRevenue = pl?.revenue.totalRevenue ??
+    final double totalRevenue =
+        pl?.revenue.totalRevenue ??
         saleProvider.sales.fold<double>(0, (s, e) => s + e.totalAmount);
-    final double netProfitLoss = pl?.netProfitLoss ?? (totalRevenue - totalCost);
+    final double netProfitLoss =
+        pl?.netProfitLoss ?? (totalRevenue - totalCost);
 
     final party = await showDialog<String>(
       context: context,
@@ -186,21 +193,42 @@ class _BatchPLPageState extends State<BatchPLPage> {
         BillSection('Purchaser Outlay', [
           BillLine('Purchase Cost', CurrencyFormatter.format(purchaseCost)),
           if (purchaserDaily > 0)
-            BillLine('Purchaser Daily Charges', CurrencyFormatter.format(purchaserDaily)),
+            BillLine(
+              'Purchaser Daily Charges',
+              CurrencyFormatter.format(purchaserDaily),
+            ),
           if (purchaserExpenses > 0)
-            BillLine('Purchaser Local Expenses', CurrencyFormatter.format(purchaserExpenses)),
+            BillLine(
+              'Purchaser Local Expenses',
+              CurrencyFormatter.format(purchaserExpenses),
+            ),
           if (packingCost > 0)
-            BillLine('Packing & Labor Cost', CurrencyFormatter.format(packingCost)),
+            BillLine(
+              'Packing & Labor Cost',
+              CurrencyFormatter.format(packingCost),
+            ),
           if (transportCost > 0)
-            BillLine('Freight & Transport Cost', CurrencyFormatter.format(transportCost)),
+            BillLine(
+              'Freight & Transport Cost',
+              CurrencyFormatter.format(transportCost),
+            ),
         ]),
       if (party == 'seller' || party == 'partner')
         BillSection('Seller Realization', [
           if (sellerDaily > 0)
-            BillLine('Seller Daily Charges', CurrencyFormatter.format(sellerDaily)),
+            BillLine(
+              'Seller Daily Charges',
+              CurrencyFormatter.format(sellerDaily),
+            ),
           if (sellerExpenses > 0)
-            BillLine('Seller Market Expenses', CurrencyFormatter.format(sellerExpenses)),
-          BillLine('Gross Wholesale Revenue', CurrencyFormatter.format(totalRevenue)),
+            BillLine(
+              'Seller Market Expenses',
+              CurrencyFormatter.format(sellerExpenses),
+            ),
+          BillLine(
+            'Gross Wholesale Revenue',
+            CurrencyFormatter.format(totalRevenue),
+          ),
         ]),
     ];
 
@@ -217,11 +245,17 @@ class _BatchPLPageState extends State<BatchPLPage> {
         party == 'partner'
             ? 'Net Profit / Loss'
             : (party == 'purchaser' ? 'Total Outlay' : 'Net Turnover'),
-        CurrencyFormatter.format(party == 'partner'
-            ? netProfitLoss
-            : (party == 'purchaser'
-                ? purchaseCost + purchaserDaily + purchaserExpenses + packingCost + transportCost
-                : totalRevenue - sellerDaily - sellerExpenses)),
+        CurrencyFormatter.format(
+          party == 'partner'
+              ? netProfitLoss
+              : (party == 'purchaser'
+                    ? purchaseCost +
+                          purchaserDaily +
+                          purchaserExpenses +
+                          packingCost +
+                          transportCost
+                    : totalRevenue - sellerDaily - sellerExpenses),
+        ),
         emphasize: true,
       ),
       footer: 'Generated via MandiRoznamcha Wholesale Platform',
@@ -258,7 +292,8 @@ class _BatchPLPageState extends State<BatchPLPage> {
               const Text('No batch data available'),
               const SizedBox(height: 14),
               OutlinedButton(
-                onPressed: () => context.read<BatchDetailProvider>().load(batchId),
+                onPressed: () =>
+                    context.read<BatchDetailProvider>().load(batchId),
                 child: const Text('Retry'),
               ),
             ],
@@ -269,8 +304,10 @@ class _BatchPLPageState extends State<BatchPLPage> {
 
     final pl = plProvider.pl;
 
-    final double purchaseCost = pl?.costBreakdown.purchaseCost ?? batch.totalPurchaseCost;
-    final double purchaserDaily = pl?.costBreakdown.purchaserDailyCharges ??
+    final double purchaseCost =
+        pl?.costBreakdown.purchaseCost ?? batch.totalPurchaseCost;
+    final double purchaserDaily =
+        pl?.costBreakdown.purchaserDailyCharges ??
         batchProvider.batchPartners
             .where((p) => p['role'] == 'purchaser')
             .fold<double>(
@@ -280,21 +317,22 @@ class _BatchPLPageState extends State<BatchPLPage> {
                   ((p['daily_charge_rate'] as num?)?.toDouble() ?? 0) *
                       ((p['days_involved'] as num?)?.toInt() ?? 1),
             );
-    final double purchaserExpenses = pl?.costBreakdown.purchaserExpenses ??
+    final double purchaserExpenses =
+        pl?.costBreakdown.purchaserExpenses ??
         expenseProvider.expenses
             .where((e) => e.expenseSide == 'purchaser')
             .fold<double>(0, (s, e) => s + e.amount);
-    final double packingCost = pl?.costBreakdown.packingCost ??
+    final double packingCost =
+        pl?.costBreakdown.packingCost ??
         batchProvider.packingRecords.fold<double>(
           0,
           (s, p) => s + p.totalPackingCost,
         );
-    final double transportCost = pl?.costBreakdown.transportCost ??
-        batchProvider.vehicleLoads.fold<double>(
-          0,
-          (s, l) => s + l.totalCost,
-        );
-    final double sellerDaily = pl?.costBreakdown.sellerDailyCharges ??
+    final double transportCost =
+        pl?.costBreakdown.transportCost ??
+        batchProvider.vehicleLoads.fold<double>(0, (s, l) => s + l.totalCost);
+    final double sellerDaily =
+        pl?.costBreakdown.sellerDailyCharges ??
         batchProvider.batchPartners
             .where((p) => p['role'] == 'seller' || p['role'] == 'both')
             .fold<double>(
@@ -304,12 +342,14 @@ class _BatchPLPageState extends State<BatchPLPage> {
                   ((p['daily_charge_rate'] as num?)?.toDouble() ?? 0) *
                       ((p['days_involved'] as num?)?.toInt() ?? 1),
             );
-    final double sellerExpenses = pl?.costBreakdown.sellerExpenses ??
+    final double sellerExpenses =
+        pl?.costBreakdown.sellerExpenses ??
         expenseProvider.expenses
             .where((e) => e.expenseSide == 'seller')
             .fold<double>(0, (s, e) => s + e.amount);
 
-    final double totalCost = pl?.costBreakdown.totalCost ??
+    final double totalCost =
+        pl?.costBreakdown.totalCost ??
         (purchaseCost +
             purchaserDaily +
             purchaserExpenses +
@@ -318,9 +358,11 @@ class _BatchPLPageState extends State<BatchPLPage> {
             sellerDaily +
             sellerExpenses);
 
-    final double totalRevenue = pl?.revenue.totalRevenue ??
+    final double totalRevenue =
+        pl?.revenue.totalRevenue ??
         saleProvider.sales.fold<double>(0, (s, e) => s + e.totalAmount);
-    final double cashReceived = pl?.revenue.cashReceived ??
+    final double cashReceived =
+        pl?.revenue.cashReceived ??
         saleProvider.sales.fold<double>(
           0,
           (s, e) =>
@@ -329,9 +371,11 @@ class _BatchPLPageState extends State<BatchPLPage> {
                   ? e.cashReceived
                   : (e.paymentMode == 'cash' ? e.totalAmount : 0.0)),
         );
-    final double creditOutstanding = pl?.revenue.creditOutstanding ??
+    final double creditOutstanding =
+        pl?.revenue.creditOutstanding ??
         (totalRevenue - cashReceived).clamp(0, double.infinity).toDouble();
-    final double netProfitLoss = pl?.netProfitLoss ?? (totalRevenue - totalCost);
+    final double netProfitLoss =
+        pl?.netProfitLoss ?? (totalRevenue - totalCost);
     final isProfit = netProfitLoss >= 0;
 
     return RefreshIndicator(
@@ -371,7 +415,11 @@ class _BatchPLPageState extends State<BatchPLPage> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: AppColors.divider, width: 1),
                   ),
-                  child: const Icon(HeroIcons.presentation_chart_bar, size: 24, color: AppColors.primary),
+                  child: const Icon(
+                    HeroIcons.presentation_chart_bar,
+                    size: 24,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -416,16 +464,24 @@ class _BatchPLPageState extends State<BatchPLPage> {
           _section('Wholesale Revenue & Realization', [
             _line('Gross Wholesale Revenue', totalRevenue),
             _line('Cash Received on Counter', cashReceived),
-            _line('Outstanding Buyer Credit', creditOutstanding, textColor: AppColors.rose),
+            _line(
+              'Outstanding Customer Credit',
+              creditOutstanding,
+              textColor: AppColors.rose,
+            ),
           ]),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              color: isProfit ? AppColors.emeraldSurface : AppColors.roseSurface,
+              color: isProfit
+                  ? AppColors.emeraldSurface
+                  : AppColors.roseSurface,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isProfit ? AppColors.emerald.withValues(alpha: 0.3) : AppColors.rose.withValues(alpha: 0.3),
+                color: isProfit
+                    ? AppColors.emerald.withValues(alpha: 0.3)
+                    : AppColors.rose.withValues(alpha: 0.3),
                 width: 1.2,
               ),
             ),
@@ -440,7 +496,9 @@ class _BatchPLPageState extends State<BatchPLPage> {
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w800,
                         fontSize: 14.5,
-                        color: isProfit ? AppColors.emeraldDark : AppColors.rose,
+                        color: isProfit
+                            ? AppColors.emeraldDark
+                            : AppColors.rose,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -450,7 +508,9 @@ class _BatchPLPageState extends State<BatchPLPage> {
                           : 'Pending sales completion',
                       style: GoogleFonts.inter(
                         fontSize: 11.5,
-                        color: isProfit ? AppColors.emeraldDark : AppColors.rose,
+                        color: isProfit
+                            ? AppColors.emeraldDark
+                            : AppColors.rose,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -494,7 +554,12 @@ class _BatchPLPageState extends State<BatchPLPage> {
     );
   }
 
-  Widget _line(String label, double amount, {bool bold = false, Color? textColor}) {
+  Widget _line(
+    String label,
+    double amount, {
+    bool bold = false,
+    Color? textColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -513,7 +578,9 @@ class _BatchPLPageState extends State<BatchPLPage> {
             style: GoogleFonts.inter(
               fontSize: 13.5,
               fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-              color: textColor ?? (bold ? AppColors.textPrimary : AppColors.textPrimary),
+              color:
+                  textColor ??
+                  (bold ? AppColors.textPrimary : AppColors.textPrimary),
             ),
           ),
         ],

@@ -73,7 +73,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
         businessId: businessId,
         amount: amount,
         paymentMode: _paymentMode,
-        bankReference: _referenceCtrl.text.trim().isEmpty ? null : _referenceCtrl.text.trim(),
+        bankReference: _referenceCtrl.text.trim().isEmpty
+            ? null
+            : _referenceCtrl.text.trim(),
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
         paymentDate: DateTime.now().toIso8601String().split('T').first,
       );
@@ -93,9 +95,7 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              customerProv.error ?? 'Failed to record payment',
-            ),
+            content: Text(customerProv.error ?? 'Failed to record payment'),
           ),
         );
       }
@@ -120,7 +120,7 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          'Record Buyer Payment',
+          'Record Customer Payment',
           style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w800,
             fontSize: 18.5,
@@ -141,16 +141,26 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: (outstanding > 0 ? AppColors.roseSurface : AppColors.emeraldSurface),
+                        color: (outstanding > 0
+                            ? AppColors.roseSurface
+                            : AppColors.emeraldSurface),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: (outstanding > 0 ? AppColors.rose : AppColors.emerald).withValues(alpha: 0.25),
+                          color:
+                              (outstanding > 0
+                                      ? AppColors.rose
+                                      : AppColors.emerald)
+                                  .withValues(alpha: 0.25),
                           width: 1,
                         ),
                       ),
                       child: Icon(
-                        outstanding > 0 ? HeroIcons.banknotes : HeroIcons.check_badge,
-                        color: outstanding > 0 ? AppColors.rose : AppColors.emeraldDark,
+                        outstanding > 0
+                            ? HeroIcons.banknotes
+                            : HeroIcons.check_badge,
+                        color: outstanding > 0
+                            ? AppColors.rose
+                            : AppColors.emeraldDark,
                         size: 22,
                       ),
                     ),
@@ -160,8 +170,13 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            outstanding > 0 ? 'Outstanding Buyer Credit' : 'No Outstanding Dues',
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                            outstanding > 0
+                                ? 'Outstanding Customer Credit'
+                                : 'No Outstanding Dues',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -169,7 +184,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: outstanding > 0 ? AppColors.rose : AppColors.emeraldDark,
+                              color: outstanding > 0
+                                  ? AppColors.rose
+                                  : AppColors.emeraldDark,
                             ),
                           ),
                         ],
@@ -195,19 +212,25 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _amountCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Payment Amount',
                         prefixIcon: const Icon(HeroIcons.banknotes, size: 20),
                         helperText: outstanding > 0
                             ? 'Maximum limit: ${CurrencyFormatter.format(outstanding)}'
                             : 'No balance owed',
-                        errorText: overLimit ? 'Exceeds outstanding balance' : null,
+                        errorText: overLimit
+                            ? 'Exceeds outstanding balance'
+                            : null,
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) return 'Required';
+                        if (value == null || value.trim().isEmpty)
+                          return 'Required';
                         final v = double.tryParse(value.trim());
-                        if (v == null || v <= 0) return 'Enter a positive number';
+                        if (v == null || v <= 0)
+                          return 'Enter a positive number';
                         if (v > outstanding + 0.01) {
                           return 'Exceeds outstanding balance';
                         }
@@ -220,11 +243,21 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                       value: _paymentMode,
                       labelText: 'Payment Mode',
                       items: const [
-                        DropdownItem(value: 'cash', child: Text('Cash Received')),
-                        DropdownItem(value: 'bank_transfer', child: Text('Bank Transfer / Deposit')),
-                        DropdownItem(value: 'cheque', child: Text('Cheque / PDC')),
+                        DropdownItem(
+                          value: 'cash',
+                          child: Text('Cash Received'),
+                        ),
+                        DropdownItem(
+                          value: 'bank_transfer',
+                          child: Text('Bank Transfer / Deposit'),
+                        ),
+                        DropdownItem(
+                          value: 'cheque',
+                          child: Text('Cheque / PDC'),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => _paymentMode = v ?? 'cash'),
+                      onChanged: (v) =>
+                          setState(() => _paymentMode = v ?? 'cash'),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -241,7 +274,8 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                       maxLines: 4,
                       decoration: const InputDecoration(
                         labelText: 'Notes (optional)',
-                        hintText: 'e.g. Cleared partial dues for last week purchase',
+                        hintText:
+                            'e.g. Cleared partial dues for last week purchase',
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -250,7 +284,9 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                       child: FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: _saving ? null : _submit,
                         child: _saving

@@ -14,11 +14,7 @@ class DashboardKpiGrid extends StatelessWidget {
   final DashboardProvider provider;
   final ValueChanged<int>? onSelectTab;
 
-  const DashboardKpiGrid({
-    super.key,
-    required this.provider,
-    this.onSelectTab,
-  });
+  const DashboardKpiGrid({super.key, required this.provider, this.onSelectTab});
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +31,12 @@ class DashboardKpiGrid extends StatelessWidget {
                 icon: HeroIcons.banknotes,
                 color: AppColors.secondary,
                 badge: provider.customersWithCreditCount > 0
-                    ? '${provider.customersWithCreditCount} buyers'
+                    ? '${provider.customersWithCreditCount} Customers'
                     : 'Settled',
-                onTap: () => Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute(builder: (_) => const ReportsPage()),
-                ),
+                onTap: () => Navigator.of(
+                  context,
+                  rootNavigator: true,
+                ).push(MaterialPageRoute(builder: (_) => const ReportsPage())),
               ),
             ),
             const SizedBox(width: 12),
@@ -67,10 +64,10 @@ class DashboardKpiGrid extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            // 3. Buyer Directory
+            // 3. Customer Directory
             Expanded(
               child: DashboardCard(
-                title: 'Buyer Directory',
+                title: 'Customer Directory',
                 value: '${provider.customersCount} Clients',
                 icon: HeroIcons.user_group,
                 color: AppColors.indigo,
@@ -80,7 +77,9 @@ class DashboardKpiGrid extends StatelessWidget {
                     onSelectTab!(3);
                   } else {
                     Navigator.of(context, rootNavigator: true).push(
-                      MaterialPageRoute(builder: (_) => const CustomerListPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const CustomerListPage(),
+                      ),
                     );
                   }
                 },
