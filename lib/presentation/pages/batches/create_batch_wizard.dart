@@ -2,7 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
@@ -500,9 +501,15 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Batch'),
+        title: Text(
+          'Create Produce Batch',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 18.5,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(MingCuteIcons.mgc_close_line),
+          icon: const Icon(HeroIcons.x_mark),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -581,8 +588,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                   activeGroup: _activeGroup,
                   onGroupSelected: (g) => setState(() => _activeGroup = g),
                   expensesForActiveGroup: _expensesFor(_activeGroup),
-                  onExpensesChanged: (records) =>
-                      setState(() => _expensesByGroup[_activeGroup] = records),
+                  onExpensesChanged: (expenses) =>
+                      setState(() => _expensesByGroup[_activeGroup] = expenses),
                   onAddExpense: _addExpense,
                 ),
                 WizardTransportStep(
@@ -591,8 +598,8 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                   onGroupSelected: (g) => setState(() => _activeGroup = g),
                   loadsForActiveGroup: _loadsFor(_activeGroup),
                   packingForActiveGroup: _packingFor(_activeGroup),
-                  onLoadsChanged: (records) =>
-                      setState(() => _loadsByGroup[_activeGroup] = records),
+                  onLoadsChanged: (loads) =>
+                      setState(() => _loadsByGroup[_activeGroup] = loads),
                 ),
                 WizardReviewStep(
                   groupCount: _groupCount,
@@ -630,11 +637,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
     ];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
         border: Border(
           bottom: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+            color: AppColors.divider,
+            width: 1,
           ),
         ),
       ),
@@ -647,7 +655,7 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 height: 2,
                 color: stepIndex < currentStep
                     ? AppColors.primary
-                    : theme.colorScheme.outline.withValues(alpha: 0.2),
+                    : AppColors.divider,
               ),
             );
           }
@@ -662,34 +670,34 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                 backgroundColor: isDone
                     ? AppColors.primary
                     : isActive
-                    ? AppColors.primary.withValues(alpha: 0.15)
-                    : theme.colorScheme.surfaceContainerHighest,
+                        ? AppColors.primarySurface
+                        : AppColors.surfaceAlt,
                 child: isDone
                     ? const Icon(
-                        MingCuteIcons.mgc_check_line,
+                        HeroIcons.check,
                         size: 14,
                         color: Colors.white,
                       )
                     : Text(
                         '${stepIndex + 1}',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: isActive
                               ? AppColors.primary
-                              : theme.colorScheme.onSurfaceVariant,
+                              : AppColors.textTertiary,
                         ),
                       ),
               ),
               const SizedBox(height: 4),
               Text(
                 labels[stepIndex],
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 10,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   color: isActive
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
                 ),
               ),
             ],
@@ -705,11 +713,12 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
         border: Border(
           top: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+            color: AppColors.divider,
+            width: 1,
           ),
         ),
       ),
@@ -721,8 +730,15 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               Expanded(
                 flex: 1,
                 child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.divider, width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: _submitting ? null : _prev,
-                  child: const Text('Back'),
+                  child: Text(
+                    'Back',
+                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -731,6 +747,10 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
               flex: currentStep > 0 ? 2 : 1,
               child: isLast
                   ? FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       onPressed: _submitting ? null : _submit,
                       child: _submitting
                           ? const SizedBox(
@@ -741,11 +761,21 @@ class _CreateBatchWizardState extends State<CreateBatchWizard> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Create Batch'),
+                          : Text(
+                              'Create Batch',
+                              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+                            ),
                     )
                   : FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       onPressed: canNext ? _next : null,
-                      child: const Text('Next'),
+                      child: Text(
+                        'Continue to Next Step',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+                      ),
                     ),
             ),
           ],

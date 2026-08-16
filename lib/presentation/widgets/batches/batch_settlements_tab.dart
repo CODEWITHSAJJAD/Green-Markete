@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/theme.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
@@ -9,6 +12,7 @@ import '../../providers/batch_provider.dart';
 import '../../providers/capability.dart';
 import '../../providers/partner_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../green_card.dart';
 import 'batch_dialogs.dart';
 import 'batch_metric_card.dart';
 
@@ -86,8 +90,7 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
         .where((t) => sellerId == null || t.toPartnerId == sellerId)
         .fold<double>(0, (sum, t) => sum + t.amount);
 
-    final purchaseCost = pl?.costBreakdown.purchaseCost ??
-        batch.totalPurchaseCost;
+    final purchaseCost = pl?.costBreakdown.purchaseCost ?? batch.totalPurchaseCost;
     final purchaserDaily = pl?.costBreakdown.purchaserDailyCharges ??
         batchPartners.where((p) => p['role'] == 'purchaser').fold<double>(
               0,
@@ -110,60 +113,49 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
           0,
           (s, l) => s + l.totalCost,
         );
-    final transportInBill =
-        batch.transportPaidBy == 'purchaser' ? transport : 0.0;
-    final owed =
-        purchaseCost +
-        purchaserDaily +
-        purchaserExpenses +
-        packingCost +
-        transportInBill;
-    final remaining = (owed - settledForBatch)
-        .clamp(0, double.infinity)
-        .toDouble();
+    final transportInBill = batch.transportPaidBy == 'purchaser' ? transport : 0.0;
+    final owed = purchaseCost + purchaserDaily + purchaserExpenses + packingCost + transportInBill;
+    final remaining = (owed - settledForBatch).clamp(0, double.infinity).toDouble();
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary.withValues(alpha: 0.10),
-                theme.colorScheme.surface,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.08),
-            ),
-          ),
+        GreenCard(
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 18,
-                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    child: Icon(
-                      MingCuteIcons.mgc_user_3_line,
+                    radius: 20,
+                    backgroundColor: AppColors.primarySurface,
+                    child: const Icon(
+                      HeroIcons.user,
                       size: 18,
-                      color: theme.colorScheme.primary,
+                      color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Seller / Receiving Partner', style: theme.textTheme.bodySmall),
+                        Text(
+                          'Seller / Receiving Partner',
+                          style: GoogleFonts.inter(
+                            color: AppColors.textTertiary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         Text(
                           sellerName,
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ],
                     ),
@@ -171,24 +163,55 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
                 ],
               ),
               const SizedBox(height: 16),
-              buildBatchCostLine(theme, 'Purchase cost', purchaseCost),
-              buildBatchCostLine(theme, 'Purchaser expenses', purchaserExpenses),
-              buildBatchCostLine(theme, 'Purchaser daily charges', purchaserDaily),
-              buildBatchCostLine(theme, 'Packing cost', packingCost),
+              buildBatchCostLine(theme, 'Purchase Procurement Cost', purchaseCost),
+              buildBatchCostLine(theme, 'Purchaser Local Expenses', purchaserExpenses),
+              buildBatchCostLine(theme, 'Purchaser Daily Charges', purchaserDaily),
+              buildBatchCostLine(theme, 'Packing & Labor Cost', packingCost),
               if (batch.transportPaidBy == 'purchaser')
-                buildBatchCostLine(theme, 'Transport (purchaser-paid)', transport),
+                buildBatchCostLine(theme, 'Freight & Transport (Purchaser Paid)', transport),
               const Divider(height: 20),
-              buildBatchCostLine(theme, 'Bill owed to seller', owed, bold: true),
-              buildBatchCostLine(theme, 'Settled for this batch', settledForBatch),
-              buildBatchCostLine(theme, 'Remaining', remaining, bold: true),
-              if (remaining > 0 &&
+              buildBatchCostLine(theme, 'Total Purchaser Outlay (Bill Basis)', owed, bold: true),
+              buildBatchCostLine(theme, 'Already Settled for this Batch', settledForBatch),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: remaining > 0 ? AppColors.roseSurface : AppColors.emeraldSurface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: remaining > 0 ? AppColors.rose.withValues(alpha: 0.25) : AppColors.emerald.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Outstanding Bill Payable',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                        color: remaining > 0 ? AppColors.rose : AppColors.emeraldDark,
+                      ),
+                    ),
+                    Text(
+                      CurrencyFormatter.format(remaining),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: remaining > 0 ? AppColors.rose : AppColors.emeraldDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (context.read<AuthProvider>().capabilities.can(Capability.createSettlement) &&
                   sellerId != null &&
-                  context.read<AuthProvider>().capabilities.can(
-                        Capability.createSettlement,
-                      )) ...[
+                  remaining > 0) ...[
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
+                  height: 50,
                   child: FilledButton.icon(
                     onPressed: () => showSettleSellerDialog(
                       context,
@@ -198,18 +221,16 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
                       remaining: remaining,
                       settledForBatch: settledForBatch,
                     ),
-                    icon: const Icon(MingCuteIcons.mgc_wallet_3_line),
-                    label: const Text('Settle Seller'),
+                    icon: const Icon(HeroIcons.banknotes, size: 20),
+                    label: Text(
+                      'Settle Seller Payment',
+                      style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14.5),
+                    ),
                   ),
                 ),
               ],
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'The bill owed to the seller is the purchaser-side total (purchase cost + purchaser expenses + daily charges + packing + purchaser-paid transport). Settle it fully or in partial splits — each payment is recorded as a partner transaction and matched to this batch via its code in the notes.',
-          style: theme.textTheme.bodySmall,
         ),
       ],
     );
