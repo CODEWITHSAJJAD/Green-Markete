@@ -6,6 +6,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../pages/reports/reports_page.dart';
 import '../../providers/dashboard_provider.dart';
 
+/// Executive Financial Overview Card designed with real-world fintech aesthetics.
 class DashboardHeroCard extends StatelessWidget {
   final DashboardProvider provider;
 
@@ -21,17 +22,17 @@ class DashboardHeroCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.primary, // Solid Luxury Obsidian Midnight Slate
-        borderRadius: BorderRadius.circular(22),
+        color: AppColors.primary, // Executive Obsidian Slate #0F172A
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFF1E293B),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.20),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: AppColors.primary.withValues(alpha: 0.22),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -41,51 +42,37 @@ class DashboardHeroCard extends StatelessWidget {
           onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(builder: (_) => const ReportsPage()),
           ),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top header row: Label + P&L badge
+                // Header: Clean label + Net Margin pill
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        HeroIcons.wallet,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Total Gross Turnover',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    Text(
+                      'TOTAL TURNOVER',
+                      style: GoogleFonts.inter(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                       decoration: BoxDecoration(
                         color: isProfit
-                            ? AppColors.emerald.withValues(alpha: 0.18)
-                            : AppColors.rose.withValues(alpha: 0.18),
+                            ? AppColors.emerald.withValues(alpha: 0.15)
+                            : AppColors.rose.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isProfit
-                              ? AppColors.emerald.withValues(alpha: 0.5)
-                              : AppColors.rose.withValues(alpha: 0.5),
-                          width: 1.0,
+                              ? AppColors.emerald.withValues(alpha: 0.45)
+                              : AppColors.rose.withValues(alpha: 0.45),
+                          width: 1,
                         ),
                       ),
                       child: Row(
@@ -95,16 +82,18 @@ class DashboardHeroCard extends StatelessWidget {
                             isProfit
                                 ? HeroIcons.arrow_trending_up
                                 : HeroIcons.arrow_trending_down,
-                            size: 13,
-                            color: isProfit ? const Color(0xFF6EE7B7) : const Color(0xFFFCA5A5),
+                            size: 12,
+                            color: isProfit ? const Color(0xFF34D399) : const Color(0xFFF87171),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isProfit ? 'Net Profit' : 'Net Loss',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: isProfit ? const Color(0xFF6EE7B7) : const Color(0xFFFCA5A5),
+                            isProfit
+                                ? '${marginPct > 0 ? '+${marginPct.toStringAsFixed(1)}%' : '0%'} Margin'
+                                : '${marginPct.toStringAsFixed(1)}% Loss',
+                            style: GoogleFonts.inter(
+                              color: isProfit ? const Color(0xFF34D399) : const Color(0xFFF87171),
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -112,9 +101,9 @@ class DashboardHeroCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
 
-                // Main Metric: Total Revenue Amount with Plus Jakarta Sans
+                // Main Big Number
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
@@ -122,102 +111,81 @@ class DashboardHeroCard extends StatelessWidget {
                     CurrencyFormatter.format(provider.totalRevenue),
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
-                      fontSize: 32,
+                      fontSize: 30,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.6,
+                      letterSpacing: -0.5,
                     ),
                   ),
+                ),
+                const SizedBox(height: 16),
+
+                // Hairline Divider
+                Container(
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.10),
                 ),
                 const SizedBox(height: 14),
 
-                // Net Profit Row with Margin Percentage
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B).withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        isProfit ? 'Estimated Net Earnings:' : 'Estimated Loss:',
-                        style: GoogleFonts.inter(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  CurrencyFormatter.format(provider.totalProfitLoss.abs()),
-                                  style: GoogleFonts.inter(
-                                    color: isProfit
-                                        ? const Color(0xFF6EE7B7)
-                                        : const Color(0xFFFCA5A5),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                if (marginPct != 0) ...[
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '(${isProfit ? '+' : ''}${marginPct.toStringAsFixed(1)}%)',
-                                    style: GoogleFonts.inter(
-                                      color: isProfit
-                                          ? AppColors.emerald
-                                          : AppColors.rose,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Today's Pulse Bar
+                // 2-Column Balanced Financial Split
                 Row(
                   children: [
-                    Icon(
-                      HeroIcons.clock,
-                      size: 14,
-                      color: Colors.white.withValues(alpha: 0.65),
-                    ),
-                    const SizedBox(width: 6),
+                    // Column 1: Today's Sales
                     Expanded(
-                      child: Text(
-                        'Today: ${CurrencyFormatter.format(provider.todaySales)} · ${provider.todaySalesCount} sales · ${provider.activeBatchesCount} batches in market',
-                        style: GoogleFonts.inter(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'TODAY\'S SALES',
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            CurrencyFormatter.format(provider.todaySales),
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Icon(
-                      HeroIcons.chevron_right,
-                      size: 14,
-                      color: Colors.white.withValues(alpha: 0.5),
+                    Container(
+                      height: 28,
+                      width: 1,
+                      color: Colors.white.withValues(alpha: 0.10),
+                    ),
+                    const SizedBox(width: 16),
+                    // Column 2: Net Profit / Gain
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isProfit ? 'EST. NET PROFIT' : 'NET DEFICIT',
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            CurrencyFormatter.format(provider.totalProfitLoss.abs()),
+                            style: GoogleFonts.inter(
+                              color: isProfit ? const Color(0xFF34D399) : const Color(0xFFF87171),
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -28,10 +28,11 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GreenCard(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -47,7 +48,7 @@ class DashboardCard extends StatelessWidget {
                     width: 1,
                   ),
                 ),
-                child: Icon(icon, size: 19, color: color),
+                child: Icon(icon, size: 18, color: color),
               ),
               if (badge != null)
                 Flexible(
@@ -76,7 +77,7 @@ class DashboardCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             title,
             maxLines: 1,
@@ -84,10 +85,10 @@ class DashboardCard extends StatelessWidget {
             style: GoogleFonts.inter(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
-              fontSize: 12,
+              fontSize: 11.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -96,20 +97,20 @@ class DashboardCard extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
-                fontSize: 18,
+                fontSize: 16.5,
                 letterSpacing: -0.3,
               ),
             ),
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               subtitle!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
                 color: AppColors.textTertiary,
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w500,
               ),
             ),

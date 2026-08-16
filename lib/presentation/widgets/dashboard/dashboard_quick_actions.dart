@@ -52,38 +52,54 @@ class DashboardQuickActions extends StatelessWidget {
     final canCreate = auth.capabilities.can(Capability.createBatch);
     final canSell = auth.canEditSellerSide;
     final canRecordPayment = auth.capabilities.can(Capability.recordPayment);
-    final canManageSupplier = auth.capabilities.can(Capability.manageSupplier);
 
-    Widget tile(IconData icon, String label, VoidCallback onTap, Color color) {
+    Widget actionCard(IconData icon, String title, String subtitle, VoidCallback onTap, Color color) {
       return GreenCard(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: color.withValues(alpha: 0.18),
+                  color: color.withValues(alpha: 0.20),
                   width: 1,
                 ),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 11.5,
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -91,72 +107,73 @@ class DashboardQuickActions extends StatelessWidget {
       );
     }
 
-    final items = <Widget>[
-      if (canCreate)
-        Expanded(
-          child: tile(
+    final card1 = canCreate
+        ? actionCard(
             HeroIcons.plus,
             'New Batch',
+            'Log arrival',
             () => Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (_) => const CreateBatchWizard(),
-              ),
+              MaterialPageRoute(builder: (_) => const CreateBatchWizard()),
             ),
             AppColors.primary,
-          ),
-        ),
-      if (canSell)
-        Expanded(
-          child: tile(
-            HeroIcons.shopping_cart,
-            'Quick Sale',
-            () => Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (_) => const QuickSalePage(),
-              ),
-            ),
-            AppColors.secondary,
-          ),
-        ),
-      if (canRecordPayment)
-        Expanded(
-          child: tile(
-            HeroIcons.banknotes,
-            'Collect Cash',
-            () => _recordPayment(context),
-            AppColors.emerald,
-          ),
-        ),
-      if (canManageSupplier && !canSell)
-        Expanded(
-          child: tile(
+          )
+        : actionCard(
             HeroIcons.building_storefront,
             'Suppliers',
+            'Settlements',
             () => Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (_) => const SupplierSettlementPage(),
-              ),
+              MaterialPageRoute(builder: (_) => const SupplierSettlementPage()),
             ),
             AppColors.amber,
-          ),
-        ),
-      Expanded(
-        child: tile(
-          HeroIcons.chart_bar,
-          'Reports',
-          () => Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute(builder: (_) => const ReportsPage()),
-          ),
-          AppColors.indigo,
-        ),
-      ),
-    ];
+          );
 
-    final spacedItems = <Widget>[];
-    for (var i = 0; i < items.length; i++) {
-      if (i > 0) spacedItems.add(const SizedBox(width: 8));
-      spacedItems.add(items[i]);
-    }
+    final card2 = canSell
+        ? actionCard(
+            HeroIcons.shopping_cart,
+            'Quick Sale',
+            'Sell produce',
+            () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(builder: (_) => const QuickSalePage()),
+            ),
+            AppColors.secondary,
+          )
+        : actionCard(
+            HeroIcons.chart_bar,
+            'Analytics',
+            'View metrics',
+            () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(builder: (_) => const ReportsPage()),
+            ),
+            AppColors.indigo,
+          );
+
+    final card3 = canRecordPayment
+        ? actionCard(
+            HeroIcons.banknotes,
+            'Collect Cash',
+            'Receive dues',
+            () => _recordPayment(context),
+            AppColors.emerald,
+          )
+        : actionCard(
+            HeroIcons.chart_bar,
+            'Statements',
+            'Accounts',
+            () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(builder: (_) => const ReportsPage()),
+            ),
+            AppColors.emerald,
+          );
+
+    final card4 = actionCard(
+      HeroIcons.chart_bar,
+      'P&L Reports',
+      'Statements',
+      () => Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(builder: (_) => const ReportsPage()),
+      ),
+      AppColors.indigo,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,8 +184,22 @@ class DashboardQuickActions extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 12),
-        Row(children: spacedItems),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(child: card1),
+            const SizedBox(width: 10),
+            Expanded(child: card2),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(child: card3),
+            const SizedBox(width: 10),
+            Expanded(child: card4),
+          ],
+        ),
       ],
     );
   }

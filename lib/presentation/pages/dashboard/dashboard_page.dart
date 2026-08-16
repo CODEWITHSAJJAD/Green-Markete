@@ -224,13 +224,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 18),
                     DashboardHeroCard(provider: provider),
                     const SizedBox(height: 18),
+                    const DashboardQuickActions(),
+                    const SizedBox(height: 20),
                     DashboardKpiGrid(
                       provider: provider,
                       onSelectTab: widget.onSelectTab,
                     ),
-                    const SizedBox(height: 22),
-                    const DashboardQuickActions(),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
                     const DashboardCreditAlerts(),
                     const SizedBox(height: 24),
                     SectionHeader(
