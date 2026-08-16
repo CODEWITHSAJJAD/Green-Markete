@@ -69,7 +69,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   Text('Set up your business', style: theme.textTheme.displayMedium, textAlign: TextAlign.center),
                   const SizedBox(height: 6),
                   Text(
-                    'A few details to get you started with Green Market',
+                    'A few details to get your Mandi Commission Shop started',
                     style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                     textAlign: TextAlign.center,
                   ),
@@ -82,7 +82,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         TextFormField(
                           controller: _nameController,
                           decoration: const InputDecoration(
-                            labelText: 'Business Name',
+                            labelText: 'Shop / Business Name (e.g. Al-Madina Commission Shop)',
                             prefixIcon: Icon(MingCuteIcons.mgc_store_line),
                           ),
                           textInputAction: TextInputAction.next,
@@ -92,19 +92,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         TextFormField(
                           controller: _cityController,
                           decoration: const InputDecoration(
-                            labelText: 'Your City',
+                            labelText: 'Mandi City / Location (e.g. Badami Bagh, Lahore)',
                             prefixIcon: Icon(MingCuteIcons.mgc_building_2_line),
                           ),
                           textInputAction: TextInputAction.next,
                           validator: (v) => v == null || v.isEmpty ? 'City is required' : null,
                         ),
                         const SizedBox(height: 20),
-                        Text('Business Type', style: theme.textTheme.titleMedium),
+                        Text('Business Structure', style: theme.textTheme.titleMedium),
                         const SizedBox(height: 12),
                         SegmentedButton<String>(
                           segments: const [
-                            ButtonSegment(value: 'single', label: Text('Single Owner')),
-                            ButtonSegment(value: 'multi_partner', label: Text('Multi Partner')),
+                            ButtonSegment(value: 'single', label: Text('Solo Arthi')),
+                            ButtonSegment(value: 'multi_partner', label: Text('Partnership Shop')),
                           ],
                           selected: {_businessType},
                           onSelectionChanged: (v) => setState(() => _businessType = v.first),

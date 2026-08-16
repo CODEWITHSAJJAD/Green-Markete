@@ -86,7 +86,7 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Join the Green Market wholesale produce network',
+                    'Join the MandiRoznamcha wholesale produce network',
                     style: GoogleFonts.inter(
                       fontSize: 13.5,
                       color: AppColors.textSecondary,

@@ -1,6 +1,11 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
+  static const String appName = 'MandiRoznamcha';
+  static const String appUrduName = 'منڈی روزنامچہ';
+  static const String appTagline = 'منڈی کا ڈیجیٹل کھاتہ و بکری نظام';
+  static const String appEnglishTagline = 'Pakistan\'s Digital Mandi & Wholesale OS';
+
   static String get supabaseUrl =>
       dotenv.env['SUPABASE_URL'] ?? 'https://placeholder.supabase.co';
 

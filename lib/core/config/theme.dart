@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 export 'app_icons.dart';
 
-/// Luxury Modern Minimalist Brand + Semantic Colors for Green Market.
+/// Luxury Modern Minimalist Brand + Semantic Colors for MandiRoznamcha.
 class AppColors {
   // Primary Palette: Obsidian Midnight Slate & Crisp Charcoal
   static const primary = Color(0xFF0F172A); // Executive Obsidian Slate

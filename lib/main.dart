@@ -116,7 +116,7 @@ class GreenMarketApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Green Market',
+      title: 'MandiRoznamcha',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

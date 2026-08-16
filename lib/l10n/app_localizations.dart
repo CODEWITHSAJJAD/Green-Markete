@@ -98,13 +98,13 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Green Market'**
+  /// **'MandiRoznamcha'**
   String get appTitle;
 
   /// No description provided for @appSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Vegetable Import / Export & Wholesale Management'**
+  /// **'Pakistan\'s Digital Mandi & Wholesale OS'**
   String get appSubtitle;
 
   /// No description provided for @navHome.
@@ -1004,13 +1004,13 @@ abstract class AppLocalizations {
   /// No description provided for @aboutCopyright.
   ///
   /// In en, this message translates to:
-  /// **'© {year} Green Market. All rights reserved.'**
+  /// **'© {year} MandiRoznamcha. All rights reserved.'**
   String aboutCopyright(Object year);
 
   /// No description provided for @aboutTracking.
   ///
   /// In en, this message translates to:
-  /// **'Track batches, sales, expenses and partner P&L for vegetable wholesale traders.'**
+  /// **'Manage Mandi arrivals, Boli auctions, Bikri Parchis, Zamindar Safaya bills, and Khareedar Khata.'**
   String get aboutTracking;
 
   /// No description provided for @aboutDataStorage.

@@ -1,6 +1,20 @@
-# Project State — Green Market Frontend
+# Project State — MandiRoznamcha Frontend
 
-**Last updated:** 2026-08-16 (daily-118)
+**Last updated:** 2026-08-16 (daily-119)
+
+> **Session (2026-08-16, daily-119, Brand Identity, Vector Logo, Obsidian Splash & Mandi Terminology):**
+> 1. **Brand Identity Renaming:** Rebranded application to **`MandiRoznamcha` (منڈی روزنامچہ)** — Pakistan's Digital Mandi & Wholesale OS (*منڈی کا ڈیجیٹل کھاتہ و بکری نظام*).
+> 2. **Custom Vector Logo (`brand_logo.dart`, `brand_mark.dart`):** Created scalable vector emblem combining produce leaf + Mandi scale geometry with Royal Emerald (`#10B981`) & Champagne Amber (`#F59E0B`) accents.
+> 3. **Luxury Obsidian Splash Screen (`splash_page.dart`):** Redesigned splash screen on deep Obsidian Midnight (`#0F172A`) with animated logo pulse, bilingual headline (`MandiRoznamcha` / `منڈی روزنامچہ`), tagline, and sleek loading bar.
+> 4. **Authentic Mandi Terminology Standardization:**
+>    - Batches / Arrivals -> **آمدِ مال / لاٹ (Aamad Maal / Lots)** (strictly excluded 'khep').
+>    - Suppliers -> **زمیندار / بیوپاری / آڑھت شاپس (Zamindar / Arhat Shops)**.
+>    - Sales -> **بکری و بولی (Bikri & Boli)** and **بکری پرچی (Bikri Parchi)**.
+>    - Transport -> **گاڑی کرایہ / ٹرانسپورٹ (Kiraya Gaari)** (strictly excluded 'bhada').
+>    - Customer Dues -> **خریدار کھاتہ و بقایا وصولی (Khata & Wasooli)**.
+>    - Settlement -> **صافیہ بل (Safaya Statement)**.
+> 5. **Navigation & Exports:** Updated `SidebarDrawer`, `AboutPage`, `SettingsPage`, `AppConfig`, `pubspec.yaml`, `app_en.arb`, `app_localizations_en.dart`, and PDF/WhatsApp share footers.
+> 6. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all tests passed).
 
 > **Session (2026-08-16, daily-118, Executive Dashboard Redesign — Authentic Fintech & Balanced Quick Actions):** Per user feedback on dashboard aesthetics and action consistency:
 > 1. **Executive Hero Card (`dashboard_hero_card.dart`):** Rebuilt with clean, real-world fintech aesthetics (Stripe/Revolut inspired). Replaced template-like nested glowing boxes with a solid Obsidian Slate card featuring `TOTAL TURNOVER`, clean `Margin %` status pill, bold revenue display, and a balanced 2-column split for `Today's Sales` vs `Net Profit`.

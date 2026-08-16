@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:ming_cute_icons/ming_cute_icons.dart';
 
 import '../../../core/config/theme.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/green_card.dart';
 import '../../widgets/section_header.dart';
 
@@ -18,36 +18,17 @@ class AboutPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           const SizedBox(height: 8),
-          Center(
-            child: Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                ),
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Icon(MingCuteIcons.mgc_leaf_2_fill, color: Colors.white, size: 40),
-            ),
+          const Center(
+            child: BrandLogo(size: 84, isDarkBackground: true),
           ),
           const SizedBox(height: 16),
           Center(
-            child: Text('Green Market', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+            child: Text('MandiRoznamcha', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
           ),
           const SizedBox(height: 4),
           Center(
             child: Text(
-              'Vegetable import/export & wholesale management',
+              'Pakistan\'s Digital Mandi & Wholesale OS\nمنڈی کا ڈیجیٹل کھاتہ و بکری نظام',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall,
             ),
@@ -67,9 +48,9 @@ class AboutPage extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _infoTile(theme, 'Publisher', 'Green Market'),
+                _infoTile(theme, 'Publisher', 'MandiRoznamcha Technologies'),
                 _infoTile(theme, 'Version', '1.0.0 (build 1)'),
-                _infoTile(theme, 'Purpose', 'Track batches, sales, expenses and partner P&L for vegetable wholesale traders.'),
+                _infoTile(theme, 'Purpose', 'Manage Mandi arrivals, Boli auctions, Bikri Parchis, Zamindar Safaya bills, and Khareedar Khata.'),
               ],
             ),
           ),
@@ -89,7 +70,7 @@ class AboutPage extends StatelessWidget {
           const SizedBox(height: 24),
           Center(
             child: Text(
-              '© 2026 Green Market. All rights reserved.',
+              '© 2026 MandiRoznamcha. All rights reserved.',
               style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
             ),
           ),

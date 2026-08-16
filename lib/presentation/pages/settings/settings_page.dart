@@ -154,7 +154,7 @@ class SettingsPage extends StatelessWidget {
           ),
           _settingTile(
             HeroIcons.information_circle,
-            'About Green Market',
+            'About MandiRoznamcha',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AboutPage()),
             ),

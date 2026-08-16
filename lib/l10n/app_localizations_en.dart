@@ -9,22 +9,22 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Green Market';
+  String get appTitle => 'MandiRoznamcha';
 
   @override
-  String get appSubtitle => 'Vegetable Import / Export & Wholesale Management';
+  String get appSubtitle => 'Pakistan\'s Digital Mandi & Wholesale OS';
 
   @override
   String get navHome => 'Home';
 
   @override
-  String get navBatches => 'Batches';
+  String get navBatches => 'Aamad Maal / Lots';
 
   @override
-  String get navSales => 'Sales';
+  String get navSales => 'Bikri & Boli';
 
   @override
-  String get navCustomers => 'Customers';
+  String get navCustomers => 'Khareedar Khata';
 
   @override
   String get menuProfile => 'My Profile';
@@ -479,11 +479,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String aboutCopyright(Object year) {
-    return '© $year Green Market. All rights reserved.';
+    return '© $year MandiRoznamcha. All rights reserved.';
   }
 
   @override
-  String get aboutTracking => 'Track batches, sales, expenses and partner P&L for vegetable wholesale traders.';
+  String get aboutTracking => 'Manage Mandi arrivals, Boli auctions, Bikri Parchis, Zamindar Safaya bills, and Khareedar Khata.';
 
   @override
   String get aboutDataStorage => 'Your data is stored securely in the cloud and synced to this device.';

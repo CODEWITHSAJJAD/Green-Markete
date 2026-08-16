@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
-
 import 'package:provider/provider.dart';
+
+import '../../core/config/theme.dart';
+import 'brand_logo.dart';
 
 import '../pages/markets/market_list_page.dart';
 import '../pages/partners/partner_list_page.dart';
@@ -63,7 +65,7 @@ class SidebarDrawer extends StatelessWidget {
                   _NavTile(
                     icon: MingCuteIcons.mgc_shopping_bag_2_line,
                     activeIcon: MingCuteIcons.mgc_shopping_bag_2_fill,
-                    label: 'Batches',
+                    label: 'Aamad Maal / Lots',
                     selected: currentTab == 1,
                     onTap: () => onSelectTab(1),
                   ),
@@ -71,7 +73,7 @@ class SidebarDrawer extends StatelessWidget {
                     _NavTile(
                       icon: MingCuteIcons.mgc_bill_line,
                       activeIcon: MingCuteIcons.mgc_bill_fill,
-                      label: 'Sales',
+                      label: 'Bikri & Boli',
                       selected: currentTab == 2,
                       onTap: () => onSelectTab(2),
                     ),
@@ -79,69 +81,69 @@ class SidebarDrawer extends StatelessWidget {
                     _NavTile(
                       icon: MingCuteIcons.mgc_user_3_line,
                       activeIcon: MingCuteIcons.mgc_user_3_fill,
-                      label: 'Customers',
+                      label: 'Khareedar Khata',
                       selected: currentTab == 3,
                       onTap: () => onSelectTab(3),
                     ),
                   const SizedBox(height: 8),
-                  const _SectionHeader('Manage'),
+                  const _SectionHeader('Mandi Management'),
                   _NavTile(
                     icon: MingCuteIcons.mgc_package_line,
                     activeIcon: MingCuteIcons.mgc_package_fill,
-                    label: 'Products',
+                    label: 'Produce Catalog',
                     onTap: () => onOpenPage(const ProductListPage()),
                   ),
                   if (isOwner)
                     _NavTile(
                       icon: MingCuteIcons.mgc_user_4_line,
                       activeIcon: MingCuteIcons.mgc_user_4_fill,
-                      label: 'Partners',
+                      label: 'Partners & Munshi',
                       onTap: () => onOpenPage(const PartnerListPage()),
                     ),
                   _NavTile(
                     icon: MingCuteIcons.mgc_store_2_line,
                     activeIcon: MingCuteIcons.mgc_store_2_fill,
-                    label: 'Markets',
+                    label: 'Mandi Directory',
                     onTap: () => onOpenPage(const MarketListPage()),
                   ),
                   if (isOwner || canPurchaser)
                     _NavTile(
                       icon: MingCuteIcons.mgc_truck_line,
                       activeIcon: MingCuteIcons.mgc_truck_fill,
-                      label: 'Vehicles',
+                      label: 'Transport & Vehicles',
                       onTap: () => onOpenPage(const VehicleListPage()),
                     ),
                   if (isOwner || canPurchaser || isAccountant)
                     _NavTile(
                       icon: MingCuteIcons.mgc_store_2_line,
                       activeIcon: MingCuteIcons.mgc_store_2_fill,
-                      label: 'Supplier Settlements',
+                      label: 'Zamindar Safaya',
                       onTap: () => onOpenPage(const SupplierSettlementPage()),
                     ),
                   const SizedBox(height: 8),
-                  const _SectionHeader('Insights'),
+                  const _SectionHeader('Accounts & Insights'),
                   _NavTile(
                     icon: MingCuteIcons.mgc_chart_bar_line,
                     activeIcon: MingCuteIcons.mgc_chart_bar_fill,
-                    label: 'Reports',
+                    label: 'P&L Reports',
                     onTap: () => onOpenPage(const ReportsPage()),
                   ),
                   if (isOwner || isAccountant || canSeller)
                     _NavTile(
                       icon: MingCuteIcons.mgc_exchange_dollar_line,
                       activeIcon: MingCuteIcons.mgc_exchange_dollar_fill,
-                      label: 'Transactions',
+                      label: 'Roznamcha Ledger',
                       onTap: () => onOpenPage(const TransactionListPage()),
                     ),
                   if (isOwner || canSeller || isAccountant)
                     _NavTile(
                       icon: MingCuteIcons.mgc_wallet_3_line,
                       activeIcon: MingCuteIcons.mgc_wallet_3_fill,
-                      label: 'Partner Dues',
+                      label: 'Partner Accounts',
                       onTap: () => onOpenPage(const PartnerDuesPage()),
                     ),
                   const SizedBox(height: 8),
-                  const _SectionHeader('Account'),
+                  const _SectionHeader('System'),
                   _NavTile(
                     icon: MingCuteIcons.mgc_settings_3_line,
                     activeIcon: MingCuteIcons.mgc_settings_3_fill,
@@ -175,16 +177,16 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.paddingOf(context).top + 24,
+        top: MediaQuery.paddingOf(context).top + 20,
         left: 20,
         right: 20,
-        bottom: 24,
+        bottom: 20,
       ),
       decoration: const BoxDecoration(
         color: Color(0xFF0F172A),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
       child: Column(
@@ -192,33 +194,26 @@ class _Header extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(MingCuteIcons.mgc_leaf_2_fill, color: Colors.white, size: 26),
-              ),
+              const BrandLogo(size: 38, isDarkBackground: true),
               const SizedBox(width: 12),
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Green Market',
+                    'MandiRoznamcha',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.2,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   Text(
-                    'Wholesale Management',
+                    'منڈی کا ڈیجیٹل کھاتہ',
                     style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
+                      color: AppColors.emerald,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],

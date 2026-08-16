@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/config/theme.dart';
 
-/// A clean, luxury surface card container used across Green Market.
+/// A clean, luxury surface card container used across MandiRoznamcha.
 class GreenCard extends StatelessWidget {
   const GreenCard({
     super.key,

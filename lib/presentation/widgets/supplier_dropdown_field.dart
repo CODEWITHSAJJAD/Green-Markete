@@ -22,7 +22,7 @@ class SupplierDropdownField extends StatefulWidget {
     required this.value,
     required this.onChanged,
     required this.suppliers,
-    this.labelText = 'Supplier / shop name *',
+    this.labelText = 'Zamindar / Beopari / Arhat Shop *',
     this.required = true,
     this.onCreateSupplier,
   });

@@ -131,7 +131,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
       context,
       bill: bill,
       fileName: 'statement_${customer.fullName.replaceAll(' ', '_')}',
-      subject: 'Green Market — Credit Statement',
+      subject: 'MandiRoznamcha — Credit Statement',
     );
   }
 

@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Sign in to manage your wholesale vegetable operations',
+                    'Sign in to manage your Mandi lots, Boli auctions & Khata',
                     style: GoogleFonts.inter(
                       fontSize: 13.5,
                       color: AppColors.textSecondary,

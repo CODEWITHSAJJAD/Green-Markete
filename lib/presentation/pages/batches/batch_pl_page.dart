@@ -179,7 +179,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
     if (party == null || !context.mounted) return;
 
     final business = context.read<BusinessProvider>().business;
-    final businessName = business?.name ?? 'Green Market';
+    final businessName = business?.name ?? 'MandiRoznamcha';
 
     final sections = <BillSection>[
       if (party == 'purchaser' || party == 'partner')
@@ -224,14 +224,14 @@ class _BatchPLPageState extends State<BatchPLPage> {
                 : totalRevenue - sellerDaily - sellerExpenses)),
         emphasize: true,
       ),
-      footer: 'Generated via Green Market Wholesale Platform',
+      footer: 'Generated via MandiRoznamcha Wholesale Platform',
     );
 
     await shareBill(
       context,
       bill: bill,
       fileName: '${batch.batchCode}_${party}_bill',
-      subject: 'Green Market — ${batch.batchCode} $party bill',
+      subject: 'MandiRoznamcha — ${batch.batchCode} $party bill',
     );
   }
 
