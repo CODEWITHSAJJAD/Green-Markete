@@ -1,6 +1,12 @@
 # Project State — Green Market Frontend
 
-**Last updated:** 2026-08-16 (daily-112)
+**Last updated:** 2026-08-16 (daily-113)
+
+> **Session (2026-08-16, daily-113, IconData `final` Class Compile Fix & Complete Removal of `icons_plus`):** Per Gradle build failure during `flutter run` on Android ("The class 'IconData' can't be extended outside of its library because it's a final class in icons_plus: ^5.0.0"):
+> 1. **Root Cause:** In modern Dart/Flutter SDKs, `IconData` is marked `final class IconData`, causing third-party packages that subclass `IconData` (such as `icons_plus: ^5.0.0`) to fail during kernel compilation.
+> 2. **Native Lightweight `app_icons.dart` Mapping:** Created `lib/core/config/app_icons.dart` mapping `HeroIcons` directly to `MingCuteIcons` constants (which do not subclass `IconData`). Exported `app_icons.dart` from `theme.dart`.
+> 3. **Removed `icons_plus` Dependency:** Removed `icons_plus` completely from `pubspec.yaml` and replaced all imports with the core theme icons.
+> 4. **Verified Build Readiness:** Executed `flutter pub get`, verified `dart analyze lib` clean (0 errors), and confirmed all tests pass in `flutter test`.
 
 > **Session (2026-08-16, daily-112, Full App-Wide Dropdown Standardization to AppDropdown):** Per user directive ("why some pages use dropdown_button2 directly however I already have created my AppDropdown in widgets, use it wherever dropdown is required and do not use dropdown_button2 directly"):
 > 1. **Exported `DropdownItem` via `AppDropdown`:** Added `export 'package:dropdown_button2/dropdown_button2.dart' show DropdownItem;` in `lib/presentation/widgets/app_dropdown.dart` so child pages and forms do not need to import the third-party package directly.

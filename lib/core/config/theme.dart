@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+export 'app_icons.dart';
+
 /// Luxury Modern Minimalist Brand + Semantic Colors for Green Market.
 class AppColors {
   // Primary Palette: Obsidian Midnight Slate & Crisp Charcoal

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:icons_plus/icons_plus.dart';
 
 import '../../core/config/theme.dart';
 import '../../core/utils/currency_formatter.dart';
