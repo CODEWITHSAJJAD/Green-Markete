@@ -78,79 +78,26 @@ class RecentActivityList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14.5,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceAlt,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '#${batch.batchCode}',
-                            style: GoogleFonts.inter(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10.5,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (batch.supplierName != null && batch.supplierName!.isNotEmpty) ...[
-                          const Icon(
-                            HeroIcons.building_storefront,
-                            size: 12,
-                            color: AppColors.textTertiary,
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              batch.supplierName!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            '•',
-                            style: TextStyle(
-                              color: AppColors.textTertiary,
-                              fontSize: 10,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        Text(
-                          '${batch.totalQuantity.toStringAsFixed(batch.totalQuantity.truncateToDouble() == batch.totalQuantity ? 0 : 1)} ${batch.quantityUnit}',
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 3),
+                    Text(
+                      '#${batch.batchCode}${batch.supplierName != null && batch.supplierName!.isNotEmpty ? ' • ${batch.supplierName}' : ''} • ${batch.totalQuantity.toStringAsFixed(batch.totalQuantity.truncateToDouble() == batch.totalQuantity ? 0 : 1)} ${batch.quantityUnit}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),

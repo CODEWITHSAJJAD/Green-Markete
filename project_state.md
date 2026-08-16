@@ -1,6 +1,10 @@
 # Project State — Green Market Frontend
 
-**Last updated:** 2026-08-16 (daily-116)
+**Last updated:** 2026-08-16 (daily-117)
+
+> **Session (2026-08-16, daily-117, RecentActivityList Bulletproof Single-Stream Layout):** Per narrow width constraints (`w <= 101.2px` inside compact mobile list tiles):
+> 1. **Redesigned Middle Column:** Replaced nested, inflexible multi-Rows with a clean, vertical 2-line layout: primary produce title (`Text` with `overflow: TextOverflow.ellipsis`) and secondary batch info string (`#GM-XXXX • Supplier • Qty` with `overflow: TextOverflow.ellipsis`).
+> 2. **Verification:** `dart analyze lib` clean (0 errors), `flutter test` green (all tests passed).
 
 > **Session (2026-08-16, daily-116, BatchMetricCard `buildBatchCostLine` 17px RenderFlex Overflow Fix):** Per runtime layout assertion on 286dp cards ("A RenderFlex overflowed by 17 pixels on the right in Row batch_metric_card.dart:51:12"):
 > 1. **Root Cause:** In `buildBatchCostLine`, unconstrained `Text(title)` alongside formatted multi-digit currency amounts exceeded card width constraints on compact devices.
