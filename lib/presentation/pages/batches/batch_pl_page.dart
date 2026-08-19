@@ -11,6 +11,15 @@ import '../../providers/batch_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../widgets/green_card.dart';
 
+/// One selectable candidate line for a customizable bill export.
+class _BillItem {
+  final String key;
+  final String label;
+  final double amount;
+
+  const _BillItem(this.key, this.label, this.amount);
+}
+
 class BatchPLPage extends StatefulWidget {
   final String batchId;
 
@@ -105,7 +114,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
     final double purchaserExpenses =
         pl?.costBreakdown.purchaserExpenses ??
         expenseProvider.expenses
-            .where((e) => e.expenseSide == 'purchaser')
+            .where((e) => !e.isVoided && e.expenseSide == 'purchaser' && e.expenseType != 'transport')
             .fold<double>(0, (s, e) => s + e.amount);
     final double packingCost =
         pl?.costBreakdown.packingCost ??
@@ -113,9 +122,16 @@ class _BatchPLPageState extends State<BatchPLPage> {
           0,
           (s, p) => s + p.totalPackingCost,
         );
+    final double vehicleLoadsFare =
+        batchProvider.vehicleLoads.fold<double>(0, (s, l) => s + l.totalCost);
+    final double transportExpenseTotal = expenseProvider.expenses
+        .where((e) => !e.isVoided && e.expenseType == 'transport')
+        .fold<double>(0, (s, e) => s + e.amount);
     final double transportCost =
         pl?.costBreakdown.transportCost ??
-        batchProvider.vehicleLoads.fold<double>(0, (s, l) => s + l.totalCost);
+        (vehicleLoadsFare > transportExpenseTotal
+            ? vehicleLoadsFare
+            : transportExpenseTotal);
     final double sellerDaily =
         pl?.costBreakdown.sellerDailyCharges ??
         batchProvider.batchPartners
@@ -130,7 +146,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
     final double sellerExpenses =
         pl?.costBreakdown.sellerExpenses ??
         expenseProvider.expenses
-            .where((e) => e.expenseSide == 'seller')
+            .where((e) => !e.isVoided && e.expenseSide == 'seller' && e.expenseType != 'transport')
             .fold<double>(0, (s, e) => s + e.amount);
 
     final double totalCost =
@@ -188,47 +204,50 @@ class _BatchPLPageState extends State<BatchPLPage> {
     final business = context.read<BusinessProvider>().business;
     final businessName = business?.name ?? 'MandiRoznamcha';
 
+    // Every candidate line the chosen bill type could show, with a stable
+    // key so the user can pick exactly which ones to include — the bottom
+    // total always reflects the real full amount regardless of what's
+    // itemized, so hiding a line never makes the bill inaccurate.
+    final candidates = <_BillItem>[
+      if (party == 'purchaser' || party == 'partner') ...[
+        _BillItem('purchase_cost', 'Purchase Cost', purchaseCost),
+        _BillItem('purchaser_daily', 'Purchaser Daily Charges', purchaserDaily),
+        _BillItem('purchaser_expenses', 'Purchaser Local Expenses', purchaserExpenses),
+        _BillItem('packing_cost', 'Packing & Labor Cost', packingCost),
+        _BillItem('transport_cost', 'Freight & Transport Cost', transportCost),
+      ],
+      if (party == 'seller' || party == 'partner') ...[
+        _BillItem('seller_daily', 'Seller Daily Charges', sellerDaily),
+        _BillItem('seller_expenses', 'Seller Market Expenses', sellerExpenses),
+        _BillItem('gross_revenue', 'Gross Wholesale Revenue', totalRevenue),
+      ],
+    ].where((i) => i.amount > 0).toList();
+
+    if (!context.mounted) return;
+    final included = await _pickBillItems(context, candidates);
+    if (included == null || !context.mounted) return;
+
+    const purchaserKeys = {
+      'purchase_cost',
+      'purchaser_daily',
+      'purchaser_expenses',
+      'packing_cost',
+      'transport_cost',
+    };
+    const sellerKeys = {'seller_daily', 'seller_expenses', 'gross_revenue'};
+
     final sections = <BillSection>[
       if (party == 'purchaser' || party == 'partner')
         BillSection('Purchaser Outlay', [
-          BillLine('Purchase Cost', CurrencyFormatter.format(purchaseCost)),
-          if (purchaserDaily > 0)
-            BillLine(
-              'Purchaser Daily Charges',
-              CurrencyFormatter.format(purchaserDaily),
-            ),
-          if (purchaserExpenses > 0)
-            BillLine(
-              'Purchaser Local Expenses',
-              CurrencyFormatter.format(purchaserExpenses),
-            ),
-          if (packingCost > 0)
-            BillLine(
-              'Packing & Labor Cost',
-              CurrencyFormatter.format(packingCost),
-            ),
-          if (transportCost > 0)
-            BillLine(
-              'Freight & Transport Cost',
-              CurrencyFormatter.format(transportCost),
-            ),
+          for (final i in candidates)
+            if (purchaserKeys.contains(i.key) && included.contains(i.key))
+              BillLine(i.label, CurrencyFormatter.format(i.amount)),
         ]),
       if (party == 'seller' || party == 'partner')
         BillSection('Seller Realization', [
-          if (sellerDaily > 0)
-            BillLine(
-              'Seller Daily Charges',
-              CurrencyFormatter.format(sellerDaily),
-            ),
-          if (sellerExpenses > 0)
-            BillLine(
-              'Seller Market Expenses',
-              CurrencyFormatter.format(sellerExpenses),
-            ),
-          BillLine(
-            'Gross Wholesale Revenue',
-            CurrencyFormatter.format(totalRevenue),
-          ),
+          for (final i in candidates)
+            if (sellerKeys.contains(i.key) && included.contains(i.key))
+              BillLine(i.label, CurrencyFormatter.format(i.amount)),
         ]),
     ];
 
@@ -266,6 +285,61 @@ class _BatchPLPageState extends State<BatchPLPage> {
       bill: bill,
       fileName: '${batch.batchCode}_${party}_bill',
       subject: 'MandiRoznamcha — ${batch.batchCode} $party bill',
+    );
+  }
+
+  /// Lets the user pick which of [candidates] to include in the exported
+  /// bill. Returns the set of included keys, or `null` if cancelled.
+  Future<Set<String>?> _pickBillItems(
+    BuildContext context,
+    List<_BillItem> candidates,
+  ) async {
+    if (candidates.isEmpty) return <String>{};
+    final included = {for (final i in candidates) i.key};
+    return showDialog<Set<String>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              'Include in Bill',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final item in candidates)
+                    CheckboxListTile(
+                      value: included.contains(item.key),
+                      title: Text(item.label),
+                      subtitle: Text(CurrencyFormatter.format(item.amount)),
+                      onChanged: (v) => setSt(() {
+                        if (v == true) {
+                          included.add(item.key);
+                        } else {
+                          included.remove(item.key);
+                        }
+                      }),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, included),
+                child: const Text('Continue'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -320,7 +394,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
     final double purchaserExpenses =
         pl?.costBreakdown.purchaserExpenses ??
         expenseProvider.expenses
-            .where((e) => e.expenseSide == 'purchaser')
+            .where((e) => !e.isVoided && e.expenseSide == 'purchaser' && e.expenseType != 'transport')
             .fold<double>(0, (s, e) => s + e.amount);
     final double packingCost =
         pl?.costBreakdown.packingCost ??
@@ -328,9 +402,16 @@ class _BatchPLPageState extends State<BatchPLPage> {
           0,
           (s, p) => s + p.totalPackingCost,
         );
+    final double vehicleLoadsFare =
+        batchProvider.vehicleLoads.fold<double>(0, (s, l) => s + l.totalCost);
+    final double transportExpenseTotal = expenseProvider.expenses
+        .where((e) => !e.isVoided && e.expenseType == 'transport')
+        .fold<double>(0, (s, e) => s + e.amount);
     final double transportCost =
         pl?.costBreakdown.transportCost ??
-        batchProvider.vehicleLoads.fold<double>(0, (s, l) => s + l.totalCost);
+        (vehicleLoadsFare > transportExpenseTotal
+            ? vehicleLoadsFare
+            : transportExpenseTotal);
     final double sellerDaily =
         pl?.costBreakdown.sellerDailyCharges ??
         batchProvider.batchPartners
@@ -345,7 +426,7 @@ class _BatchPLPageState extends State<BatchPLPage> {
     final double sellerExpenses =
         pl?.costBreakdown.sellerExpenses ??
         expenseProvider.expenses
-            .where((e) => e.expenseSide == 'seller')
+            .where((e) => !e.isVoided && e.expenseSide == 'seller' && e.expenseType != 'transport')
             .fold<double>(0, (s, e) => s + e.amount);
 
     final double totalCost =

@@ -41,7 +41,7 @@ class CustomerRepository {
     }
     final rows = await query.order('full_name');
     final customers = rows.map(CustomerModel.fromJson).toList();
-    final balances = await _liveOutstandingBalances(
+    final totals = await _liveCustomerTotals(
       customers.map((c) => c.id).toList(),
     );
     return customers
@@ -53,38 +53,47 @@ class CustomerRepository {
             phone: c.phone,
             city: c.city,
             shopName: c.shopName,
-            totalPurchased: c.totalPurchased,
-            totalPaid: c.totalPaid,
-            outstandingBalance: balances[c.id] ?? 0.0,
+            totalPurchased: totals[c.id]?.purchased ?? 0.0,
+            totalPaid: totals[c.id]?.paid ?? 0.0,
+            outstandingBalance: totals[c.id]?.outstanding ?? 0.0,
             isArchived: c.isArchived,
           ),
         )
         .toList();
   }
 
-  /// Live outstanding balance per customer, summed from `sales.credit_amount`
-  /// — the ledger `recordPayment`'s FIFO allocation actually keeps accurate
-  /// on partial payments. `customers.outstanding_balance` is a DB-maintained
-  /// cache that can drift out of sync (e.g. after a partial payment), so
-  /// every read of "outstanding credit" in the app must go through this
-  /// instead of trusting that column.
-  Future<Map<String, double>> _liveOutstandingBalances(
-    List<String> customerIds,
-  ) async {
+  /// Live purchased/paid/outstanding totals per customer, summed straight
+  /// from `sales` — the ledger `recordPayment`'s FIFO allocation keeps
+  /// `credit_amount`/`cash_received` accurate on every partial payment, and
+  /// a sale's own `cash_received` already captures cash collected at the
+  /// time of a partial-credit sale. `customers.outstanding_balance` /
+  /// `.total_paid` / `.total_purchased` are DB-maintained caches that drift
+  /// out of sync (e.g. a partial payment made at sale time never touches
+  /// `customer_payments`, so those caches miss it), so every read of a
+  /// customer's credit standing in the app must go through this instead of
+  /// trusting those columns.
+  Future<Map<String, ({double purchased, double paid, double outstanding})>>
+  _liveCustomerTotals(List<String> customerIds) async {
     if (customerIds.isEmpty) return const {};
     final rows = await _client
         .from('sales')
-        .select('customer_id, credit_amount')
+        .select('customer_id, total_amount, cash_received, credit_amount')
         .inFilter('customer_id', customerIds);
-    final balances = <String, double>{};
+    final totals = <String, ({double purchased, double paid, double outstanding})>{};
     for (final r in rows) {
       final id = r['customer_id'] as String?;
       if (id == null) continue;
+      final total = (r['total_amount'] as num?)?.toDouble() ?? 0.0;
+      final cash = (r['cash_received'] as num?)?.toDouble() ?? 0.0;
       final credit = (r['credit_amount'] as num?)?.toDouble() ?? 0.0;
-      if (credit <= 0.001) continue;
-      balances[id] = (balances[id] ?? 0) + credit;
+      final existing = totals[id] ?? (purchased: 0.0, paid: 0.0, outstanding: 0.0);
+      totals[id] = (
+        purchased: existing.purchased + total,
+        paid: existing.paid + cash,
+        outstanding: existing.outstanding + (credit > 0.001 ? credit : 0.0),
+      );
     }
-    return balances;
+    return totals;
   }
 
   /// Returns the ids of customers shared with/from this business, plus whether
@@ -177,7 +186,7 @@ class CustomerRepository {
   Future<List<CustomerLedgerEntry>> getLedger(String customerId) async {
     final sales = await _client
         .from('sales')
-        .select('sale_date, total_amount, quantity_sold, product_batches(batch_code)')
+        .select('sale_date, total_amount, cash_received, quantity_sold, product_batches(batch_code)')
         .eq('customer_id', customerId);
     final payments = await _client
         .from('customer_payments')
@@ -188,16 +197,34 @@ class CustomerRepository {
     for (final s in sales) {
       final batch = s['product_batches'];
       final batchCode = batch is Map<String, dynamic> ? batch['batch_code'] : null;
+      final saleDate = s['sale_date'] as String? ?? '';
       entries.add((
-        sortKey: DateTime.tryParse(s['sale_date'] as String? ?? '') ?? DateTime(2000),
+        sortKey: DateTime.tryParse(saleDate) ?? DateTime(2000),
         entry: CustomerLedgerEntry(
-          date: s['sale_date'] as String? ?? '',
+          date: saleDate,
           description: 'Sale${batchCode != null ? ' — $batchCode' : ''}',
           amount: (s['total_amount'] as num?)?.toDouble() ?? 0,
           runningBalance: 0,
           type: 'sale',
         ),
       ));
+      // Cash paid at the time of a (partial-)credit sale never creates a
+      // `customer_payments` row — surface it as its own line here, or it
+      // silently vanishes from the transaction history and the running
+      // balance overstates what's still owed.
+      final cashAtSale = (s['cash_received'] as num?)?.toDouble() ?? 0.0;
+      if (cashAtSale > 0.001) {
+        entries.add((
+          sortKey: DateTime.tryParse(saleDate) ?? DateTime(2000),
+          entry: CustomerLedgerEntry(
+            date: saleDate,
+            description: 'Cash received at sale',
+            amount: cashAtSale,
+            runningBalance: 0,
+            type: 'payment',
+          ),
+        ));
+      }
     }
     for (final p in payments) {
       entries.add((

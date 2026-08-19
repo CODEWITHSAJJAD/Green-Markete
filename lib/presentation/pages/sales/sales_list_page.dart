@@ -13,6 +13,7 @@ import '../../providers/data_refresh.dart';
 import '../../widgets/batches/batch_dialogs.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
+import 'edit_sale_page.dart';
 import 'quick_sale_page.dart';
 
 class SalesListPage extends StatefulWidget {
@@ -331,7 +332,7 @@ class _SalesListPageState extends State<SalesListPage> {
                   children: filteredBatches.map((batch) {
                     return GreenCard(
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14),
                       child: Row(
                         children: [
                           Container(
@@ -431,7 +432,7 @@ class _SalesListPageState extends State<SalesListPage> {
 
     return GreenCard(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -495,7 +496,11 @@ class _SalesListPageState extends State<SalesListPage> {
                   constraints: const BoxConstraints(minWidth: 120),
                   onSelected: (action) {
                     if (action == 'edit') {
-                      showEditSaleDialog(context, sale);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EditSalePage(sale: sale),
+                        ),
+                      );
                     } else if (action == 'delete') {
                       showDeleteSaleDialog(context, sale);
                     }

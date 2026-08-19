@@ -32,6 +32,20 @@ class MeasurementUnitRepository {
     return MeasurementUnitModel.fromJson(row);
   }
 
+  Future<MeasurementUnitModel> update({
+    required String id,
+    required String name,
+    required double kgPerUnit,
+  }) async {
+    final row = await _client
+        .from('measurement_units')
+        .update({'name': name, 'kg_per_unit': kgPerUnit})
+        .eq('id', id)
+        .select()
+        .single();
+    return MeasurementUnitModel.fromJson(row);
+  }
+
   Future<void> delete(String id) async {
     final deleted = await _client
         .from('measurement_units')

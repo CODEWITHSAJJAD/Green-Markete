@@ -11,6 +11,14 @@ import '../../data/repositories/transaction_repository.dart';
 /// purchaser expenses + purchaser daily charges + packing cost + purchaser-paid
 /// transport), and settled amounts come from partner transactions matched to
 /// the batch via its code in the notes/reference.
+///
+/// A batch's bill is ONE shared bill owed by the seller side as a whole, not
+/// one bill per seller — when a batch has multiple seller partners, they are
+/// jointly responsible for the same single amount, and a settlement paid
+/// against the batch (to any one of them) clears it for all of them. Totals
+/// are summed once per batch (`_batchDues`) so a multi-seller batch is never
+/// double-counted; `dues` groups the same underlying batch-level figures by
+/// seller purely for the "which of my sellers is this batch under" display.
 class PartnerDuesProvider extends ChangeNotifier {
   PartnerDuesProvider(this._batchRepo, this._txRepo);
 
@@ -20,18 +28,18 @@ class PartnerDuesProvider extends ChangeNotifier {
   List<PartnerDueModel> _dues = const [];
   List<PartnerDueModel> get dues => _dues;
 
+  List<BatchDueModel> _batchDues = const [];
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
   String? _error;
   String? get error => _error;
 
-  double get totalBill =>
-      _dues.fold<double>(0, (sum, d) => sum + d.totalBill);
-  double get totalPaid =>
-      _dues.fold<double>(0, (sum, d) => sum + d.totalPaid);
+  double get totalBill => _batchDues.fold<double>(0, (sum, d) => sum + d.bill);
+  double get totalPaid => _batchDues.fold<double>(0, (sum, d) => sum + d.paid);
   double get totalOutstanding =>
-      _dues.fold<double>(0, (sum, d) => sum + d.totalRemaining);
+      _batchDues.fold<double>(0, (sum, d) => sum + d.remaining);
 
   Future<void> load(String businessId) async {
     _isLoading = true;
@@ -64,38 +72,43 @@ class PartnerDuesProvider extends ChangeNotifier {
         }
       }));
 
+      // One combined bill per batch — shared by every seller on it, not
+      // duplicated per seller. Settled amount matches ANY transaction tagged
+      // with the batch code regardless of which specific partner received
+      // it, so a payment against the batch clears it no matter who paid or
+      // who was credited.
       final batchDues = <BatchDueModel>[];
       for (var i = 0; i < candidates.length; i++) {
         final batch = candidates[i];
         final pl = summaries[i];
         final bill = _billFor(batch, pl);
-        final sellerIds = sellersByBatch[batch.id] ?? const <String>[];
-        for (final sellerId in sellerIds) {
-          final paid = transactions
-              .where(
-                (t) =>
-                    t.toPartnerId == sellerId &&
-                    ((t.notes?.contains(batch.batchCode) ?? false) ||
-                        (t.reference?.contains(batch.batchCode) ?? false)),
-              )
-              .fold<double>(0, (sum, t) => sum + t.amount);
-          batchDues.add(
-            BatchDueModel(
-              partnerId: sellerId,
-              batchId: batch.id,
-              batchCode: batch.batchCode,
-              productName: batch.productName,
-              bill: bill,
-              paid: paid,
-              remaining: (bill - paid).clamp(0, double.infinity).toDouble(),
-            ),
-          );
-        }
+        final paid = transactions
+            .where(
+              (t) =>
+                  (t.notes?.contains(batch.batchCode) ?? false) ||
+                  (t.reference?.contains(batch.batchCode) ?? false),
+            )
+            .fold<double>(0, (sum, t) => sum + t.amount);
+        batchDues.add(
+          BatchDueModel(
+            partnerId: (sellersByBatch[batch.id] ?? const <String>[]).firstOrNull ?? '',
+            batchId: batch.id,
+            batchCode: batch.batchCode,
+            productName: batch.productName,
+            bill: bill,
+            paid: paid,
+            remaining: (bill - paid).clamp(0, double.infinity).toDouble(),
+          ),
+        );
       }
+      _batchDues = batchDues;
 
       final byPartner = <String, List<BatchDueModel>>{};
       for (final due in batchDues) {
-        byPartner.putIfAbsent(due.partnerId, () => []).add(due);
+        final sellerIds = sellersByBatch[due.batchId] ?? const <String>[];
+        for (final sellerId in sellerIds) {
+          byPartner.putIfAbsent(sellerId, () => []).add(due);
+        }
       }
       final list =
           byPartner.entries

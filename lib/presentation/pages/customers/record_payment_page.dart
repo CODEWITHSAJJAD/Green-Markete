@@ -284,6 +284,7 @@ class _RecordPaymentPageState extends State<RecordPaymentPage> {
                     ),
                     const SizedBox(height: 22),
                     SizedBox(
+                      width: double.infinity,
                       height: 50,
                       child: FilledButton(
                         style: FilledButton.styleFrom(

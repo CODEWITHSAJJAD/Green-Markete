@@ -39,7 +39,7 @@ Future<void> shareBill(
             subtitle: const Text('Print-ready document'),
             onTap: () {
               Navigator.pop(sheetCtx);
-              _sharePdf(bill, fileName);
+              _sharePdf(context, bill, fileName);
             },
           ),
           ListTile(
@@ -48,7 +48,7 @@ Future<void> shareBill(
             subtitle: const Text('Spreadsheet-compatible data'),
             onTap: () {
               Navigator.pop(sheetCtx);
-              _shareCsv(bill, fileName, subject);
+              _shareCsv(context, bill, fileName, subject);
             },
           ),
           ListTile(
@@ -89,36 +89,63 @@ String billToCsv(BillModel bill) {
   return buildCsv(columns: const ['Label', 'Value', 'Detail'], rows: rows);
 }
 
-Future<void> _shareCsv(BillModel bill, String fileName, String? subject) async {
-  final csv = billToCsv(bill);
-  final dir = await getTemporaryDirectory();
-  final safeName = _baseName(fileName);
-  final file = File('${dir.path}/$safeName.csv');
-  await file.writeAsString(csv);
-  await Share.shareXFiles(
-    [XFile(file.path, mimeType: 'text/csv', name: '$safeName.csv')],
-    subject: subject,
-  );
+Future<void> _shareCsv(
+  BuildContext context,
+  BillModel bill,
+  String fileName,
+  String? subject,
+) async {
+  try {
+    final csv = billToCsv(bill);
+    final dir = await getTemporaryDirectory();
+    final safeName = _baseName(fileName);
+    final file = File('${dir.path}/$safeName.csv');
+    await file.writeAsString(csv);
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: 'text/csv', name: '$safeName.csv')],
+      subject: subject,
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to export CSV: $e')),
+    );
+  }
 }
 
-Future<void> _sharePdf(BillModel bill, String fileName) async {
-  final doc = pw.Document();
-  doc.addPage(
-    pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(28),
-      build: (_) => _pdfContent(bill),
-    ),
-  );
-  final bytes = await doc.save();
-  await Printing.sharePdf(bytes: bytes, filename: _baseName(fileName));
+Future<void> _sharePdf(
+  BuildContext context,
+  BillModel bill,
+  String fileName,
+) async {
+  try {
+    final doc = pw.Document();
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(28),
+        header: (ctx) => ctx.pageNumber == 1
+            ? pw.SizedBox()
+            : pw.Text(
+                bill.documentTitle,
+                style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+        build: (_) => _pdfContent(bill),
+      ),
+    );
+    final bytes = await doc.save();
+    await Printing.sharePdf(bytes: bytes, filename: _baseName(fileName));
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to export PDF: $e')),
+    );
+  }
 }
 
-pw.Widget _pdfContent(BillModel bill) {
+List<pw.Widget> _pdfContent(BillModel bill) {
   const green = PdfColors.green800;
-  return pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-    children: [
+  return [
       pw.Center(
         child: pw.Text(
           'MANDI ROZNAMCHA',
@@ -212,8 +239,7 @@ pw.Widget _pdfContent(BillModel bill) {
           ),
         ),
       ],
-    ],
-  );
+  ];
 }
 
 pw.Widget _pdfLine(BillLine line, {bool strong = false}) {

@@ -56,6 +56,19 @@ class PartnerProvider extends ChangeNotifier {
     });
   }
 
+  Future<bool> delete(String id) async {
+    try {
+      await _repo.remove(id);
+      _partners = _partners.where((p) => p.id != id).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<PartnerModel?> create(Map<String, dynamic> data) async {
     try {
       final partner = await _repo.create(data);

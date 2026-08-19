@@ -6,10 +6,12 @@ import '../../../core/config/theme.dart';
 import '../../../data/models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_refresh.dart';
+import '../../providers/measurement_unit_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
+import 'create_product_page.dart';
 
 class ProductListPage extends StatefulWidget {
   const ProductListPage({super.key});
@@ -27,7 +29,24 @@ class _ProductListPageState extends State<ProductListPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final businessId = context.read<AuthProvider>().businessId ?? '';
       context.read<ProductProvider>().load(businessId);
+      context.read<MeasurementUnitProvider>().load(businessId);
     });
+  }
+
+  Future<void> _openCreate(BuildContext context, String businessId) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const CreateProductPage()),
+    );
+    if (!mounted) return;
+    context.read<ProductProvider>().load(businessId);
+  }
+
+  Future<void> _openEdit(BuildContext context, String businessId, ProductModel product) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => CreateProductPage(product: product)),
+    );
+    if (!mounted) return;
+    context.read<ProductProvider>().load(businessId);
   }
 
   @override
@@ -73,7 +92,7 @@ class _ProductListPageState extends State<ProductListPage> {
               ? 'Try modifying your search term.'
               : 'Add vegetables, fruits, and units to build your wholesale produce catalog.',
           actionLabel: 'Add Variety',
-          onAction: () => _showCreateDialog(context, businessId),
+          onAction: () => _openCreate(context, businessId),
         ),
       );
     } else {
@@ -96,7 +115,7 @@ class _ProductListPageState extends State<ProductListPage> {
                 ),
                 confirmDismiss: (_) => _confirmDelete(product),
                 child: GestureDetector(
-                  onTap: () => _showEditDialog(context, businessId, product),
+                  onTap: () => _openEdit(context, businessId, product),
                   child: GreenCard(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(14),
@@ -184,7 +203,7 @@ class _ProductListPageState extends State<ProductListPage> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        onPressed: () => _showCreateDialog(context, businessId),
+        onPressed: () => _openCreate(context, businessId),
         icon: const Icon(HeroIcons.plus, size: 18),
         label: Text(
           'Add Variety',
@@ -291,105 +310,4 @@ class _ProductListPageState extends State<ProductListPage> {
     return deleted;
   }
 
-  void _showCreateDialog(BuildContext context, String businessId) {
-    final nameCtrl = TextEditingController();
-    final catCtrl = TextEditingController();
-    final unitCtrl = TextEditingController(text: 'kg');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Add Produce Line',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Produce Name (e.g., Tomato)'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: catCtrl,
-              decoration: const InputDecoration(labelText: 'Category (e.g., Vegetables)'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: unitCtrl,
-              decoration: const InputDecoration(labelText: 'Measurement Unit (e.g., kg, crate, bag)'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty) return;
-              await context.read<ProductProvider>().create({
-                'business_id': businessId,
-                'name': nameCtrl.text.trim(),
-                if (catCtrl.text.trim().isNotEmpty) 'category': catCtrl.text.trim(),
-                'base_unit': unitCtrl.text.trim().isEmpty ? 'kg' : unitCtrl.text.trim(),
-              });
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditDialog(BuildContext context, String businessId, ProductModel product) {
-    final nameCtrl = TextEditingController(text: product.name);
-    final catCtrl = TextEditingController(text: product.category ?? '');
-    final unitCtrl = TextEditingController(text: product.baseUnit);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Edit ${product.name}',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Produce Name'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: catCtrl,
-              decoration: const InputDecoration(labelText: 'Category'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: unitCtrl,
-              decoration: const InputDecoration(labelText: 'Measurement Unit'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty) return;
-              await context.read<ProductProvider>().update(product.id, {
-                'business_id': businessId,
-                'name': nameCtrl.text.trim(),
-                if (catCtrl.text.trim().isNotEmpty) 'category': catCtrl.text.trim(),
-                'base_unit': unitCtrl.text.trim().isEmpty ? 'kg' : unitCtrl.text.trim(),
-              });
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Update'),
-          ),
-        ],
-      ),
-    );
-  }
 }

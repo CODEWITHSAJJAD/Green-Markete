@@ -11,6 +11,9 @@ class TransactionProvider extends ChangeNotifier {
   Map<String, dynamic>? _ledger;
   Map<String, dynamic>? get ledger => _ledger;
 
+  List<TransactionModel> _businessTransactions = const [];
+  List<TransactionModel> get businessTransactions => _businessTransactions;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -28,6 +31,20 @@ class TransactionProvider extends ChangeNotifier {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// All settlement/transaction records for the business, regardless of
+  /// which partner they're between — a batch's bill is shared by every
+  /// purchaser/seller on it, so matching "settled for this batch" must not
+  /// be scoped to one specific partner's ledger.
+  Future<void> loadBusinessTransactions(String businessId) async {
+    try {
+      _businessTransactions = await _repo.listByBusiness(businessId);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
     }
   }

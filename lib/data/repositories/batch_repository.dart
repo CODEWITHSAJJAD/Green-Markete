@@ -480,25 +480,15 @@ class BatchRepository {
   }
 
   Future<BatchPLDetailModel> getSummary(String id) async {
-    try {
-      final response = await _client.rpc(
-        'get_batch_pl',
-        params: {'p_batch_id': id},
-      );
-      if (response is Map<String, dynamic>) {
-        final data = response['data'] ?? response;
-        if (data is Map<String, dynamic> &&
-            (data['cost_breakdown'] != null ||
-                data['total_cost'] != null ||
-                data['purchase_cost'] != null)) {
-          return BatchPLDetailModel.fromJson({...data, 'batch_id': id});
-        }
-      }
-    } catch (e) {
-      debugPrint('get_batch_pl rpc fallback: $e');
-    }
-
-    // Direct fallback calculation from Supabase tables
+    // Always computed directly from the underlying tables — never from the
+    // `get_batch_pl` RPC. That server-side function returns its own
+    // cost_breakdown (transport lumped into generic expenses, no voided
+    // exclusion) which used to silently win over this calculation whenever
+    // it succeeded, since `pl?.costBreakdown.X ?? fallback` only falls
+    // through on a null field, not a wrongly-computed 0 — so the transport
+    // fix here never took visible effect while the RPC kept succeeding.
+    // Nothing in the UI reads the RPC-only `partner_shares` field, so there
+    // is no functionality lost by not calling it.
     try {
       final batchRow = await _client
           .from('product_batches')

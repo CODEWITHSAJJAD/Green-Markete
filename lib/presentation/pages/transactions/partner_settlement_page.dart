@@ -173,6 +173,7 @@ class _PartnerSettlementPageState extends State<PartnerSettlementPage> {
                             ),
                             const SizedBox(height: 24),
                             SizedBox(
+                              width: double.infinity,
                               height: 50,
                               child: FilledButton(
                                 style: FilledButton.styleFrom(

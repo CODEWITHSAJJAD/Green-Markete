@@ -48,6 +48,23 @@ class PackingTypeProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> update({
+    required String id,
+    required String businessId,
+    required String name,
+    required double kgCapacity,
+  }) async {
+    try {
+      await _repo.update(id: id, name: name, kgCapacity: kgCapacity);
+      await load(businessId);
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> delete(String id) async {
     try {
       await _repo.delete(id);

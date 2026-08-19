@@ -3,9 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/theme.dart';
+import '../../../data/models/partner_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/capability.dart';
 import '../../providers/partner_provider.dart';
+import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
 import 'create_partner_page.dart';
@@ -51,6 +53,27 @@ class _PartnerListPageState extends State<PartnerListPage> {
     if (!mounted) return;
     final businessId = context.read<AuthProvider>().businessId ?? '';
     if (businessId.isNotEmpty) context.read<PartnerProvider>().load(businessId);
+  }
+
+  Future<bool> _confirmDelete(PartnerModel partner) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final provider = context.read<PartnerProvider>();
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Remove ${partner.fullName}?',
+      message: 'This member will lose access to this business and be removed from the team directory.',
+      confirmLabel: 'Remove',
+      isDestructive: true,
+    );
+    if (ok != true) return false;
+    final deleted = await provider.delete(partner.id);
+    if (!mounted) return deleted;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(deleted ? 'Member removed' : (provider.error ?? 'Failed to remove member')),
+      ),
+    );
+    return deleted;
   }
 
   @override
@@ -282,9 +305,9 @@ class _PartnerListPageState extends State<PartnerListPage> {
                 final isOwner = partner.role == 'owner';
                 final isPartnerType = partner.isPartner;
 
-                return GreenCard(
+                final card = GreenCard(
                   margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
@@ -413,6 +436,30 @@ class _PartnerListPageState extends State<PartnerListPage> {
                       ),
                     ],
                   ),
+                );
+
+                if (isOwner ||
+                    !context.read<AuthProvider>().capabilities.can(
+                      Capability.createPartner,
+                    )) {
+                  return card;
+                }
+                return Dismissible(
+                  key: ValueKey('partner-${partner.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.roseSurface,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: AppColors.rose, width: 1),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: const Icon(HeroIcons.trash, color: AppColors.rose),
+                  ),
+                  confirmDismiss: (_) => _confirmDelete(partner),
+                  child: card,
                 );
               }).toList(),
             ),

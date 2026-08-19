@@ -35,6 +35,8 @@ class ProductProvider extends ChangeNotifier {
   Future<ProductModel?> create(Map<String, dynamic> data) async {
     try {
       final product = await _repo.create(data);
+      _products = [..._products, product];
+      notifyListeners();
       return product;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');

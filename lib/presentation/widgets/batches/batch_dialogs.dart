@@ -790,8 +790,7 @@ Future<void> showCollectWalkInCreditDialog(
 Future<void> showSettleSellerDialog(
   BuildContext context, {
   required BatchModel batch,
-  required String sellerId,
-  required String sellerName,
+  required List<String> sellerIds,
   required double remaining,
   required double settledForBatch,
 }) async {
@@ -805,6 +804,7 @@ Future<void> showSettleSellerDialog(
       .whereType<String>()
       .toList();
   String? fromPartnerId = purchasers.isNotEmpty ? purchasers.first : null;
+  String? toPartnerId = sellerIds.isNotEmpty ? sellerIds.first : null;
   final amountCtrl = TextEditingController(
     text: remaining > 0 ? remaining.toStringAsFixed(2) : '',
   );
@@ -826,26 +826,68 @@ Future<void> showSettleSellerDialog(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setSt) {
         return AlertDialog(
-          title: Text('Settle $sellerName'),
+          title: Text(
+            purchasers.length <= 1 && sellerIds.length <= 1
+                ? 'Settle Batch'
+                : 'Settle Purchaser ↔ Seller Side',
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppDropdown<String>(
-                  value: fromPartnerId,
-                  labelText: 'Paid by (partner)',
-                  items: [
-                    for (final p in purchasers)
-                      DropdownItem(
-                        value: p,
-                        child: Text(
-                          partnerName(p),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                  onChanged: (v) => setSt(() => fromPartnerId = v),
+                Text(
+                  'Paying any amount here clears this batch\'s shared bill — '
+                  'it\'s jointly owed between whichever purchaser fronted the '
+                  'cost and whichever seller collected the sale, not split '
+                  'per person.',
+                  style: theme.textTheme.bodySmall,
                 ),
+                const SizedBox(height: 12),
+                if (purchasers.length <= 1)
+                  _fixedPartnerRow(
+                    theme,
+                    'Purchaser side',
+                    purchasers.isEmpty ? 'Unassigned' : partnerName(purchasers.first),
+                  )
+                else
+                  AppDropdown<String>(
+                    value: fromPartnerId,
+                    labelText: 'Purchaser side — paid by (optional: pick who)',
+                    items: [
+                      for (final p in purchasers)
+                        DropdownItem(
+                          value: p,
+                          child: Text(
+                            partnerName(p),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: (v) => setSt(() => fromPartnerId = v),
+                  ),
+                const SizedBox(height: 12),
+                if (sellerIds.length <= 1)
+                  _fixedPartnerRow(
+                    theme,
+                    'Seller side',
+                    toPartnerId == null ? 'Unassigned' : partnerName(toPartnerId!),
+                  )
+                else
+                  AppDropdown<String>(
+                    value: toPartnerId,
+                    labelText: 'Seller side — received by (optional: pick who)',
+                    items: [
+                      for (final s in sellerIds)
+                        DropdownItem(
+                          value: s,
+                          child: Text(
+                            partnerName(s),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: (v) => setSt(() => toPartnerId = v),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: amountCtrl,
@@ -901,7 +943,13 @@ Future<void> showSettleSellerDialog(
                 }
                 if (fromPartnerId == null || fromPartnerId!.isEmpty) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('Select who is paying')),
+                    const SnackBar(content: Text('No purchaser available to pay from')),
+                  );
+                  return;
+                }
+                if (toPartnerId == null || toPartnerId!.isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('No seller available to receive')),
                   );
                   return;
                 }
@@ -911,7 +959,7 @@ Future<void> showSettleSellerDialog(
                     TransactionCreateRequest(
                       businessId: businessId,
                       fromPartnerId: fromPartnerId!,
-                      toPartnerId: sellerId,
+                      toPartnerId: toPartnerId!,
                       amount: amount,
                       transactionType: 'settlement',
                       paymentMode: paymentMode,
@@ -925,7 +973,9 @@ Future<void> showSettleSellerDialog(
                     ),
                   );
                   if (created != null) {
-                    txProvider.loadLedger(sellerId);
+                    if (businessId.isNotEmpty) {
+                      txProvider.loadBusinessTransactions(businessId);
+                    }
                     if (ctx.mounted) Navigator.pop(ctx);
                   } else if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
@@ -953,6 +1003,29 @@ Future<void> showSettleSellerDialog(
           ],
         );
       },
+    ),
+  );
+}
+
+/// Read-only "there's only one, nothing to pick" row shown in place of a
+/// dropdown when a side has exactly one (or zero) partners on the batch.
+Widget _fixedPartnerRow(ThemeData theme, String label, String name) {
+  return Align(
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: RichText(
+        text: TextSpan(
+          style: theme.textTheme.bodyMedium,
+          children: [
+            TextSpan(text: '$label: ', style: theme.textTheme.bodySmall),
+            TextSpan(
+              text: name,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }
@@ -1050,207 +1123,6 @@ Future<void> confirmCloseBatch(BuildContext context, String batchId) async {
       SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
     );
   }
-}
-
-Future<void> showEditSaleDialog(
-  BuildContext context,
-  SaleModel sale, {
-  String? businessId,
-  String? batchId,
-}) async {
-  final theme = Theme.of(context);
-  final activeBizId = businessId ?? context.read<AuthProvider>().businessId ?? '';
-  final customerProv = context.read<CustomerProvider>();
-  final customers = customerProv.customers;
-
-  final quantityCtrl = TextEditingController(
-    text: sale.quantitySold.toStringAsFixed(sale.quantitySold.truncateToDouble() == sale.quantitySold ? 0 : 2),
-  );
-  final priceCtrl = TextEditingController(
-    text: sale.pricePerUnit.toStringAsFixed(2),
-  );
-  final cashCtrl = TextEditingController(
-    text: sale.cashReceived > 0 ? sale.cashReceived.toStringAsFixed(2) : '',
-  );
-  final bankRefCtrl = TextEditingController(text: sale.bankReference ?? '');
-  final notesCtrl = TextEditingController(text: sale.notes ?? '');
-  String paymentMode = sale.paymentMode;
-  String? selectedCustomerId = sale.customerId;
-
-  await showDialog<void>(
-    context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setSt) {
-        final qty = double.tryParse(quantityCtrl.text.trim()) ?? 0;
-        final price = double.tryParse(priceCtrl.text.trim()) ?? 0;
-        final total = qty * price;
-        final cash = double.tryParse(cashCtrl.text.trim()) ?? 0;
-        final credit = paymentMode == 'credit'
-            ? total
-            : paymentMode == 'partial'
-                ? (total - cash).clamp(0.0, double.infinity)
-                : 0.0;
-
-        return AlertDialog(
-          title: const Text('Edit Sale'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (customers.isNotEmpty) ...[
-                  AppDropdown<String?>(
-                    value: selectedCustomerId,
-                    labelText: 'Customer (optional for walk-in)',
-                    items: [
-                      const DropdownItem(value: null, child: Text('Direct / Walk-in Customer')),
-                      for (final c in customers)
-                        DropdownItem(value: c.id, child: Text(c.fullName, overflow: TextOverflow.ellipsis)),
-                    ],
-                    onChanged: (v) => setSt(() => selectedCustomerId = v),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                TextField(
-                  controller: quantityCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Quantity Sold'),
-                  onChanged: (_) => setSt(() {}),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: priceCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Price per Unit (Rs)'),
-                  onChanged: (_) => setSt(() {}),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.divider),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.w600)),
-                      Text(CurrencyFormatter.format(total), style: const TextStyle(fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                AppDropdown<String>(
-                  value: paymentMode,
-                  labelText: 'Payment Mode',
-                  items: const [
-                    DropdownItem(value: 'cash', child: Text('Full Cash')),
-                    DropdownItem(value: 'credit', child: Text('Full Credit')),
-                    DropdownItem(value: 'partial', child: Text('Partial Payment')),
-                    DropdownItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                  ],
-                  onChanged: (v) => setSt(() {
-                    paymentMode = v ?? 'cash';
-                    if (paymentMode == 'cash' || paymentMode == 'bank_transfer') {
-                      cashCtrl.text = total > 0 ? total.toStringAsFixed(2) : '';
-                    } else if (paymentMode == 'credit') {
-                      cashCtrl.text = '0';
-                    }
-                  }),
-                ),
-                if (paymentMode == 'partial') ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: cashCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Cash Received (Rs)'),
-                    onChanged: (_) => setSt(() {}),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Credit remaining: ${CurrencyFormatter.format(credit)}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: AppColors.rose, fontWeight: FontWeight.w600),
-                  ),
-                ],
-                if (paymentMode == 'bank_transfer') ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: bankRefCtrl,
-                    decoration: const InputDecoration(labelText: 'Bank Reference (optional)'),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                TextField(
-                  controller: notesCtrl,
-                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (qty <= 0 || price <= 0) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('Quantity and price must be greater than 0')),
-                  );
-                  return;
-                }
-                final actualCash = paymentMode == 'cash' || paymentMode == 'bank_transfer'
-                    ? total
-                    : paymentMode == 'credit'
-                        ? 0.0
-                        : cash;
-                final actualCredit = (total - actualCash).clamp(0.0, double.infinity);
-
-                final updateReq = SaleUpdateRequest(
-                  quantitySold: qty,
-                  pricePerUnit: price,
-                  totalAmount: total,
-                  paymentMode: paymentMode,
-                  cashReceived: actualCash,
-                  creditAmount: actualCredit,
-                  customerId: selectedCustomerId,
-                  bankReference: bankRefCtrl.text.trim().isEmpty ? null : bankRefCtrl.text.trim(),
-                  notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
-                );
-
-                final ok = await context.read<SaleProvider>().update(
-                  sale.id,
-                  updateReq,
-                  businessId: activeBizId,
-                  batchId: batchId ?? sale.batchId,
-                );
-
-                if (!ctx.mounted) return;
-                if (ok) {
-                  Navigator.pop(ctx);
-                  if (activeBizId.isNotEmpty) {
-                    DataRefreshNotifier.instance.refresh(activeBizId);
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Sale updated successfully')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed: ${context.read<SaleProvider>().error ?? 'Unknown error'}'),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Save Changes'),
-            ),
-          ],
-        );
-      },
-    ),
-  );
 }
 
 Future<void> showDeleteSaleDialog(

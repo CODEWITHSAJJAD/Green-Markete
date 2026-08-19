@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
-import '../../../data/models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../../providers/capability.dart';
@@ -25,7 +24,7 @@ class BatchSettlementsTab extends StatefulWidget {
 }
 
 class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
-  String? _ledgerSellerId;
+  String? _loadedForBusinessId;
 
   @override
   Widget build(BuildContext context) {
@@ -43,19 +42,40 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
         .where((p) => p['role'] == 'seller' || p['role'] == 'both')
         .toList();
 
+    final businessId = context.read<AuthProvider>().businessId;
+    if (businessId != null &&
+        businessId.isNotEmpty &&
+        _loadedForBusinessId != businessId) {
+      _loadedForBusinessId = businessId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<TransactionProvider>().loadBusinessTransactions(businessId);
+        }
+      });
+    }
+
     String? sellerId;
     String sellerName = 'Seller';
+    List<String> sellerIds = const [];
 
     if (sellers.isNotEmpty) {
-      sellerId = sellers.first['partner_id'] as String?;
-      if (sellerId != null) {
-        sellerName = partnerProvider.partners
-                .where((p) => p.id == sellerId)
+      sellerIds = sellers
+          .map((s) => s['partner_id'] as String?)
+          .whereType<String>()
+          .toList();
+      sellerId = sellerIds.firstOrNull;
+      final names = sellerIds
+          .map(
+            (id) => partnerProvider.partners
+                .where((p) => p.id == id)
                 .map((p) => p.fullName)
-                .firstOrNull ??
-            (sellers.first['name'] as String?) ??
-            'Seller';
-      }
+                .firstOrNull,
+          )
+          .whereType<String>()
+          .toList();
+      sellerName = names.isNotEmpty
+          ? names.join(', ')
+          : ((sellers.first['name'] as String?) ?? 'Seller');
     } else {
       final fallbackSeller = partnerProvider.partners
           .where((p) => p.role == 'seller' || p.role == 'both' || p.role == 'owner')
@@ -63,30 +83,19 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
       if (fallbackSeller != null) {
         sellerId = fallbackSeller.id;
         sellerName = fallbackSeller.fullName;
+        sellerIds = [fallbackSeller.id];
       }
     }
 
-    if (sellerId != null && _ledgerSellerId != sellerId) {
-      _ledgerSellerId = sellerId;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.read<TransactionProvider>().loadLedger(sellerId!);
-      });
-    }
-
-    final ledgerRows = txProvider.ledger?['transactions'];
-    final ledgerTxs = ledgerRows is List
-        ? ledgerRows
-            .whereType<Map<String, dynamic>>()
-            .map(TransactionModel.fromJson)
-            .toList()
-        : <TransactionModel>[];
-    final settledForBatch = ledgerTxs
+    // The bill is shared by every seller on this batch, so "settled" must
+    // match ANY transaction tagged with the batch code — regardless of
+    // which specific partner it was between — not just one seller's ledger.
+    final settledForBatch = txProvider.businessTransactions
         .where(
           (t) =>
               (t.notes?.contains(batch.batchCode) ?? false) ||
               (t.reference?.contains(batch.batchCode) ?? false),
         )
-        .where((t) => sellerId == null || t.toPartnerId == sellerId)
         .fold<double>(0, (sum, t) => sum + t.amount);
 
     final purchaseCost = pl?.costBreakdown.purchaseCost ?? batch.totalPurchaseCost;
@@ -100,18 +109,24 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
             );
     final purchaserExpenses = pl?.costBreakdown.purchaserExpenses ??
         expenseProvider.expenses
-            .where((e) => e.expenseSide == 'purchaser')
+            .where((e) => !e.isVoided && e.expenseSide == 'purchaser' && e.expenseType != 'transport')
             .fold<double>(0, (s, e) => s + e.amount);
     final packingCost = pl?.costBreakdown.packingCost ??
         detailProvider.packingRecords.fold<double>(
           0,
           (s, p) => s + p.totalPackingCost,
         );
+    final vehicleLoadsFare = detailProvider.vehicleLoads.fold<double>(
+      0,
+      (s, l) => s + l.totalCost,
+    );
+    final transportExpenseTotal = expenseProvider.expenses
+        .where((e) => !e.isVoided && e.expenseType == 'transport')
+        .fold<double>(0, (s, e) => s + e.amount);
     final transport = pl?.costBreakdown.transportCost ??
-        detailProvider.vehicleLoads.fold<double>(
-          0,
-          (s, l) => s + l.totalCost,
-        );
+        (vehicleLoadsFare > transportExpenseTotal
+            ? vehicleLoadsFare
+            : transportExpenseTotal);
     final transportInBill = batch.transportPaidBy == 'purchaser' ? transport : 0.0;
     final owed = purchaseCost + purchaserDaily + purchaserExpenses + packingCost + transportInBill;
     final remaining = (owed - settledForBatch).clamp(0, double.infinity).toDouble();
@@ -215,8 +230,7 @@ class _BatchSettlementsTabState extends State<BatchSettlementsTab> {
                     onPressed: () => showSettleSellerDialog(
                       context,
                       batch: batch,
-                      sellerId: sellerId!,
-                      sellerName: sellerName,
+                      sellerIds: sellerIds,
                       remaining: remaining,
                       settledForBatch: settledForBatch,
                     ),

@@ -11,6 +11,8 @@ import '../../providers/packing_type_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/green_card.dart';
+import 'create_measurement_unit_page.dart';
+import 'create_packing_type_page.dart';
 
 class UnitsPackingPage extends StatefulWidget {
   const UnitsPackingPage({super.key});
@@ -73,70 +75,17 @@ class _UnitsPackingPageState extends State<UnitsPackingPage>
 class _MeasurementUnitsTab extends StatelessWidget {
   const _MeasurementUnitsTab();
 
-  Future<void> _openCreate(BuildContext context) async {
+  Future<void> _openEditor(BuildContext context, {MeasurementUnitModel? existing}) async {
     final businessId = context.read<AuthProvider>().businessId ?? '';
     if (businessId.isEmpty) return;
-    final nameCtrl = TextEditingController();
-    final kgCtrl = TextEditingController();
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Measurement Unit'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Unit name',
-                hintText: 'e.g. Peti',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: kgCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Weight per unit (kg)',
-                hintText: 'e.g. 25',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              final kg = double.tryParse(kgCtrl.text.trim()) ?? 0;
-              if (name.isEmpty || kg <= 0) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(
-                    content: Text('Enter a name and a weight greater than 0'),
-                  ),
-                );
-                return;
-              }
-              final ok = await context.read<MeasurementUnitProvider>().create(
-                businessId: businessId,
-                name: name,
-                kgPerUnit: kg,
-              );
-              if (ctx.mounted) Navigator.pop(ctx, ok);
-            },
-            child: const Text('Save'),
-          ),
-        ],
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CreateMeasurementUnitPage(unit: existing),
       ),
     );
-    if (saved != true || !context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Measurement unit added')),
-    );
+    if (context.mounted) {
+      context.read<MeasurementUnitProvider>().load(businessId);
+    }
   }
 
   Future<void> _delete(BuildContext context, MeasurementUnitModel unit) async {
@@ -167,7 +116,7 @@ class _MeasurementUnitsTab extends StatelessWidget {
         heroTag: 'add-unit',
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        onPressed: () => _openCreate(context),
+        onPressed: () => _openEditor(context),
         icon: const Icon(HeroIcons.plus, size: 18),
         label: Text(
           'Add Unit',
@@ -175,7 +124,7 @@ class _MeasurementUnitsTab extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           Container(
             padding: const EdgeInsets.all(14),
@@ -229,6 +178,7 @@ class _MeasurementUnitsTab extends StatelessWidget {
                 child: GreenCard(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
+                  onTap: () => _openEditor(context, existing: u),
                   child: Row(
                     children: [
                       Expanded(
@@ -249,6 +199,12 @@ class _MeasurementUnitsTab extends StatelessWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        HeroIcons.pencil_square,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                     ],
                   ),
                 ),
@@ -263,70 +219,17 @@ class _MeasurementUnitsTab extends StatelessWidget {
 class _PackingTypesTab extends StatelessWidget {
   const _PackingTypesTab();
 
-  Future<void> _openCreate(BuildContext context) async {
+  Future<void> _openEditor(BuildContext context, {PackingTypeModel? existing}) async {
     final businessId = context.read<AuthProvider>().businessId ?? '';
     if (businessId.isEmpty) return;
-    final nameCtrl = TextEditingController();
-    final kgCtrl = TextEditingController();
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Packing Type'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Packing name',
-                hintText: 'e.g. Jute bag (50 kg)',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: kgCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Capacity (kg)',
-                hintText: 'e.g. 50',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              final kg = double.tryParse(kgCtrl.text.trim()) ?? 0;
-              if (name.isEmpty || kg <= 0) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(
-                    content: Text('Enter a name and a capacity greater than 0'),
-                  ),
-                );
-                return;
-              }
-              final ok = await context.read<PackingTypeProvider>().create(
-                businessId: businessId,
-                name: name,
-                kgCapacity: kg,
-              );
-              if (ctx.mounted) Navigator.pop(ctx, ok);
-            },
-            child: const Text('Save'),
-          ),
-        ],
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CreatePackingTypePage(packingType: existing),
       ),
     );
-    if (saved != true || !context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Packing type added')),
-    );
+    if (context.mounted) {
+      context.read<PackingTypeProvider>().load(businessId);
+    }
   }
 
   Future<void> _delete(BuildContext context, PackingTypeModel type) async {
@@ -357,7 +260,7 @@ class _PackingTypesTab extends StatelessWidget {
         heroTag: 'add-packing-type',
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        onPressed: () => _openCreate(context),
+        onPressed: () => _openEditor(context),
         icon: const Icon(HeroIcons.plus, size: 18),
         label: Text(
           'Add Packing Type',
@@ -365,7 +268,7 @@ class _PackingTypesTab extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           Container(
             padding: const EdgeInsets.all(14),
@@ -419,6 +322,7 @@ class _PackingTypesTab extends StatelessWidget {
                 child: GreenCard(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
+                  onTap: () => _openEditor(context, existing: t),
                   child: Row(
                     children: [
                       Expanded(
@@ -438,6 +342,12 @@ class _PackingTypesTab extends StatelessWidget {
                           fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        HeroIcons.pencil_square,
+                        size: 16,
+                        color: AppColors.textSecondary,
                       ),
                     ],
                   ),

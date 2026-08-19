@@ -32,6 +32,20 @@ class PackingTypeRepository {
     return PackingTypeModel.fromJson(row);
   }
 
+  Future<PackingTypeModel> update({
+    required String id,
+    required String name,
+    required double kgCapacity,
+  }) async {
+    final row = await _client
+        .from('packing_types')
+        .update({'name': name, 'kg_capacity': kgCapacity})
+        .eq('id', id)
+        .select()
+        .single();
+    return PackingTypeModel.fromJson(row);
+  }
+
   Future<void> delete(String id) async {
     final deleted = await _client
         .from('packing_types')

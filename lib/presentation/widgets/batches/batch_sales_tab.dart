@@ -6,6 +6,7 @@ import '../../../core/config/theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/batch_model.dart';
 import '../../../data/models/sale_model.dart';
+import '../../pages/sales/edit_sale_page.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/batch_provider.dart';
 import '../empty_state.dart';
@@ -162,7 +163,11 @@ class BatchSalesTab extends StatelessWidget {
                       constraints: const BoxConstraints(minWidth: 110),
                       onSelected: (action) {
                         if (action == 'edit') {
-                          showEditSaleDialog(context, sale, batchId: batch.id);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => EditSalePage(sale: sale, batchId: batch.id),
+                            ),
+                          );
                         } else if (action == 'delete') {
                           showDeleteSaleDialog(context, sale, batchId: batch.id);
                         }
