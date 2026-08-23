@@ -2,27 +2,27 @@
 
 Vegetable import/export & wholesale management app. **Purchaser** buys from **suppliers** at source markets (cash/debt), ships to a **seller** via shared **vehicles** (packing loads split across vehicles, transport cost per-packing or per-vehicle), the seller **packs** (often with reusable bags that return with the vehicle), pays **expenses** (labor, local transport, commission, stall rent), then **sells** — either POS-style per customer or a **day-end manual summary** — and tracks **credit per batch and per business** with full customer credit history and live batch P&L.
 
-> **Agents: start by reading `../../frontend/project_state.md`** (session log, feature status, environment quirks) and `../../frontend/AGENTS.md` (hard rules). This README is the project map; `OPERATIONS_FEATURES_PLAN.md` is the requirements map + roadmap.
+> **Agents: start by reading `project_state.md`** (session log, feature status, environment quirks) and `AGENTS.md` (hard rules). This README is the project map; `OPERATIONS_FEATURES_PLAN.md` is the requirements map + roadmap.
 
 ## Repo layout
 
 ```
-frontend/                 ← git repo root
-├── project_state.md      ← REQUIRED first read: session log + live status (the source of truth)
-├── AGENTS.md             ← hard rules (scope, commit discipline, conventions)
-└── green_market/         ← the Flutter app
-    ├── README.md         ← this file
-    ├── OPERATIONS_FEATURES_PLAN.md  ← requirements map + phased roadmap
-    ├── 05_MultiUser_RBAC_Plan.md    ← multi-user role-based access plan (PLANNED)
-    ├── gap_analysis.md   ← older gap inventory (partly stale)
-    └── lib/
-        ├── core/         ← config, supabase service, utils, error, export
-        ├── data/         ← models (hand-written), repositories, datasources
-        ├── domain/       ← entities + usecases (thin)
-        └── presentation/ ← pages, providers (Provider 6.x ChangeNotifier), widgets
+./                         ← git repo root (the Flutter app)
+├── project_state.md       ← REQUIRED first read: session log + live status (the source of truth)
+├── AGENTS.md               ← hard rules (scope, commit discipline, conventions)
+├── README.md               ← this file
+├── OPERATIONS_FEATURES_PLAN.md  ← requirements map + phased roadmap
+├── 05_MultiUser_RBAC_Plan.md    ← multi-user role-based access plan
+├── gap_analysis.md         ← older gap inventory (partly stale)
+├── supabase/migrations/    ← numbered SQL migrations, applied manually via the Supabase SQL editor
+└── lib/
+    ├── core/               ← config, supabase service, utils, error, export
+    ├── data/               ← models (hand-written), repositories, datasources
+    ├── domain/             ← entities + usecases (thin)
+    └── presentation/       ← pages, providers (Provider 6.x ChangeNotifier), widgets
 ```
 
-## Commands (run from `green_market/`)
+## Commands (run from the repo root)
 
 - `flutter analyze` — must stay clean (0 errors; a few info-level lints acceptable)
 - `flutter test` — only `test/widget_test.dart` exists
@@ -37,7 +37,7 @@ frontend/                 ← git repo root
 - **Supabase envelope:** responses are raw rows (no `data` wrapper). Read with defensive casts (`as num?)?.toDouble()`); never assume a column exists.
 - **Defensive live-schema pattern (IMPORTANT):** the live DB is ahead of the docs and may lack columns/tables the original spec assumed (e.g., `customers.is_archived`, `customer_shares`, day-end tables). Every access to a possibly-absent column/table is wrapped: probe → `catch (PostgrestException)` → degrade to a non-breaking default (empty list, hidden button). See `CustomerRepository.list` (42703 fallback) and `listSharedCustomerIds`.
 - **Cross-table matching:** where a real FK column is absent (e.g., `partner_transactions.batch_id`), match rows by `notes`/`reference` containing the `batch_code` (Phase 5 pattern).
-- **Backend P&L is authoritative:** `get_batch_pl` RPC. Day-end entries must be synthesized as ordinary `sales`/`expenses` rows so P&L keeps working.
+- **P&L is computed locally, not via RPC:** `BatchRepository.getSummary()` calculates P&L directly from `sales`/`expenses`/`purchases` rows. The `get_batch_pl` RPC exists in the DB but must **not** be called from the app — it silently produced wrong totals (e.g. dropping transport expenses) and was root-caused and removed from the summary path; do not reintroduce it. Day-end entries must be synthesized as ordinary `sales`/`expenses` rows so this local calculation keeps working.
 - **Currency/dates:** `core/utils/currency_formatter.dart` (`CurrencyFormatter.currentCode`, multi-currency), `date_formatter.dart`. Reuse shared widgets in `presentation/widgets/` (GreenCard, AmountText, StatusPill, EmptyState, ConfirmDialog, SaleEntrySheet, ExpenseEntrySheet…).
 - **Routing:** plain `Navigator.push` behind an `AuthNavigator` host (`pages/auth/auth_navigator.dart`); 5-tab bottom nav in `main_shell.dart`. No go_router, no `routes.dart`.
 - **Backend is OUT OF SCOPE:** never read/edit the FastAPI/backend repo. Schema needs are documented as "backend prerequisites" in the plan.
@@ -52,14 +52,18 @@ frontend/                 ← git repo root
 | Packing records + packing returns | Done |
 | Partners, products, markets, customers (list/create/ledger/payments) | Done |
 | Reports (P&L, credit, overdue, market perf, partner P&L) + CSV export | Done |
-| Settlements (Phase 5) + shared-customers indicator (Phase 6) | Done |
-| **Multi-user roles & access** (partner claim by phone, per-business roles, side-scoped permissions: edit own side / view other side) | **Planned — see `05_MultiUser_RBAC_Plan.md`** |
+| Settlements (Phase 5) + shared-customers indicator (Phase 6), multi-partner batches settled as one combined bill | Done |
+| **Multi-user roles & access** (partner claim by phone, per-business roles, side-scoped permissions, multi-business support) | Done — see `05_MultiUser_RBAC_Plan.md` |
+| Dynamic Units & Packing (business-defined measurement units/packing types) for purchases and packing | Done |
+| Transport payment tracking (pay-button state tied to expense payment/void status) | Done |
+| Unit-flexible quantity/price entry on sale and purchase (quote a price or quantity in a different unit than what was physically handled) | Done |
+| PDF bill export with content customization | Done |
 | **Day-end manual summary, per-batch credit, suppliers, reusable packing** | **Planned — see `OPERATIONS_FEATURES_PLAN.md` Phase 7–11** |
 
 ## Docs index
 
-- `../../frontend/project_state.md` — session log + live status (read first)
-- `../../frontend/AGENTS.md` — hard rules
+- `project_state.md` — session log + live status (read first)
+- `AGENTS.md` — hard rules
 - `OPERATIONS_FEATURES_PLAN.md` — requirements map (R1–R18) + phased roadmap
 - `05_MultiUser_RBAC_Plan.md` — multi-user role-based access: claim-by-phone flow, per-business roles, side-scoped permission matrix, backend prerequisites (B1–B5), frontend phases (P1–P5), open decisions (D1–D6)
 - `gap_analysis.md` — older inventory (partially stale; trust `project_state.md` + code)
