@@ -52,6 +52,13 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
     'unitKey': 'kg',
     'customKg': '',
     'quantity': 0.0,
+    // null = price is quoted per the same unit as the quantity above (the
+    // default, unchanged behaviour). Set only when the supplier's price
+    // is quoted for a different lot size than what was actually received
+    // (e.g. received 50kg loose, but the price known is for a 40kg mann).
+    'priceUnitKey': null,
+    'priceCustomKg': '',
+    'enteredPrice': 0.0,
     'pricePerUnit': 0.0,
     'paymentMode': 'cash',
     'amountPaid': 0.0,
@@ -114,7 +121,7 @@ class _PurchaseEntryFormState extends State<PurchaseEntryForm> {
               _emit();
             },
             icon: const Icon(Icons.add),
-            label: const Text('Add supplier'),
+            label: const Text('Add Purchase'),
           ),
         ),
         const SizedBox(height: 8),
@@ -228,8 +235,10 @@ class _EntryCardState extends State<_EntryCard> {
   late final TextEditingController _customKgCtrl;
   late final TextEditingController _qtyCtrl;
   late final TextEditingController _priceCtrl;
+  late final TextEditingController _priceCustomKgCtrl;
   late final TextEditingController _paidCtrl;
   late String _unitKey;
+  String? _priceUnitKey;
   String? _marketId;
   String _paymentMode = 'cash';
   int _batchGroup = 1;
@@ -243,12 +252,17 @@ class _EntryCardState extends State<_EntryCard> {
     );
     _qtyCtrl = TextEditingController(text: (e['quantity'] as num?)?.toString());
     _priceCtrl = TextEditingController(
-      text: (e['pricePerUnit'] as num?)?.toString(),
+      text: (e['enteredPrice'] as num?)?.toString() ??
+          (e['pricePerUnit'] as num?)?.toString(),
+    );
+    _priceCustomKgCtrl = TextEditingController(
+      text: e['priceCustomKg']?.toString() ?? '',
     );
     _paidCtrl = TextEditingController(
       text: (e['amountPaid'] as num?)?.toString(),
     );
     _unitKey = e['unitKey'] as String? ?? 'kg';
+    _priceUnitKey = e['priceUnitKey'] as String?;
     _marketId = e['marketId'] as String?;
     _paymentMode = e['paymentMode'] as String? ?? 'cash';
     _batchGroup = (e['batchGroup'] as int?) ?? 1;
@@ -259,17 +273,45 @@ class _EntryCardState extends State<_EntryCard> {
     _customKgCtrl.dispose();
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
+    _priceCustomKgCtrl.dispose();
     _paidCtrl.dispose();
     super.dispose();
   }
 
+  double _kgPerUnit(String key, String customText) {
+    if (key == 'custom') return double.tryParse(customText) ?? 0;
+    return resolvePurchaseUnit(key, widget.customUnits).kgPerUnit;
+  }
+
+  /// Price expressed per the QUANTITY unit — the raw entered price when the
+  /// price is quoted for the same unit as the quantity (the default,
+  /// unchanged behaviour), or converted through kg when the supplier's
+  /// price is for a different lot size than what was actually received
+  /// (e.g. received 50kg loose, priced per a 40kg mann).
+  double _pricePerQuantityUnit() {
+    final entered = double.tryParse(_priceCtrl.text) ?? 0;
+    final priceUnitKey = _priceUnitKey;
+    if (priceUnitKey == null) return entered;
+    final priceUnitKg = _kgPerUnit(priceUnitKey, _priceCustomKgCtrl.text);
+    final qtyUnitKg = _kgPerUnit(_unitKey, _customKgCtrl.text);
+    if (priceUnitKg <= 0 || qtyUnitKg <= 0) return 0;
+    return (entered / priceUnitKg) * qtyUnitKg;
+  }
+
+  double _effectivePricePerKg() {
+    final entered = double.tryParse(_priceCtrl.text) ?? 0;
+    final unitKg = _priceUnitKey == null
+        ? _kgPerUnit(_unitKey, _customKgCtrl.text)
+        : _kgPerUnit(_priceUnitKey!, _priceCustomKgCtrl.text);
+    return unitKg > 0 ? entered / unitKg : 0;
+  }
+
   Map<String, dynamic> _snapshot() {
     final unitKey = _unitKey;
-    final kgPerUnit = unitKey == 'custom'
-        ? double.tryParse(_customKgCtrl.text) ?? 0
-        : resolvePurchaseUnit(unitKey, widget.customUnits).kgPerUnit;
+    final kgPerUnit = _kgPerUnit(unitKey, _customKgCtrl.text);
     final qty = double.tryParse(_qtyCtrl.text) ?? 0;
-    final price = double.tryParse(_priceCtrl.text) ?? 0;
+    final enteredPrice = double.tryParse(_priceCtrl.text) ?? 0;
+    final pricePerQtyUnit = _pricePerQuantityUnit();
     return {
       'uid': widget.entry['uid'] ?? 0,
       'supplierName': (widget.entry['supplierName'] as String? ?? '').trim(),
@@ -281,11 +323,14 @@ class _EntryCardState extends State<_EntryCard> {
       'unitKg': kgPerUnit,
       'customKg': _customKgCtrl.text.trim(),
       'quantity': qty,
-      'pricePerUnit': price,
+      'priceUnitKey': _priceUnitKey,
+      'priceCustomKg': _priceCustomKgCtrl.text.trim(),
+      'enteredPrice': enteredPrice,
+      'pricePerUnit': pricePerQtyUnit,
       'paymentMode': _paymentMode,
       'amountPaid': double.tryParse(_paidCtrl.text) ?? 0,
       'kgTotal': qty * kgPerUnit,
-      'lineCost': qty * price,
+      'lineCost': qty * pricePerQtyUnit,
       'batchGroup': _batchGroup,
     };
   }
@@ -299,13 +344,12 @@ class _EntryCardState extends State<_EntryCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final unitKey = _unitKey;
-    final kgPerUnit = unitKey == 'custom'
-        ? double.tryParse(_customKgCtrl.text) ?? 0
-        : resolvePurchaseUnit(unitKey, widget.customUnits).kgPerUnit;
+    final kgPerUnit = _kgPerUnit(unitKey, _customKgCtrl.text);
     final qty = double.tryParse(_qtyCtrl.text) ?? 0;
-    final price = double.tryParse(_priceCtrl.text) ?? 0;
+    final price = _pricePerQuantityUnit();
     final subtotal = qty * price;
     final lineKg = qty * kgPerUnit;
+    final effectivePricePerKg = _effectivePricePerKg();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -322,7 +366,10 @@ class _EntryCardState extends State<_EntryCard> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -338,7 +385,11 @@ class _EntryCardState extends State<_EntryCard> {
               const Spacer(),
               if (widget.deletable)
                 IconButton(
-                  icon: const Icon(MingCuteIcons.mgc_delete_3_line, size: 20, color: Colors.red),
+                  icon: const Icon(
+                    MingCuteIcons.mgc_delete_3_line,
+                    size: 20,
+                    color: Colors.red,
+                  ),
                   tooltip: 'Delete purchase',
                   onPressed: widget.onDelete,
                 ),
@@ -381,33 +432,6 @@ class _EntryCardState extends State<_EntryCard> {
               onChanged: (v) => _update(() => _marketId = v),
             ),
           const SizedBox(height: 12),
-          AppDropdown<String>(
-            value: unitKey,
-            labelText: 'Purchase Unit',
-            prefixIcon: const Icon(MingCuteIcons.mgc_scale_line, size: 18),
-            items: [
-              for (final u in purchaseUnits)
-                DropdownItem(value: u.key, child: Text(u.label)),
-              for (final u in widget.customUnits)
-                DropdownItem(value: u.key, child: Text(u.label)),
-              const DropdownItem(value: 'custom', child: Text('Custom Weight')),
-            ],
-            onChanged: (v) => _update(() => _unitKey = v ?? 'kg'),
-          ),
-          if (unitKey == 'custom') ...[
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _customKgCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Custom weight per unit (kg) *',
-              ),
-              onChanged: (_) => _update(() {}),
-            ),
-          ],
-          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -416,9 +440,7 @@ class _EntryCardState extends State<_EntryCard> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: InputDecoration(
-                    labelText: 'Quantity (${kgPerUnit == 1 ? 'kg' : 'units'})',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Quantity Purchased'),
                   onChanged: (_) => _update(() {}),
                 ),
               ),
@@ -437,22 +459,144 @@ class _EntryCardState extends State<_EntryCard> {
               ),
             ],
           ),
-          if (lineKg > 0 || subtotal > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${_fmt(lineKg)} kg · ${CurrencyFormatter.format(subtotal)}',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.15),
               ),
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Units',
+                  style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: AppDropdown<String>(
+                        value: unitKey,
+                        labelText: 'Purchase unit',
+                        fillColor: theme.colorScheme.surface,
+                        items: [
+                          for (final u in purchaseUnits)
+                            DropdownItem(value: u.key, child: Text(u.label)),
+                          for (final u in widget.customUnits)
+                            DropdownItem(value: u.key, child: Text(u.label)),
+                          const DropdownItem(value: 'custom', child: Text('Custom Weight')),
+                        ],
+                        onChanged: (v) => _update(() => _unitKey = v ?? 'kg'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: AppDropdown<String?>(
+                        value: _priceUnitKey,
+                        labelText: 'Price quoted per',
+                        fillColor: theme.colorScheme.surface,
+                        items: [
+                          const DropdownItem<String?>(
+                            value: null,
+                            child: Text('Same as purchase unit'),
+                          ),
+                          for (final u in purchaseUnits)
+                            DropdownItem<String?>(value: u.key, child: Text(u.label)),
+                          for (final u in widget.customUnits)
+                            DropdownItem<String?>(value: u.key, child: Text(u.label)),
+                          const DropdownItem<String?>(value: 'custom', child: Text('Custom Weight')),
+                        ],
+                        onChanged: (v) => _update(() => _priceUnitKey = v),
+                      ),
+                    ),
+                  ],
+                ),
+                if (unitKey == 'custom') ...[
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _customKgCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Custom weight per unit (kg) *',
+                      filled: false,
+                    ),
+                    onChanged: (_) => _update(() {}),
+                  ),
+                ],
+                if (_priceUnitKey == 'custom') ...[
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _priceCustomKgCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Lot weight the price covers (kg) *',
+                      filled: false,
+                    ),
+                    onChanged: (_) => _update(() {}),
+                  ),
+                ],
+                if (unitKey != 'kg' || _priceUnitKey != null) ...[
+                  const SizedBox(height: 10),
+                  const Divider(height: 1),
+                  const SizedBox(height: 10),
+                  if (unitKey != 'kg')
+                    _conversionLine(
+                      theme,
+                      'Weight received',
+                      lineKg > 0 ? '${_fmt(lineKg)} kg' : '—',
+                    ),
+                  if (_priceUnitKey != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: unitKey != 'kg' ? 4 : 0),
+                      child: _conversionLine(
+                        theme,
+                        'Rate per kg',
+                        effectivePricePerKg > 0
+                            ? CurrencyFormatter.format(effectivePricePerKg)
+                            : '—',
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${_fmt(lineKg)} kg',
+                  style: theme.textTheme.titleSmall,
+                ),
+                Flexible(
+                  child: Text(
+                    CurrencyFormatter.format(subtotal),
+                    textAlign: TextAlign.end,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -498,4 +642,21 @@ class _EntryCardState extends State<_EntryCard> {
   ];
 
   String _fmt(double v) => v.toStringAsFixed(1);
+}
+
+Widget _conversionLine(ThemeData theme, String label, String value) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label, style: theme.textTheme.bodySmall),
+      Flexible(
+        child: Text(
+          value,
+          textAlign: TextAlign.end,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+    ],
+  );
 }

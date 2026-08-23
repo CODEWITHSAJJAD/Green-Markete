@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/unit_converter.dart';
 import '../../data/models/batch_model.dart';
 import '../../data/models/customer_model.dart';
 import '../../data/models/sale_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/batch_provider.dart';
 import '../providers/customer_provider.dart';
+import '../providers/measurement_unit_provider.dart';
 import 'app_dropdown.dart';
 
 /// Returns `true` when a sale was actually saved, `null`/`false` otherwise.
@@ -47,12 +50,16 @@ class _SaleEntrySheet extends StatefulWidget {
 class _SaleEntrySheetState extends State<_SaleEntrySheet> {
   final _formKey = GlobalKey<FormState>();
   final _quantityCtrl = TextEditingController();
+  final _qtyUnitKgCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
+  final _priceUnitKgCtrl = TextEditingController();
   final _cashCtrl = TextEditingController();
   final _bankRefCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   CustomerModel? _customer;
   String _paymentMode = 'cash';
+  String _qtyUnitKey = 'kg';
+  String _priceUnitKey = 'kg';
   bool _saving = false;
 
   @override
@@ -64,13 +71,63 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
     final businessId = context.read<AuthProvider>().businessId;
     if (businessId != null && businessId.isNotEmpty) {
       context.read<CustomerProvider>().load(businessId);
+      context.read<MeasurementUnitProvider>().load(businessId);
     }
+  }
+
+  /// The kg weight one unit of the selling unit represents — 1 when selling
+  /// straight in kg, or a lot size (e.g. a 5kg bag) when the quantity is
+  /// counted in units rather than weighed out.
+  double _qtyUnitKgFor(List<PurchaseUnit> customUnits) {
+    if (_qtyUnitKey == 'custom') {
+      return double.tryParse(_qtyUnitKgCtrl.text.trim()) ?? 0;
+    }
+    return resolvePurchaseUnit(_qtyUnitKey, customUnits).kgPerUnit;
+  }
+
+  /// The actual kg quantity being sold — what gets checked against remaining
+  /// batch stock and stored, regardless of what unit it was counted in.
+  double _actualKgQuantity(List<PurchaseUnit> customUnits) {
+    final entered = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
+    return entered * _qtyUnitKgFor(customUnits);
+  }
+
+  /// The kg weight the entered price is quoted against — 1 when priced
+  /// straight per kg, or a supplier lot size (e.g. 40kg mann) when the
+  /// seller only knows the price for that lot, not the per-kg rate.
+  double _priceUnitKgFor(List<PurchaseUnit> customUnits) {
+    if (_priceUnitKey == 'custom') {
+      return double.tryParse(_priceUnitKgCtrl.text.trim()) ?? 0;
+    }
+    return resolvePurchaseUnit(_priceUnitKey, customUnits).kgPerUnit;
+  }
+
+  /// The actual per-kg price used to compute the total — the entered price
+  /// divided by the unit it was quoted against.
+  double _effectivePricePerKg(List<PurchaseUnit> customUnits) {
+    final entered = double.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final kgPerUnit = _priceUnitKgFor(customUnits);
+    return kgPerUnit > 0 ? entered / kgPerUnit : 0;
+  }
+
+  double _totalAmount(List<PurchaseUnit> customUnits) =>
+      _actualKgQuantity(customUnits) * _effectivePricePerKg(customUnits);
+
+  List<PurchaseUnit> _customUnits(BuildContext context, {bool watch = false}) {
+    final provider = watch
+        ? context.watch<MeasurementUnitProvider>()
+        : context.read<MeasurementUnitProvider>();
+    return provider.units
+        .map((u) => PurchaseUnit(u.id, u.name, u.kgPerUnit))
+        .toList();
   }
 
   @override
   void dispose() {
     _quantityCtrl.dispose();
+    _qtyUnitKgCtrl.dispose();
     _priceCtrl.dispose();
+    _priceUnitKgCtrl.dispose();
     _cashCtrl.dispose();
     _bankRefCtrl.dispose();
     _notesCtrl.dispose();
@@ -79,13 +136,14 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final qty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
-    final price = double.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final customUnits = _customUnits(context);
+    final qty = _actualKgQuantity(customUnits);
+    final price = _effectivePricePerKg(customUnits);
     final remaining = widget.batch.totalQuantity - widget.soldQuantity;
     if (qty <= 0 || price <= 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Enter quantity and price')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter quantity, price, and their units')),
+      );
       return;
     }
     if (qty > remaining + 0.0001) {
@@ -140,9 +198,12 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final customers = context.watch<CustomerProvider>().customers;
+    final customUnits = _customUnits(context, watch: true);
+    final effectivePricePerKg = _effectivePricePerKg(customUnits);
+    final actualKgQuantity = _actualKgQuantity(customUnits);
+    final totalAmount = _totalAmount(customUnits);
     final remaining = widget.batch.totalQuantity - widget.soldQuantity;
-    final qty = double.tryParse(_quantityCtrl.text.trim()) ?? 0;
-    final overLimit = qty > remaining + 0.0001;
+    final overLimit = actualKgQuantity > remaining + 0.0001;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -186,41 +247,187 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _quantityCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+              Text(
+                'Only ${remaining.toStringAsFixed(1)} ${widget.batch.unit} remaining (of '
+                '${widget.batch.totalQuantity.toStringAsFixed(1)})',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _quantityCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Quantity Sold',
+                        errorText: overLimit ? 'Exceeds remaining quantity' : null,
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Required';
+                        if (double.tryParse(v.trim()) == null) {
+                          return 'Enter a positive number';
+                        }
+                        if (_actualKgQuantity(customUnits) > remaining + 0.0001) {
+                          return 'Exceeds remaining quantity';
+                        }
+                        return null;
+                      },
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: _priceUnitKey == 'kg' ? 'Price per kg' : 'Price per unit',
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Required';
+                        final n = double.tryParse(v.trim());
+                        if (n == null || n <= 0) return 'Enter a positive number';
+                        return null;
+                      },
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.15)),
                 ),
-                decoration: InputDecoration(
-                  labelText: 'Quantity (${widget.batch.unit})',
-                  helperText:
-                      'Only ${remaining.toStringAsFixed(0)} ${widget.batch.unit} remaining (of ${widget.batch.totalQuantity.toStringAsFixed(0)})',
-                  errorText: overLimit ? 'Exceeds remaining quantity' : null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Units',
+                      style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: AppDropdown<String>(
+                            value: _qtyUnitKey,
+                            labelText: 'Selling unit',
+                            fillColor: theme.colorScheme.surface,
+                            items: [
+                              for (final u in purchaseUnits)
+                                DropdownItem(value: u.key, child: Text(u.label)),
+                              for (final u in customUnits)
+                                DropdownItem(value: u.key, child: Text(u.label)),
+                              const DropdownItem(value: 'custom', child: Text('Custom weight')),
+                            ],
+                            onChanged: (v) => setState(() => _qtyUnitKey = v ?? 'kg'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: AppDropdown<String>(
+                            value: _priceUnitKey,
+                            labelText: 'Price quoted per',
+                            fillColor: theme.colorScheme.surface,
+                            items: [
+                              for (final u in purchaseUnits)
+                                DropdownItem(value: u.key, child: Text(u.label)),
+                              for (final u in customUnits)
+                                DropdownItem(value: u.key, child: Text(u.label)),
+                              const DropdownItem(value: 'custom', child: Text('Custom weight')),
+                            ],
+                            onChanged: (v) => setState(() => _priceUnitKey = v ?? 'kg'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_qtyUnitKey == 'custom') ...[
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _qtyUnitKgCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Weight of one unit sold (kg)',
+                          filled: false,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
+                    if (_priceUnitKey == 'custom') ...[
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _priceUnitKgCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Lot weight the price covers (kg)',
+                          filled: false,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
+                    if (_qtyUnitKey != 'kg' || _priceUnitKey != 'kg') ...[
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      const SizedBox(height: 10),
+                      if (_qtyUnitKey != 'kg')
+                        _conversionLine(
+                          theme,
+                          'Quantity in kg',
+                          actualKgQuantity > 0 ? '${actualKgQuantity.toStringAsFixed(2)} kg' : '—',
+                        ),
+                      if (_priceUnitKey != 'kg')
+                        Padding(
+                          padding: EdgeInsets.only(top: _qtyUnitKey != 'kg' ? 4 : 0),
+                          child: _conversionLine(
+                            theme,
+                            'Rate per kg',
+                            effectivePricePerKg > 0
+                                ? CurrencyFormatter.format(effectivePricePerKg)
+                                : '—',
+                          ),
+                        ),
+                    ],
+                  ],
                 ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Required';
-                  final n = double.tryParse(v.trim());
-                  if (n == null || n <= 0) return 'Enter a positive number';
-                  if (n > remaining + 0.0001) {
-                    return 'Exceeds remaining quantity';
-                  }
-                  return null;
-                },
-                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _priceCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
                 ),
-                decoration: const InputDecoration(labelText: 'Price per unit'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Required';
-                  final n = double.tryParse(v.trim());
-                  if (n == null || n <= 0) return 'Enter a positive number';
-                  return null;
-                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Amount', style: theme.textTheme.titleSmall),
+                    Flexible(
+                      child: Text(
+                        CurrencyFormatter.format(totalAmount),
+                        textAlign: TextAlign.end,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               AppDropdown<String>(
@@ -288,6 +495,23 @@ class _SaleEntrySheetState extends State<_SaleEntrySheet> {
       ),
     );
   }
+}
+
+Widget _conversionLine(ThemeData theme, String label, String value) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label, style: theme.textTheme.bodySmall),
+      Flexible(
+        child: Text(
+          value,
+          textAlign: TextAlign.end,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+    ],
+  );
 }
 
 class _CustomerPicker extends StatefulWidget {
